@@ -1,0 +1,81 @@
+// Simulated order data - in real app this would come from API based on orderId
+export const orderData = {
+  id: "WIN2024001",
+  date: "2024-01-16T09:15:00",
+  status: "delivered",
+  total: 56.59,
+  discount: 5.65,
+  subtotal: 50.94,
+  items: [
+    {
+      id: 1,
+      name: "Parafuso Phillips 4x40mm - Caixa com 500 unidades",
+      quantity: 2,
+      price: 26.34,
+      store: "JC Ferragens",
+      image: "/placeholder.svg",
+    },
+    {
+      id: 2,
+      name: "Dobradiça reta com amortecedor FGVTN calço fixo",
+      quantity: 1,
+      price: 3.91,
+      store: "JC Ferragens",
+      image: "/placeholder.svg",
+    },
+  ],
+  customer: {
+    name: "João Silva",
+    phone: "(61) 99999-9999",
+    address: "QE 40 CONJUNTO M LOJA 19 - Guará II, Brasília - DF",
+  },
+  payment: {
+    method: "PIX",
+    status: "approved",
+    transactionId: "PIX123456789",
+  },
+  delivery: {
+    code: "1234",
+    estimatedTime: "15 min",
+    driverName: "Carlos Entregador",
+    driverPhone: "(61) 98888-7777",
+    currentLocation: "A 500m do seu endereço",
+  },
+  tracking: [
+    {
+      status: "confirmed",
+      title: "Pedido Confirmado",
+      description: "Pagamento aprovado e pedido enviado para as lojas",
+      time: "09:15",
+      completed: true,
+    },
+    {
+      status: "preparing",
+      title: "Em Preparação",
+      description: "Os itens estão sendo separados pelas lojas",
+      time: "09:20",
+      completed: true,
+    },
+    {
+      status: "ready",
+      title: "Pronto para Entrega",
+      description: "Todos os itens foram preparados",
+      time: "09:45",
+      completed: true,
+    },
+    {
+      status: "in_transit",
+      title: "Saiu para Entrega",
+      description: "Carlos está levando seu pedido até você",
+      time: "10:30",
+      completed: true,
+    },
+    {
+      status: "delivered",
+      title: "Entregue",
+      description: "Aguardando confirmação de entrega",
+      time: "~10:45",
+      completed: false,
+    },
+  ],
+};
