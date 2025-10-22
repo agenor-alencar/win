@@ -7,14 +7,13 @@ import java.util.UUID;
 public record PagamentoResponseDTO(
     UUID id,
     UUID pedidoId,
+    String numeroPedido,
     String metodoPagamento, // CARTAO_CREDITO, CARTAO_DEBITO, PIX, BOLETO, DINHEIRO
     BigDecimal valor,
-    String status, // PENDENTE, PROCESSANDO, APROVADO, REJEITADO, CANCELADO
     Integer parcelas,
+    String status, // PENDENTE, PROCESSANDO, APROVADO, REJEITADO, CANCELADO
+    String transacaoId,
     String informacoesCartao,
-    String codigoTransacao,
-    String urlComprovante,
     String observacoes,
-    OffsetDateTime dataProcessamento,
-    OffsetDateTime dataCriacao
+    OffsetDateTime criadoEm
 ) {}

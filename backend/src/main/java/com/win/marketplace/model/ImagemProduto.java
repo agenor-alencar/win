@@ -4,44 +4,36 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(name = "imagem_produto")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "imagens_produto")
 public class ImagemProduto {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "produto_id", nullable = false)
     private Produto produto;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(nullable = false, length = 500)
     private String url;
 
-    private Boolean principal;
-
-    @Column(name = "nome_arquivo", nullable = false)
-    private String nomeArquivo;
-
-    @Column(name = "tipo_arquivo", nullable = false)
-    private String tipoArquivo;
-
-    @Column(name = "tamanho_arquivo", nullable = false)
-    private Long tamanhoArquivo;
-
-    @Lob
-    @Column(name = "dados_imagem", columnDefinition = "BYTEA")
-    private byte[] dadosImagem;
+    @Column(name = "texto_alternativo", length = 200)
+    private String textoAlternativo;
 
     @Column(name = "ordem_exibicao")
-    private Integer ordemExibicao;
+    private Integer ordemExibicao = 0;
 
-    private Boolean ativo;
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    @CreationTimestamp
+    private OffsetDateTime criadoEm;
 }

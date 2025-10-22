@@ -38,6 +38,7 @@ import {
   AlertCircle,
   RotateCcw,
 } from "lucide-react";
+import { MerchantLayout } from "@/components/MerchantLayout";
 
 // Mock data
 const salesData = [
@@ -134,29 +135,14 @@ export default function MerchantDashboard() {
   ];
 
   return (
-    <div
-      style={{
-        backgroundColor: "#FFFFFF",
-        minHeight: "100vh",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
-      {/* Header */}
-      <header
-        className="border-b px-6 py-4"
-        style={{ backgroundColor: "#FFFFFF", borderColor: "#E5E7EB" }}
-      >
+    <MerchantLayout>
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Store className="h-8 w-8 mr-3" style={{ color: "#3DBEAB" }} />
+          <div className="flex items-center gap-3">
+            <Store className="h-6 w-6 text-[#3DBEAB]" />
             <div>
-              <h1
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  color: "#333333",
-                }}
-              >
+              <h1 className="text-2xl font-bold text-gray-900">
                 Ferragens Silva
               </h1>
               <p style={{ fontSize: "12px", color: "#666666" }}>
@@ -165,17 +151,10 @@ export default function MerchantDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" style={{ color: "#666666" }} />
-              <Badge
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                style={{
-                  backgroundColor: "#EF4444",
-                  color: "#FFFFFF",
-                  fontSize: "10px",
-                }}
-              >
+              <Bell className="h-5 w-5 text-gray-600" />
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
                 3
               </Badge>
             </Button>
@@ -183,7 +162,7 @@ export default function MerchantDashboard() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <Settings className="h-5 w-5" style={{ color: "#666666" }} />
+                  <Settings className="h-5 w-5 text-gray-600" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -194,15 +173,13 @@ export default function MerchantDashboard() {
             </DropdownMenu>
           </div>
         </div>
-      </header>
 
-      <div className="p-6">
         {/* KPIs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {kpis.map((kpi, index) => (
             <Card
               key={index}
-              style={{ borderRadius: "12px", border: "1px solid #E5E7EB" }}
+              className="rounded-xl border"
             >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -505,49 +482,6 @@ export default function MerchantDashboard() {
           </Card>
         </div>
       </div>
-
-      {/* Mobile Bottom Navigation */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50"
-        style={{ borderColor: "#E5E7EB" }}
-      >
-        <div className="grid grid-cols-4 h-16">
-          <Link
-            to="/merchant/dashboard"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#3DBEAB" }}
-          >
-            <Store className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>
-              Dashboard
-            </span>
-          </Link>
-          <Link
-            to="/merchant/orders"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Package className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Pedidos</span>
-          </Link>
-          <Link
-            to="/merchant/products"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Produtos</span>
-          </Link>
-          <Link
-            to="/merchant/profile"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Settings className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Perfil</span>
-          </Link>
-        </div>
-      </nav>
-    </div>
+    </MerchantLayout>
   );
 }

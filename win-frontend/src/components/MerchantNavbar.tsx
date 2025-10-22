@@ -22,6 +22,7 @@ import {
   Plus,
   Eye,
   DollarSign,
+  ShoppingCart,
 } from "lucide-react";
 
 const MerchantNavbar = () => {
@@ -148,6 +149,14 @@ const MerchantNavbar = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                {/* Modo Cliente - Destaque no topo */}
+                <Link to="/">
+                  <DropdownMenuItem className="bg-[#3DBEAB]/10 text-[#3DBEAB] hover:bg-[#3DBEAB]/20 hover:text-[#3DBEAB] font-medium">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Modo Cliente
+                  </DropdownMenuItem>
+                </Link>
+                <DropdownMenuSeparator />
                 <Link to="/merchant/profile">
                   <DropdownMenuItem>
                     <User className="h-4 w-4 mr-2" />

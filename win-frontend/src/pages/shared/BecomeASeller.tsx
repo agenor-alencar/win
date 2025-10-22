@@ -161,7 +161,7 @@ export default function BecomeASeller() {
               É fácil, rápido e sem complicação.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/merchant/auth">
+              <Link to="/become-merchant">
                 <Button
                   size="lg"
                   variant="secondary"
@@ -412,7 +412,7 @@ export default function BecomeASeller() {
             Cadastre sua loja agora e comece a vender online hoje mesmo
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/merchant/auth">
+            <Link to="/become-merchant">
               <Button
                 size="lg"
                 variant="secondary"

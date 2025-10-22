@@ -8,27 +8,22 @@ public record LojistaCreateRequestDTO(
     UUID usuarioId,
 
     @NotBlank(message = "CNPJ é obrigatório")
-    @Pattern(regexp = "\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}", message = "CNPJ deve estar no formato 00.000.000/0000-00")
+    @Pattern(regexp = "\\d{14}", message = "CNPJ deve conter 14 dígitos")
     String cnpj,
 
-    @NotBlank(message = "Razão social é obrigatória")
-    @Size(min = 2, max = 200, message = "Razão social deve ter entre 2 e 200 caracteres")
-    String razaoSocial,
-
     @NotBlank(message = "Nome fantasia é obrigatório")
-    @Size(min = 2, max = 200, message = "Nome fantasia deve ter entre 2 e 200 caracteres")
+    @Size(max = 200, message = "Nome fantasia deve ter no máximo 200 caracteres")
     String nomeFantasia,
 
-    @Size(max = 20, message = "Inscrição estadual deve ter no máximo 20 caracteres")
-    String inscricaoEstadual,
+    @NotBlank(message = "Razão social é obrigatória")
+    @Size(max = 200, message = "Razão social deve ter no máximo 200 caracteres")
+    String razaoSocial,
 
-    @Size(max = 20, message = "Inscrição municipal deve ter no máximo 20 caracteres")
-    String inscricaoMunicipal,
+    @Size(max = 5000, message = "Descrição deve ter no máximo 5000 caracteres")
+    String descricao,
 
-    @NotBlank(message = "Telefone é obrigatório")
-    @Pattern(regexp = "\\(\\d{2}\\)\\s\\d{4,5}-\\d{4}", message = "Telefone deve estar no formato (00) 0000-0000 ou (00) 00000-0000")
+    @Pattern(regexp = "\\d{10,11}", message = "Telefone deve conter 10 ou 11 dígitos")
     String telefone,
 
-    @Size(max = 500, message = "Descrição deve ter no máximo 500 caracteres")
-    String descricao
+    Boolean ativo
 ) {}

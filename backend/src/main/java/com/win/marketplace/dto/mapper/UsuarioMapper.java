@@ -9,67 +9,81 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface UsuarioMapper {
 
+    /**
+     * Converte RegisterRequestDTO para Usuario (Entity)
+     */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "senha", ignore = true) // Será criptografada no service
+    @Mapping(target = "senhaHash", ignore = true) // ✅ CORRIGIDO: senhaHash ao invés de senha_hash
     @Mapping(target = "ativo", constant = "true")
     @Mapping(target = "ultimoAcesso", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true) // ✅ CORRIGIDO: criadoEm ao invés de dataCriacao
+    @Mapping(target = "atualizadoEm", ignore = true) // ✅ CORRIGIDO: atualizadoEm ao invés de dataAtualizacao
     @Mapping(target = "enderecos", ignore = true)
     @Mapping(target = "pedidos", ignore = true)
     @Mapping(target = "avaliacoes", ignore = true)
     @Mapping(target = "notificacoes", ignore = true)
     @Mapping(target = "usuarioPerfis", ignore = true)
     @Mapping(target = "lojista", ignore = true)
-    @Mapping(target = "entregador", ignore = true)
+    @Mapping(target = "motorista", ignore = true)
     @Mapping(target = "administrador", ignore = true)
     Usuario toEntity(RegisterRequestDTO requestDTO);
 
+    /**
+     * Converte UsuarioCreateRequestDTO para Usuario (Entity)
+     */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "senha", ignore = true) // Será criptografada no service
+    @Mapping(target = "senhaHash", ignore = true) // ✅ CORRIGIDO
     @Mapping(target = "ativo", constant = "true")
     @Mapping(target = "ultimoAcesso", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true) // ✅ CORRIGIDO
+    @Mapping(target = "atualizadoEm", ignore = true) // ✅ CORRIGIDO
     @Mapping(target = "enderecos", ignore = true)
     @Mapping(target = "pedidos", ignore = true)
     @Mapping(target = "avaliacoes", ignore = true)
     @Mapping(target = "notificacoes", ignore = true)
     @Mapping(target = "usuarioPerfis", ignore = true)
     @Mapping(target = "lojista", ignore = true)
-    @Mapping(target = "entregador", ignore = true)
+    @Mapping(target = "motorista", ignore = true)
     @Mapping(target = "administrador", ignore = true)
     Usuario toEntity(UsuarioCreateRequestDTO requestDTO);
 
+    /**
+     * Converte Usuario (Entity) para UsuarioResponseDTO
+     */
     @Mapping(target = "perfis", expression = "java(getPerfis(usuario))")
     UsuarioResponseDTO toResponseDTO(Usuario usuario);
 
-    List<UsuarioResponseDTO> toResponseDTOList(List<Usuario> usuarios);
-
+    /**
+     * Atualiza Usuario existente com dados do RegisterRequestDTO
+     */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "senha", ignore = true)
+    @Mapping(target = "senhaHash", ignore = true) // ✅ CORRIGIDO
     @Mapping(target = "ultimoAcesso", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true) // ✅ CORRIGIDO
+    @Mapping(target = "atualizadoEm", ignore = true) // ✅ CORRIGIDO
     @Mapping(target = "enderecos", ignore = true)
     @Mapping(target = "pedidos", ignore = true)
     @Mapping(target = "avaliacoes", ignore = true)
     @Mapping(target = "notificacoes", ignore = true)
     @Mapping(target = "usuarioPerfis", ignore = true)
     @Mapping(target = "lojista", ignore = true)
-    @Mapping(target = "entregador", ignore = true)
+    @Mapping(target = "motorista", ignore = true)
     @Mapping(target = "administrador", ignore = true)
     void updateEntityFromDTO(RegisterRequestDTO requestDTO, @MappingTarget Usuario usuario);
 
+    /**
+     * Extrai lista de nomes dos perfis do usuário
+     */
     default List<String> getPerfis(Usuario usuario) {
-        if (usuario.getUsuarioPerfis() != null) {
+        if (usuario.getUsuarioPerfis() != null && !usuario.getUsuarioPerfis().isEmpty()) {
             return usuario.getUsuarioPerfis().stream()
-                    .map(up -> up.getPerfil().getTipo().name())
-                    .toList();
+                    .map(up -> up.getPerfil().getNome()) // ✅ CORRIGIDO: usar getNome() ao invés de getTipo().name()
+                    .collect(Collectors.toList());
         }
         return List.of();
     }

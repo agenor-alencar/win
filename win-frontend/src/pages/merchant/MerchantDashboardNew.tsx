@@ -32,7 +32,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import MerchantNavbar from "../../components/MerchantNavbar";
+import { MerchantLayout } from "@/components/MerchantLayout";
 
 // Mock data
 const salesData = [
@@ -152,12 +152,10 @@ export default function MerchantDashboardNew() {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <MerchantNavbar />
-
-      <div className="max-w-7xl mx-auto p-6">
+    <MerchantLayout>
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Welcome Header */}
-        <div className="mb-8">
+        <div>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -511,6 +509,6 @@ export default function MerchantDashboardNew() {
           </Card>
         </div>
       </div>
-    </div>
+    </MerchantLayout>
   );
 }

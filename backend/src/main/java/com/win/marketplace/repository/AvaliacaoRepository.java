@@ -9,8 +9,18 @@ import java.util.UUID;
 
 @Repository
 public interface AvaliacaoRepository extends JpaRepository<Avaliacao, UUID> {
-    List<Avaliacao> findByLojistaId(UUID lojistaId);
-    List<Avaliacao> findByClienteId(UUID clienteId);
+    
     List<Avaliacao> findByProdutoId(UUID produtoId);
+    
+    List<Avaliacao> findByUsuarioId(UUID usuarioId);
+    
+    List<Avaliacao> findByPedidoId(UUID pedidoId);
+    
+    boolean existsByUsuarioIdAndPedidoIdAndProdutoId(UUID usuarioId, UUID pedidoId, UUID produtoId);
+    
+    boolean existsByUsuarioIdAndProdutoIdAndPedidoIsNull(UUID usuarioId, UUID produtoId);
+    
+    List<Avaliacao> findByProdutoIdOrderByCriadoEmDesc(UUID produtoId);
+    
+    List<Avaliacao> findByUsuarioIdOrderByCriadoEmDesc(UUID usuarioId);
 }
-

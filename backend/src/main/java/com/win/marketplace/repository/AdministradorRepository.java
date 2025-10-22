@@ -11,5 +11,5 @@ import java.util.UUID;
 @Repository
 public interface AdministradorRepository extends JpaRepository<Administrador, UUID> {
     Optional<Administrador> findByUsuarioId(UUID usuarioId);
-    List<Administrador> findByAtivoTrue();
+    List<Administrador> findByUsuarioAtivoTrue();
 }

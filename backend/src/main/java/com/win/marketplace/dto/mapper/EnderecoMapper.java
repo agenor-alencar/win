@@ -15,9 +15,8 @@ public interface EnderecoMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "usuario", ignore = true)
     @Mapping(target = "ativo", constant = "true")
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
-    @Mapping(target = "pedidosEntrega", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true)
+    @Mapping(target = "atualizadoEm", ignore = true)
     Endereco toEntity(EnderecoRequestDTO requestDTO);
 
     @Mapping(source = "usuario.id", target = "usuarioId")
@@ -27,8 +26,7 @@ public interface EnderecoMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "usuario", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
-    @Mapping(target = "pedidosEntrega", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true)
+    @Mapping(target = "atualizadoEm", ignore = true)
     void updateEntityFromDTO(EnderecoRequestDTO requestDTO, @MappingTarget Endereco endereco);
 }

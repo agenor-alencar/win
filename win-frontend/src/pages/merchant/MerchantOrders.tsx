@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,98 +36,134 @@ import {
   Copy,
   Settings,
   ShoppingBag,
+  RefreshCw,
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
+import { MerchantLayout } from "@/components/MerchantLayout";
+import { api } from "@/lib/Api";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock data
-const orders = [
-  {
-    id: "WIN001",
-    customer: {
-      name: "Maria Silva",
-      phone: "(11) 99999-1234",
-      address: "Rua das Flores, 123 - Centro",
-    },
-    items: [
-      { name: "Parafuso Phillips 3x20mm", qty: 2, price: 12.5 },
-      { name: "Porca M8", qty: 5, price: 0.75 },
-    ],
-    total: 28.75,
-    status: "pendente",
-    createdAt: "2024-01-15 14:30",
-    deliveryCode: null,
-  },
-  {
-    id: "WIN002",
-    customer: {
-      name: "João Santos",
-      phone: "(11) 99999-5678",
-      address: "Av. Principal, 456 - Vila Nova",
-    },
-    items: [
-      { name: "Furadeira 650W", qty: 1, price: 189.9 },
-      { name: "Broca 6mm", qty: 3, price: 5.2 },
-    ],
-    total: 205.5,
-    status: "preparando",
-    createdAt: "2024-01-15 13:15",
-    deliveryCode: null,
-  },
-  {
-    id: "WIN003",
-    customer: {
-      name: "Ana Costa",
-      phone: "(11) 99999-9012",
-      address: "Rua do Comércio, 789 - Centro",
-    },
-    items: [{ name: "Martelo 500g", qty: 1, price: 25.0 }],
-    total: 25.0,
-    status: "pronto",
-    createdAt: "2024-01-15 12:00",
-    deliveryCode: "845672",
-  },
-  {
-    id: "WIN004",
-    customer: {
-      name: "Pedro Lima",
-      phone: "(11) 99999-3456",
-      address: "Rua Nova, 321 - Jardim",
-    },
-    items: [{ name: "Chave de Fenda", qty: 2, price: 18.9 }],
-    total: 37.8,
-    status: "entregue",
-    createdAt: "2024-01-15 10:30",
-    deliveryCode: "123456",
-  },
-];
+// Types
+interface Order {
+  id: string;
+  numeroPedido: string;
+  usuario: {
+    id: string;
+    nome: string;
+    email: string;
+  };
+  status: string;
+  subtotal: number;
+  desconto: number;
+  frete: number;
+  total: number;
+  enderecoEntrega: {
+    logradouro: string;
+    numero: string;
+    complemento?: string;
+    bairro: string;
+    cidade: string;
+    uf: string;
+    cep: string;
+  };
+  itens: Array<{
+    id: string;
+    nomeProduto: string;
+    quantidade: number;
+    precoUnitario: number;
+    subtotal: number;
+  }>;
+  codigoEntrega?: string;
+  criadoEm: string;
+  confirmadoEm?: string;
+  entregueEm?: string;
+}
+
+interface Lojista {
+  id: string;
+  nomeFantasia: string;
+  cnpj: string;
+  ativo: boolean;
+}
 
 export default function MerchantOrders() {
   const [selectedTab, setSelectedTab] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [driverCode, setDriverCode] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [lojista, setLojista] = useState<Lojista | null>(null);
   const { success, error: notifyError } = useNotification();
+  const { toast } = useToast();
 
-  const generateDeliveryCode = (orderId: string) => {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    success("Código gerado!", `Código de retirada: ${code}`);
-    // In a real app, this would update the order in the database
-    console.log(`Generated code ${code} for order ${orderId}`);
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+
+      // 1. Buscar dados do lojista logado
+      const { data: lojistaData } = await api.get<Lojista>("/api/v1/lojistas/me");
+      setLojista(lojistaData);
+
+      // 2. Buscar pedidos do lojista usando o novo endpoint otimizado
+      const { data: ordersData } = await api.get<Order[]>(
+        `/api/v1/pedidos/lojista/${lojistaData.id}`
+      );
+      
+      setOrders(ordersData);
+      setLoading(false);
+    } catch (error: any) {
+      console.error("Erro ao buscar pedidos:", error);
+      toast({
+        title: "Erro ao carregar pedidos",
+        description: error.response?.data?.message || "Não foi possível carregar os pedidos",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
   };
 
-  const markAsReady = (orderId: string) => {
-    success("Pedido marcado como pronto!", "Aguardando motorista");
-    // Update order status logic here
+  const generateDeliveryCode = async (orderId: string) => {
+    try {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      // TODO: Criar endpoint no backend para salvar o código de entrega
+      // await api.patch(`/api/v1/pedidos/${orderId}/codigo-entrega`, { codigo: code });
+      
+      success("Código gerado!", `Código de retirada: ${code}`);
+      console.log(`Generated code ${code} for order ${orderId}`);
+    } catch (error: any) {
+      notifyError("Erro", "Não foi possível gerar o código");
+    }
   };
 
-  const confirmPickup = (orderId: string, code: string) => {
-    if (code.length === 6) {
+  const markAsReady = async (orderId: string) => {
+    try {
+      await api.patch(`/api/v1/pedidos/${orderId}/pronto`);
+      success("Pedido marcado como pronto!", "Aguardando motorista");
+      fetchOrders(); // Recarregar pedidos
+    } catch (error: any) {
+      notifyError("Erro", error.response?.data?.message || "Não foi possível atualizar o pedido");
+    }
+  };
+
+  const confirmPickup = async (orderId: string, code: string) => {
+    if (code.length !== 6) {
+      notifyError("Código inválido", "Digite um código de 6 dígitos");
+      return;
+    }
+
+    try {
+      await api.patch(`/api/v1/pedidos/${orderId}/entregar?codigoEntrega=${code}`);
       success("Retirada confirmada!", "Pedido em rota de entrega");
       setDriverCode("");
-      // Update order status logic here
-    } else {
-      notifyError("Código inválido", "Digite um código de 6 dígitos");
+      fetchOrders(); // Recarregar pedidos
+    } catch (error: any) {
+      notifyError("Erro", error.response?.data?.message || "Código de entrega inválido");
     }
   };
 
@@ -135,113 +171,127 @@ export default function MerchantOrders() {
     const matchesTab =
       selectedTab === "all" ||
       (selectedTab === "pending" &&
-        ["pendente", "preparando"].includes(order.status)) ||
-      (selectedTab === "ready" && order.status === "pronto") ||
+        ["PENDENTE", "PREPARANDO"].includes(order.status)) ||
+      (selectedTab === "ready" && order.status === "PRONTO") ||
       (selectedTab === "delivered" &&
-        ["entregue", "retirado"].includes(order.status));
+        ["ENTREGUE", "EM_TRANSITO"].includes(order.status));
 
     const matchesSearch =
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchQuery.toLowerCase());
+      order.numeroPedido.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.usuario.nome.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesTab && matchesSearch;
   });
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pendente":
+    switch (status.toUpperCase()) {
+      case "PENDENTE":
         return { bg: "#FEF2F2", text: "#EF4444" };
-      case "preparando":
+      case "CONFIRMADO":
+      case "PREPARANDO":
         return { bg: "#FFF7ED", text: "#F59E0B" };
-      case "pronto":
+      case "PRONTO":
         return { bg: "#F0FDF4", text: "#10B981" };
-      case "entregue":
+      case "EM_TRANSITO":
+      case "ENTREGUE":
         return { bg: "#F0F9FF", text: "#2D9CDB" };
+      case "CANCELADO":
+        return { bg: "#F3F4F6", text: "#6B7280" };
       default:
         return { bg: "#F8F9FA", text: "#666666" };
     }
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pendente":
+    switch (status.toUpperCase()) {
+      case "PENDENTE":
         return Clock;
-      case "preparando":
+      case "CONFIRMADO":
+      case "PREPARANDO":
         return Package;
-      case "pronto":
+      case "PRONTO":
         return CheckCircle;
-      case "entregue":
+      case "EM_TRANSITO":
+      case "ENTREGUE":
         return Truck;
       default:
         return Package;
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      PENDENTE: "Pendente",
+      CONFIRMADO: "Confirmado",
+      PREPARANDO: "Preparando",
+      PRONTO: "Pronto",
+      EM_TRANSITO: "Em Trânsito",
+      ENTREGUE: "Entregue",
+      CANCELADO: "Cancelado",
+    };
+    return statusMap[status.toUpperCase()] || status;
+  };
+
+  if (loading) {
+    return (
+      <MerchantLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <RefreshCw className="w-8 h-8 animate-spin text-[#3DBEAB]" />
+          <span className="ml-3 text-lg">Carregando pedidos...</span>
+        </div>
+      </MerchantLayout>
+    );
+  }
+
   return (
-    <div
-      style={{
-        backgroundColor: "#FFFFFF",
-        minHeight: "100vh",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
-      {/* Header */}
-      <header
-        className="border-b px-6 py-4"
-        style={{ backgroundColor: "#FFFFFF", borderColor: "#E5E7EB" }}
-      >
+    <MerchantLayout>
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Package className="h-8 w-8 mr-3" style={{ color: "#3DBEAB" }} />
+          <div className="flex items-center gap-3">
+            <Package className="h-6 w-6 text-[#3DBEAB]" />
             <div>
-              <h1
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  color: "#333333",
-                }}
-              >
+              <h1 className="text-2xl font-bold text-gray-900">
                 Gestão de Pedidos
               </h1>
-              <p style={{ fontSize: "12px", color: "#666666" }}>
+              <p className="text-sm text-gray-600">
                 Gerencie pedidos e entregas da sua loja
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={fetchOrders}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar
+            </Button>
             <Link to="/merchant/dashboard">
-              <Button
-                variant="outline"
-                style={{ borderRadius: "12px", color: "#666666" }}
-              >
+              <Button variant="outline" className="rounded-xl">
                 Voltar ao Dashboard
               </Button>
             </Link>
           </div>
         </div>
-      </header>
 
-      <div className="p-6">
         {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1">
-            <Search
-              className="absolute left-3 top-3 h-5 w-5"
-              style={{ color: "#666666" }}
-            />
+            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
             <Input
               placeholder="Buscar por pedido ou cliente..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12"
-              style={{ borderRadius: "12px", fontSize: "16px" }}
+              className="pl-10 h-12 rounded-xl"
             />
           </div>
 
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger
-              className="w-full md:w-48 h-12"
+              className="w-full md:w-48 h-12 rounded-xl"
               style={{ borderRadius: "12px" }}
             >
               <SelectValue placeholder="Filtrar por status" />
@@ -340,10 +390,10 @@ export default function MerchantOrders() {
                             color: "#333333",
                           }}
                         >
-                          Pedido #{order.id}
+                          Pedido #{order.numeroPedido}
                         </h3>
                         <p style={{ fontSize: "12px", color: "#666666" }}>
-                          {order.createdAt}
+                          {new Date(order.criadoEm).toLocaleString("pt-BR")}
                         </p>
                       </div>
                     </div>
@@ -408,7 +458,7 @@ export default function MerchantOrders() {
                                     style={{ color: "#666666" }}
                                   />
                                   <span style={{ fontSize: "14px" }}>
-                                    {order.customer.name}
+                                    {order.usuario.nome}
                                   </span>
                                 </div>
                                 <div className="flex items-center">
@@ -417,7 +467,7 @@ export default function MerchantOrders() {
                                     style={{ color: "#666666" }}
                                   />
                                   <span style={{ fontSize: "14px" }}>
-                                    {order.customer.phone}
+                                    {order.usuario.email}
                                   </span>
                                 </div>
                                 <div className="flex items-center">
@@ -426,7 +476,7 @@ export default function MerchantOrders() {
                                     style={{ color: "#666666" }}
                                   />
                                   <span style={{ fontSize: "14px" }}>
-                                    {order.customer.address}
+                                    {order.enderecoEntrega.logradouro}, {order.enderecoEntrega.numero} - {order.enderecoEntrega.bairro}, {order.enderecoEntrega.cidade}/{order.enderecoEntrega.uf}
                                   </span>
                                 </div>
                               </div>
@@ -445,7 +495,7 @@ export default function MerchantOrders() {
                                 Itens do Pedido
                               </h4>
                               <div className="space-y-2">
-                                {order.items.map((item, index) => (
+                                {order.itens.map((item, index) => (
                                   <div
                                     key={index}
                                     className="flex justify-between items-center p-3 rounded-lg"
@@ -458,7 +508,7 @@ export default function MerchantOrders() {
                                           fontWeight: "500",
                                         }}
                                       >
-                                        {item.name}
+                                        {item.nomeProduto}
                                       </p>
                                       <p
                                         style={{
@@ -466,7 +516,7 @@ export default function MerchantOrders() {
                                           color: "#666666",
                                         }}
                                       >
-                                        Qtd: {item.qty}
+                                        Qtd: {item.quantidade}
                                       </p>
                                     </div>
                                     <p
@@ -475,10 +525,10 @@ export default function MerchantOrders() {
                                         fontWeight: "600",
                                       }}
                                     >
-                                      R${" "}
-                                      {(item.price * item.qty)
-                                        .toFixed(2)
-                                        .replace(".", ",")}
+                                      {new Intl.NumberFormat("pt-BR", {
+                                        style: "currency",
+                                        currency: "BRL",
+                                      }).format(item.subtotal)}
                                     </p>
                                   </div>
                                 ))}
@@ -554,7 +604,7 @@ export default function MerchantOrders() {
                                   Código de Retirada
                                 </h4>
 
-                                {order.deliveryCode ? (
+                                {order.codigoEntrega ? (
                                   <div className="space-y-4">
                                     <div
                                       className="flex items-center justify-center p-6 rounded-lg"
@@ -574,7 +624,7 @@ export default function MerchantOrders() {
                                             letterSpacing: "4px",
                                           }}
                                         >
-                                          {order.deliveryCode}
+                                          {order.codigoEntrega}
                                         </p>
                                         <p
                                           style={{
@@ -669,7 +719,7 @@ export default function MerchantOrders() {
                                 <p
                                   style={{ fontSize: "12px", color: "#666666" }}
                                 >
-                                  Código utilizado: {order.deliveryCode}
+                                  Código utilizado: {order.codigoEntrega}
                                 </p>
                               </div>
                             )}
@@ -697,7 +747,7 @@ export default function MerchantOrders() {
                           color: "#333333",
                         }}
                       >
-                        {order.customer.name}
+                        {order.usuario.nome}
                       </p>
                     </div>
 
@@ -718,7 +768,10 @@ export default function MerchantOrders() {
                           color: "#3DBEAB",
                         }}
                       >
-                        R$ {order.total.toFixed(2).replace(".", ",")}
+                        {new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(order.total)}
                       </p>
                     </div>
 
@@ -739,7 +792,7 @@ export default function MerchantOrders() {
                           color: "#333333",
                         }}
                       >
-                        {order.items.length} produto(s)
+                        {order.itens.length} produto(s)
                       </p>
                     </div>
                   </div>
@@ -771,49 +824,6 @@ export default function MerchantOrders() {
           </div>
         )}
       </div>
-
-      {/* Mobile Bottom Navigation */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50"
-        style={{ borderColor: "#E5E7EB" }}
-      >
-        <div className="grid grid-cols-4 h-16">
-          <Link
-            to="/merchant/dashboard"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Store className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>
-              Dashboard
-            </span>
-          </Link>
-          <Link
-            to="/merchant/orders"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#3DBEAB" }}
-          >
-            <Package className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Pedidos</span>
-          </Link>
-          <Link
-            to="/merchant/products"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Produtos</span>
-          </Link>
-          <Link
-            to="/merchant/profile"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Settings className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Perfil</span>
-          </Link>
-        </div>
-      </nav>
-    </div>
+    </MerchantLayout>
   );
 }

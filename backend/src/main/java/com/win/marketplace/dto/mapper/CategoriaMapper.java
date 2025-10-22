@@ -14,24 +14,19 @@ public interface CategoriaMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "categoriaPai", ignore = true)
-    @Mapping(target = "subcategorias", ignore = true)
-    @Mapping(target = "produtos", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true)
+    @Mapping(target = "atualizadoEm", ignore = true)
     Categoria toEntity(CategoriaCreateRequestDTO requestDTO);
 
     @Mapping(source = "categoriaPai.id", target = "categoriaPaiId")
     @Mapping(source = "categoriaPai.nome", target = "categoriaPaiNome")
-    @Mapping(source = "subcategorias", target = "subcategorias")
     CategoriaResponseDTO toResponseDTO(Categoria categoria);
 
     List<CategoriaResponseDTO> toResponseDTOList(List<Categoria> categorias);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "categoriaPai", ignore = true)
-    @Mapping(target = "subcategorias", ignore = true)
-    @Mapping(target = "produtos", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true)
+    @Mapping(target = "atualizadoEm", ignore = true)
     void updateEntityFromDTO(CategoriaCreateRequestDTO requestDTO, @MappingTarget Categoria categoria);
 }

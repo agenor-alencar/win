@@ -4,52 +4,60 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "notificacoes")
+@Entity
+@Table(name = "notificacoes", indexes = {
+    @Index(name = "idx_notificacao_usuario", columnList = "usuario_id"),
+    @Index(name = "idx_notificacao_lida", columnList = "lida")
+})
 public class Notificacao {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(name = "tipo", nullable = false, length = 50)
+    private String tipo; // ✅ String ao invés de enum: "INFO", "AVISO", "ERRO", "SUCESSO"
+
+    @Column(name = "titulo", nullable = false, length = 255)
+    private String titulo;
+
+    @Column(name = "mensagem", nullable = false, columnDefinition = "TEXT")
     private String mensagem;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private TipoNotificacao tipo;
+    @Column(name = "canal", nullable = false, length = 50)
+    private String canal; // ✅ String ao invés de enum: "SISTEMA", "EMAIL", "SMS", "PUSH"
 
-    @Column(nullable = false)
+    @Column(name = "lida", nullable = false)
     private Boolean lida = false;
 
-    @Column(name = "link_destino", columnDefinition = "TEXT")
-    private String linkDestino;
+    @Column(name = "data_leitura")
+    private OffsetDateTime dataLeitura;
 
-    @Column(name = "criado_em", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @CreationTimestamp
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20, nullable = false)
-    private CanalNotificacao canal;
-
-    public enum TipoNotificacao {
-        PEDIDO, PROMOCAO, SISTEMA, AVISO
-    }
-
-    public enum CanalNotificacao {
-        EMAIL, PUSH, WHATSAPP, SMS, SISTEMA
+    @PrePersist
+    protected void onCreate() {
+        criadoEm = OffsetDateTime.now();
+        if (lida == null) {
+            lida = false;
+        }
+        if (tipo == null) {
+            tipo = "INFO";
+        }
+        if (canal == null) {
+            canal = "SISTEMA";
+        }
     }
 }

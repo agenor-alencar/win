@@ -9,7 +9,5 @@ public record ImagemProdutoResponseDTO(
     String url,
     String textoAlternativo,
     Integer ordemExibicao,
-    Long tamanhoArquivo,
-    String tipoArquivo,
-    OffsetDateTime dataCriacao
+    OffsetDateTime criadoEm
 ) {}

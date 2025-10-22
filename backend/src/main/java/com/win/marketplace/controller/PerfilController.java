@@ -2,76 +2,141 @@ package com.win.marketplace.controller;
 
 import com.win.marketplace.dto.request.PerfilRequestDTO;
 import com.win.marketplace.dto.response.PerfilResponseDTO;
-import com.win.marketplace.model.Perfil;
 import com.win.marketplace.service.PerfilService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RestController
-@RequestMapping("/api/v1/perfil")
+@RequestMapping("/api/v1/perfis")
+@RequiredArgsConstructor
+@Tag(name = "Perfis", description = "Endpoints para gerenciamento de perfis de usuário")
 public class PerfilController {
 
     private final PerfilService perfilService;
 
-    public PerfilController(PerfilService perfilService) {
-        this.perfilService = perfilService;
-    }
-
-    @PostMapping("/create")
-    public ResponseEntity<PerfilResponseDTO> criar(@RequestBody PerfilRequestDTO requestDTO) {
+    /**
+     * Cria um novo perfil
+     */
+    @PostMapping
+    @Operation(summary = "Criar perfil", description = "Cria um novo perfil no sistema")
+    public ResponseEntity<PerfilResponseDTO> criar(
+            @Valid @RequestBody PerfilRequestDTO requestDTO) {
+        
+        log.info("POST /api/v1/perfis - Criando perfil: {}", requestDTO.nome());
         PerfilResponseDTO response = perfilService.criar(requestDTO);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/list/all")
+    /**
+     * Lista todos os perfis (ativos e inativos)
+     */
+    @GetMapping
+    @Operation(summary = "Listar todos os perfis", description = "Retorna todos os perfis cadastrados")
     public ResponseEntity<List<PerfilResponseDTO>> listarTodos() {
+        log.info("GET /api/v1/perfis - Listando todos os perfis");
         List<PerfilResponseDTO> perfis = perfilService.listarTodos();
         return ResponseEntity.ok(perfis);
     }
 
-    @GetMapping("/list/ativos")
+    /**
+     * Lista apenas perfis ativos
+     */
+    @GetMapping("/ativos")
+    @Operation(summary = "Listar perfis ativos", description = "Retorna apenas os perfis ativos")
     public ResponseEntity<List<PerfilResponseDTO>> listarAtivos() {
+        log.info("GET /api/v1/perfis/ativos - Listando perfis ativos");
         List<PerfilResponseDTO> perfis = perfilService.listarAtivos();
         return ResponseEntity.ok(perfis);
     }
 
-    @GetMapping("/list/id/{id}")
-    public ResponseEntity<PerfilResponseDTO> buscarPorId(@PathVariable UUID id) {
+    /**
+     * Busca perfil por ID
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar perfil por ID", description = "Retorna um perfil específico pelo ID")
+    public ResponseEntity<PerfilResponseDTO> buscarPorId(
+            @Parameter(description = "ID do perfil") @PathVariable UUID id) {
+        
+        log.info("GET /api/v1/perfis/{}", id);
         PerfilResponseDTO perfil = perfilService.buscarPorId(id);
         return ResponseEntity.ok(perfil);
     }
 
-    @GetMapping("/list/tipo/{tipo}")
-    public ResponseEntity<PerfilResponseDTO> buscarPorTipo(@PathVariable String tipo) {
-        Perfil.TipoPerfil tipoEnum = Perfil.TipoPerfil.valueOf(tipo.toUpperCase());
-        PerfilResponseDTO perfil = perfilService.buscarPorTipo(tipoEnum);
+    /**
+     * Busca perfil por nome
+     */
+    @GetMapping("/nome/{nome}")
+    @Operation(summary = "Buscar perfil por nome", description = "Retorna um perfil específico pelo nome")
+    public ResponseEntity<PerfilResponseDTO> buscarPorNome(
+            @Parameter(description = "Nome do perfil (ex: ADMIN, CLIENTE, LOJISTA, MOTORISTA)") 
+            @PathVariable String nome) {
+        
+        log.info("GET /api/v1/perfis/nome/{}", nome);
+        PerfilResponseDTO perfil = perfilService.buscarPorNome(nome);
         return ResponseEntity.ok(perfil);
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<PerfilResponseDTO> atualizar(@PathVariable UUID id, @RequestBody PerfilRequestDTO requestDTO) {
+    /**
+     * Atualiza um perfil existente
+     */
+    @PutMapping("/{id}")
+    @Operation(summary = "Atualizar perfil", description = "Atualiza as informações de um perfil")
+    public ResponseEntity<PerfilResponseDTO> atualizar(
+            @Parameter(description = "ID do perfil") @PathVariable UUID id,
+            @Valid @RequestBody PerfilRequestDTO requestDTO) {
+        
+        log.info("PUT /api/v1/perfis/{}", id);
         PerfilResponseDTO perfil = perfilService.atualizar(id, requestDTO);
         return ResponseEntity.ok(perfil);
     }
 
-    @PatchMapping("/ativar/{id}")
-    public ResponseEntity<PerfilResponseDTO> ativar(@PathVariable UUID id) {
+    /**
+     * Ativa um perfil
+     */
+    @PatchMapping("/{id}/ativar")
+    @Operation(summary = "Ativar perfil", description = "Ativa um perfil que estava inativo")
+    public ResponseEntity<PerfilResponseDTO> ativar(
+            @Parameter(description = "ID do perfil") @PathVariable UUID id) {
+        
+        log.info("PATCH /api/v1/perfis/{}/ativar", id);
         PerfilResponseDTO perfil = perfilService.ativar(id);
         return ResponseEntity.ok(perfil);
     }
 
-    @PatchMapping("/desativar/{id}")
-    public ResponseEntity<PerfilResponseDTO> desativar(@PathVariable UUID id) {
+    /**
+     * Desativa um perfil
+     */
+    @PatchMapping("/{id}/desativar")
+    @Operation(summary = "Desativar perfil", description = "Desativa um perfil")
+    public ResponseEntity<PerfilResponseDTO> desativar(
+            @Parameter(description = "ID do perfil") @PathVariable UUID id) {
+        
+        log.info("PATCH /api/v1/perfis/{}/desativar", id);
         PerfilResponseDTO perfil = perfilService.desativar(id);
         return ResponseEntity.ok(perfil);
     }
 
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable UUID id) {
-        perfilService.deletar(id);
+    /**
+     * Deleta um perfil
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Deletar perfil", description = "Remove um perfil do sistema (não pode ter usuários associados)")
+    public ResponseEntity<Void> deletar(
+            @Parameter(description = "ID do perfil") @PathVariable UUID id) {
+        
+        log.info("DELETE /api/v1/perfis/{}", id);
+        perfilService.deletar(id); // ✅ CORRIGIDO: era "delelar"
         return ResponseEntity.noContent().build();
     }
 }

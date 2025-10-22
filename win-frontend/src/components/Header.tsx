@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useSearch } from "../contexts/SearchContext";
+import { useAuth } from "../contexts/AuthContext";
 import UserNavbar from "./UserNavbar";
 
 interface HeaderProps {
@@ -53,6 +54,8 @@ const categories = [
 export default function Header({ showCategories = true }: HeaderProps) {
   const { state } = useCart();
   const { searchQuery, setSearchQuery, searchProducts } = useSearch();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -60,6 +63,19 @@ export default function Header({ showCategories = true }: HeaderProps) {
     if (searchQuery.trim()) {
       searchProducts(searchQuery);
       window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+    }
+  };
+
+  // Função para lidar com clique em "Venda no WIN"
+  const handleVendaClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Se usuário já tem perfil LOJISTA, vai direto para dashboard
+    if (user?.perfis?.includes("LOJISTA")) {
+      navigate("/merchant/dashboard");
+    } else {
+      // Caso contrário, vai para página de cadastro/informações
+      navigate("/sell");
     }
   };
 
@@ -80,12 +96,12 @@ export default function Header({ showCategories = true }: HeaderProps) {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Link
-                to="/sell"
+              <button
+                onClick={handleVendaClick}
                 className="text-[#3DBEAB] hover:text-[#3DBEAB]/80 font-medium"
               >
                 Venda no WIN
-              </Link>
+              </button>
               <Link
                 to="/help"
                 className="text-muted-foreground hover:text-primary"

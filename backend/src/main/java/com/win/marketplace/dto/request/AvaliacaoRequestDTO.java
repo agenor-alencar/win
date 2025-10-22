@@ -4,20 +4,19 @@ import jakarta.validation.constraints.*;
 import java.util.UUID;
 
 public record AvaliacaoRequestDTO(
-    @NotNull(message = "ID do produto/lojista é obrigatório")
-    UUID avaliadoId,
+    @NotNull(message = "ID do usuário é obrigatório")
+    UUID usuarioId,
 
-    @NotNull(message = "Tipo de avaliado é obrigatório")
-    String avaliadoTipo, // "PRODUTO", "LOJISTA"
+    @NotNull(message = "ID do produto é obrigatório")
+    UUID produtoId,
 
-    @NotNull(message = "ID do pedido é obrigatório")
     UUID pedidoId,
 
     @NotNull(message = "Nota é obrigatória")
-    @Min(value = 1, message = "Nota deve ser entre 1 e 5")
-    @Max(value = 5, message = "Nota deve ser entre 1 e 5")
+    @Min(value = 1, message = "Nota mínima é 1")
+    @Max(value = 5, message = "Nota máxima é 5")
     Integer nota,
 
-    @Size(max = 500, message = "Comentário deve ter no máximo 500 caracteres")
+    @Size(max = 1000, message = "Comentário deve ter no máximo 1000 caracteres")
     String comentario
 ) {}

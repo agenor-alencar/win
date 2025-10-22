@@ -18,8 +18,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" />;
   }
 
-  if (!user || !user.role || !requiredRoles.includes(user.role)) {
-    // Usuário não tem a função necessária, redireciona para uma página de não autorizado
+  if (!user || !user.role) {
+    return <Navigate to="/unauthorized" />;
+  }
+
+  // Compare roles case-insensitively and support perfis like ['ADMIN']
+  const userRole = String(user.role).toUpperCase();
+  const normalizedRequired = requiredRoles.map((r) => String(r).toUpperCase());
+
+  if (!normalizedRequired.includes(userRole)) {
     return <Navigate to="/unauthorized" />;
   }
 

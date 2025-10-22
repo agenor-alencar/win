@@ -32,6 +32,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
+import { MerchantLayout } from "@/components/MerchantLayout";
 
 // Mock data
 const returnRequests = [
@@ -224,56 +225,33 @@ export default function MerchantReturns() {
   const tabCounts = getTabCounts();
 
   return (
-    <div
-      style={{
-        backgroundColor: "#FFFFFF",
-        minHeight: "100vh",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
-      {/* Header */}
-      <header
-        className="border-b px-6 py-4"
-        style={{ backgroundColor: "#FFFFFF", borderColor: "#E5E7EB" }}
-      >
+    <MerchantLayout>
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <RotateCcw className="h-8 w-8 mr-3" style={{ color: "#3DBEAB" }} />
+          <div className="flex items-center gap-3">
+            <RotateCcw className="h-6 w-6 text-[#3DBEAB]" />
             <div>
-              <h1
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  color: "#333333",
-                }}
-              >
+              <h1 className="text-2xl font-bold text-gray-900">
                 Gestão de Devoluções
               </h1>
-              <p style={{ fontSize: "12px", color: "#666666" }}>
+              <p className="text-sm text-gray-600">
                 Analise e gerencie solicitações de devolução
               </p>
             </div>
           </div>
 
           <Link to="/merchant/dashboard">
-            <Button
-              variant="outline"
-              style={{ borderRadius: "12px", color: "#666666" }}
-            >
+            <Button variant="outline" className="rounded-xl">
               Voltar ao Dashboard
             </Button>
           </Link>
         </div>
-      </header>
 
-      <div className="p-6">
         {/* Search */}
         <div className="mb-6">
           <div className="relative">
-            <Search
-              className="absolute left-3 top-3 h-5 w-5"
-              style={{ color: "#666666" }}
-            />
+            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
             <Input
               placeholder="Buscar por pedido, cliente ou produto..."
               value={searchQuery}
@@ -992,49 +970,6 @@ export default function MerchantReturns() {
           </div>
         )}
       </div>
-
-      {/* Mobile Bottom Navigation */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50"
-        style={{ borderColor: "#E5E7EB" }}
-      >
-        <div className="grid grid-cols-4 h-16">
-          <Link
-            to="/merchant/dashboard"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Store className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>
-              Dashboard
-            </span>
-          </Link>
-          <Link
-            to="/merchant/orders"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Package className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Pedidos</span>
-          </Link>
-          <Link
-            to="/merchant/products"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Produtos</span>
-          </Link>
-          <Link
-            to="/merchant/profile"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Settings className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Perfil</span>
-          </Link>
-        </div>
-      </nav>
-    </div>
+    </MerchantLayout>
   );
 }

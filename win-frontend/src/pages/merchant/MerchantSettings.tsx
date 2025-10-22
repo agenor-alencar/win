@@ -35,7 +35,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
-import MerchantNavbar from "../../components/MerchantNavbar";
+import { MerchantLayout } from "@/components/MerchantLayout";
 
 export default function MerchantSettings() {
   const [isLoading, setIsLoading] = useState(false);
@@ -108,12 +108,10 @@ export default function MerchantSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <MerchantNavbar />
-
-      <div className="max-w-4xl mx-auto p-6">
+    <MerchantLayout>
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Configurações</h1>
             <p className="text-gray-600">
@@ -961,6 +959,6 @@ export default function MerchantSettings() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </MerchantLayout>
   );
 }

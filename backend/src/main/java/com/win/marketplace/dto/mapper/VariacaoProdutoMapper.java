@@ -14,20 +14,14 @@ public interface VariacaoProdutoMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "produto", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
-    @Mapping(target = "itens", ignore = true)
-    VariacaoProduto toEntity(VariacaoProdutoRequestDTO requestDTO);
+    VariacaoProduto toEntity(VariacaoProdutoRequestDTO dto);
 
     @Mapping(source = "produto.id", target = "produtoId")
     VariacaoProdutoResponseDTO toResponseDTO(VariacaoProduto variacaoProduto);
 
-    List<VariacaoProdutoResponseDTO> toResponseDTOList(List<VariacaoProduto> variacoes);
+    List<VariacaoProdutoResponseDTO> toResponseDTOList(List<VariacaoProduto> variacoesProduto);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "produto", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
-    @Mapping(target = "itens", ignore = true)
-    void updateEntityFromDTO(VariacaoProdutoRequestDTO requestDTO, @MappingTarget VariacaoProduto variacaoProduto);
+    void updateEntityFromDTO(VariacaoProdutoRequestDTO dto, @MappingTarget VariacaoProduto variacaoProduto);
 }

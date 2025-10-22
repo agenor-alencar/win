@@ -3,7 +3,6 @@ import React, {
   useContext,
   useReducer,
   useEffect,
-  useCallback,
 } from "react";
 
 export interface CartItem {
@@ -21,7 +20,6 @@ interface CartState {
   items: CartItem[];
   total: number;
   itemCount: number;
-  cartId: string | null; // Adicionado para rastrear o ID do carrinho no backend
 }
 
 type CartAction =
@@ -32,8 +30,7 @@ type CartAction =
   | { type: "REMOVE_ITEM"; payload: number }
   | { type: "UPDATE_QUANTITY"; payload: { id: number; quantity: number } }
   | { type: "CLEAR_CART" }
-  | { type: "LOAD_CART"; payload: { items: CartItem[]; cartId: string } } // Payload agora inclui o ID do carrinho
-  | { type: "SET_CART_ID"; payload: string }; // Ação para definir o ID do carrinho
+  | { type: "LOAD_CART"; payload: CartItem[] };
 
 const CartContext = createContext<{
   state: CartState;
@@ -41,6 +38,7 @@ const CartContext = createContext<{
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
+  createOrder: (usuarioId: string, enderecoEntrega: any, pagamento?: any) => Promise<any>;
 } | null>(null);
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
@@ -94,17 +92,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     }
 
     case "CLEAR_CART":
-      return { ...state, items: [], total: 0, itemCount: 0 }; // Mantém o cartId
+      return { items: [], total: 0, itemCount: 0 };
 
     case "LOAD_CART":
-      return {
-        ...state,
-        items: action.payload.items,
-        cartId: action.payload.cartId,
-      }; // Carrega o ID do carrinho
-
-    case "SET_CART_ID":
-      return { ...state, cartId: action.payload };
+      return calculateTotals({ ...state, items: action.payload });
 
     default:
       return state;
@@ -128,84 +119,27 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     items: [],
     total: 0,
     itemCount: 0,
-    cartId: null, // Inicializa o ID do carrinho como nulo
   });
 
-  // Função para criar ou buscar o carrinho no backend
-  const createOrGetCart = useCallback(async () => {
-    const storedCartId = localStorage.getItem("win-cart-id");
-
-    if (storedCartId) {
+  // Carregar carrinho do localStorage ao montar
+  useEffect(() => {
+    const storedCart = localStorage.getItem("win-cart");
+    if (storedCart) {
       try {
-        // Buscar o carrinho existente no backend
-        const response = await fetch(`/api/cart/${storedCartId}`);
-        if (response.ok) {
-          const data = await response.json();
-          dispatch({ type: "LOAD_CART", payload: { items: data.items, cartId: storedCartId } });
-          dispatch({ type: "SET_CART_ID", payload: storedCartId });
-        } else {
-          // Se o carrinho não existir mais no backend, remover do localStorage
-          localStorage.removeItem("win-cart-id");
-          // Criar um novo carrinho
-          createNewCart();
-        }
+        const items = JSON.parse(storedCart);
+        dispatch({ type: "LOAD_CART", payload: items });
       } catch (error) {
-        console.error("Error fetching cart from backend:", error);
-        // Criar um novo carrinho em caso de erro
-        createNewCart();
+        console.error("Error loading cart from localStorage:", error);
       }
-    } else {
-      // Criar um novo carrinho se não houver ID no localStorage
-      createNewCart();
     }
   }, []);
 
-  // Função auxiliar para criar um novo carrinho no backend
-  const createNewCart = useCallback(async () => {
-    try {
-      const response = await fetch("/api/cart", {
-        method: "POST",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem("win-cart-id", data.cartId);
-        dispatch({ type: "SET_CART_ID", payload: data.cartId });
-      } else {
-        console.error("Error creating cart on backend:", response.status);
-      }
-    } catch (error) {
-      console.error("Error creating cart on backend:", error);
-    }
-  }, []);
-
-  // Carregar o carrinho ao montar o componente
+  // Salvar carrinho no localStorage sempre que mudar
   useEffect(() => {
-    createOrGetCart();
-  }, [createOrGetCart]);
+    localStorage.setItem("win-cart", JSON.stringify(state.items));
+  }, [state.items]);
 
-  // Função para salvar o carrinho no backend
-  const saveCartToBackend = useCallback(async () => {
-    if (state.cartId) {
-      try {
-        await fetch(`/api/cart/${state.cartId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ items: state.items }),
-        });
-      } catch (error) {
-        console.error("Error saving cart to backend:", error);
-      }
-    }
-  }, [state.cartId, state.items]);
-
-  // Salvar o carrinho no backend sempre que ele mudar
-  useEffect(() => {
-    saveCartToBackend();
-  }, [saveCartToBackend]);
-
-  const addItem = async (
+  const addItem = (
     item: Omit<CartItem, "quantity"> & { quantity?: number },
   ) => {
     dispatch({ type: "ADD_ITEM", payload: item });
@@ -221,11 +155,60 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const clearCart = () => {
     dispatch({ type: "CLEAR_CART" });
+    localStorage.removeItem("win-cart");
+  };
+
+  // Criar pedido no backend (POST /api/v1/pedidos)
+  const createOrder = async (usuarioId: string, enderecoEntrega: any, pagamento?: any) => {
+    if (state.items.length === 0) {
+      throw new Error("Carrinho vazio");
+    }
+
+    try {
+      const response = await fetch("/api/v1/pedidos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          usuarioId: usuarioId,
+          enderecoEntrega: enderecoEntrega,
+          pagamento: pagamento || null,
+          desconto: 0,
+          frete: 0,
+          observacoes: null,
+          itens: state.items.map((item) => ({
+            produtoId: item.id,
+            quantidade: item.quantity,
+            precoUnitario: item.price,
+            variacaoId: null,
+            observacoes: null,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.message || `Erro ao criar pedido: ${response.status}`
+        );
+      }
+
+      const pedido = await response.json();
+
+      // Limpar carrinho após criar pedido
+      clearCart();
+
+      return pedido;
+    } catch (error) {
+      console.error("Error creating order:", error);
+      throw error;
+    }
   };
 
   return (
     <CartContext.Provider
-      value={{ state, addItem, removeItem, updateQuantity, clearCart }}
+      value={{ state, addItem, removeItem, updateQuantity, clearCart, createOrder }}
     >
       {children}
     </CartContext.Provider>

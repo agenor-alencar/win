@@ -31,6 +31,10 @@ public class Pedido {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "motorista_id")
+    private Motorista motorista;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private StatusPedido status = StatusPedido.PENDENTE;
@@ -50,6 +54,14 @@ public class Pedido {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "endereco_entrega", nullable = false, columnDefinition = "jsonb")
     private Endereco enderecoEntrega;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "pagamento", columnDefinition = "jsonb")
+    private Pagamento pagamento;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "nota_fiscal", columnDefinition = "jsonb")
+    private NotaFiscal notaFiscal;
 
     @Column(name = "codigo_entrega", length = 10)
     private String codigoEntrega;

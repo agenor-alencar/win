@@ -27,9 +27,10 @@ import {
   Save,
   Eye,
   Trash2,
+  CheckCircle,
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
-import MerchantNavbar from "../../components/MerchantNavbar";
+import { MerchantLayout } from "@/components/MerchantLayout";
 
 interface ProductImage {
   id: string;
@@ -238,12 +239,10 @@ export default function MerchantProductForm() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <MerchantNavbar />
-
-      <div className="max-w-4xl mx-auto p-6">
+    <MerchantLayout>
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link to="/merchant/products">
               <Button variant="ghost" size="icon">
@@ -1149,6 +1148,6 @@ export default function MerchantProductForm() {
           </div>
         </div>
       </div>
-    </div>
+    </MerchantLayout>
   );
 }

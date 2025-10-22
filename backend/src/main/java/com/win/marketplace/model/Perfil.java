@@ -4,44 +4,51 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
-@Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
 @Table(name = "perfis")
 public class Perfil {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20, nullable = false)
-    private TipoPerfil tipo;
+    @Column(name = "nome", nullable = false, unique = true, length = 50)
+    private String nome;
 
-    @Column(name = "criado_em", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @CreationTimestamp
+    @Column(name = "descricao", length = 500)
+    private String descricao;
+
+    @Column(name = "ativo", nullable = false)
+    private Boolean ativo = true; // ✅ ESTE CAMPO DEVE EXISTIR
+
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
 
-    @Column(name = "atualizado_em", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @UpdateTimestamp
+    @Column(name = "atualizado_em", nullable = false)
     private OffsetDateTime atualizadoEm;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 10, nullable = false)
-    private StatusPerfil status;
+    @OneToMany(mappedBy = "perfil", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UsuarioPerfil> usuarioPerfis;
 
-    public enum TipoPerfil {
-        ADMIN, CLIENTE, LOJISTA, ENTREGADOR
+    @PrePersist
+    protected void onCreate() {
+        criadoEm = OffsetDateTime.now();
+        atualizadoEm = OffsetDateTime.now();
+        if (ativo == null) {
+            ativo = true;
+        }
     }
 
-    public enum StatusPerfil {
-        ATIVO, INATIVO
+    @PreUpdate
+    protected void onUpdate() {
+        atualizadoEm = OffsetDateTime.now();
     }
 }

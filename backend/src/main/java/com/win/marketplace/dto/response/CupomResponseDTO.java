@@ -1,21 +1,21 @@
 package com.win.marketplace.dto.response;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record CupomResponseDTO(
     UUID id,
     String codigo,
     String descricao,
+    String tipoDesconto,
     BigDecimal valorDesconto,
-    String tipoDesconto, // PERCENTUAL, VALOR_FIXO
-    BigDecimal valorMinimo,
-    LocalDateTime dataInicio,
-    LocalDateTime dataFim,
+    BigDecimal valorMinimoPedido,
+    OffsetDateTime dataInicio,
+    OffsetDateTime dataFim,
     Integer limiteUso,
     Integer vezesUsado,
     Boolean ativo,
-    LocalDateTime dataCriacao,
-    LocalDateTime dataAtualizacao
+    OffsetDateTime criadoEm,
+    OffsetDateTime atualizadoEm
 ) {}

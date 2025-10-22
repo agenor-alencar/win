@@ -1,0 +1,93 @@
+services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: win-marketplace-db
+    environment:
+      POSTGRES_DB: win_marketplace
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      TZ: America/Sao_Paulo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - win-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Aplicação Spring Boot (Backend)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: win-marketplace-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/win_marketplace
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      TZ: America/Sao_Paulo
+      
+      # ========================================
+      # Configurações de Email
+      # ========================================
+      # OPÇÃO 1: Gmail (Desenvolvimento)
+      # Descomente e preencha:
+      # MAIL_HOST: smtp.gmail.com
+      # MAIL_PORT: 587
+      # MAIL_USERNAME: seu-email@gmail.com
+      # MAIL_PASSWORD: sua-senha-app-16-caracteres
+      # MAIL_FROM: seu-email@gmail.com
+      
+      # OPÇÃO 2: SendGrid (Recomendado - Produção)
+      # Descomente e preencha após criar conta em https://signup.sendgrid.com/
+      MAIL_HOST: ${MAIL_HOST:-smtp.sendgrid.net}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-apikey}
+      MAIL_PASSWORD: ${SENDGRID_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - win-network
+    restart: unless-stopped
+    # Removido depends_on para permitir inicialização independente
+
+  # Frontend React/Vite
+  frontend:
+    build:
+      context: ./win-frontend
+      dockerfile: Dockerfile
+    container_name: win-marketplace-frontend
+    environment:
+      VITE_API_URL: http://localhost:8080
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./win-frontend:/app
+      - /app/node_modules
+    networks:
+      - win-network
+    restart: unless-stopped
+    # Sem depends_on - roda independentemente
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  win-network:
+    driver: bridge

@@ -7,27 +7,32 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-import java.util.List;
-
 @Mapper(componentModel = "spring")
 public interface NotificacaoMapper {
 
+    /**
+     * Converte NotificacaoRequestDTO para Notificacao (Entity)
+     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "usuario", ignore = true)
     @Mapping(target = "lida", constant = "false")
+    @Mapping(target = "criadoEm", ignore = true)
     @Mapping(target = "dataLeitura", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
     Notificacao toEntity(NotificacaoRequestDTO requestDTO);
 
+    /**
+     * Converte Notificacao (Entity) para NotificacaoResponseDTO
+     */
     @Mapping(source = "usuario.id", target = "usuarioId")
+    @Mapping(source = "usuario.nome", target = "nomeUsuario")
     NotificacaoResponseDTO toResponseDTO(Notificacao notificacao);
 
-    List<NotificacaoResponseDTO> toResponseDTOList(List<Notificacao> notificacoes);
-
+    /**
+     * Atualiza Notificacao existente com dados do NotificacaoRequestDTO
+     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "usuario", ignore = true)
-    @Mapping(target = "lida", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true)
     @Mapping(target = "dataLeitura", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
     void updateEntityFromDTO(NotificacaoRequestDTO requestDTO, @MappingTarget Notificacao notificacao);
 }

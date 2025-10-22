@@ -15,15 +15,18 @@ public interface ItemPedidoMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "pedido", ignore = true)
     @Mapping(target = "produto", ignore = true)
-    @Mapping(target = "variacaoProduto", ignore = true)
-    @Mapping(target = "subtotal", expression = "java(requestDTO.precoUnitario().multiply(java.math.BigDecimal.valueOf(requestDTO.quantidade())))")
+    @Mapping(target = "variacao", ignore = true)
+    @Mapping(target = "lojista", ignore = true)
+    @Mapping(target = "nomeProduto", ignore = true)
+    @Mapping(target = "quantidade", ignore = true)
+    @Mapping(target = "precoUnitario", ignore = true)
+    @Mapping(target = "precoTotal", ignore = true)
     ItemPedido toEntity(ItemPedidoRequestDTO requestDTO);
 
     @Mapping(source = "pedido.id", target = "pedidoId")
     @Mapping(source = "produto.id", target = "produtoId")
     @Mapping(source = "produto.nome", target = "produtoNome")
-    @Mapping(source = "variacaoProduto.id", target = "variacaoProdutoId")
-    @Mapping(source = "variacaoProduto.nome", target = "variacaoProdutoNome")
+    @Mapping(source = "variacao.id", target = "variacaoProdutoId")
     ItemPedidoResponseDTO toResponseDTO(ItemPedido itemPedido);
 
     List<ItemPedidoResponseDTO> toResponseDTOList(List<ItemPedido> itens);
@@ -31,7 +34,11 @@ public interface ItemPedidoMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "pedido", ignore = true)
     @Mapping(target = "produto", ignore = true)
-    @Mapping(target = "variacaoProduto", ignore = true)
-    @Mapping(target = "subtotal", expression = "java(requestDTO.precoUnitario().multiply(java.math.BigDecimal.valueOf(requestDTO.quantidade())))")
+    @Mapping(target = "variacao", ignore = true)
+    @Mapping(target = "lojista", ignore = true)
+    @Mapping(target = "nomeProduto", ignore = true)
+    @Mapping(target = "quantidade", ignore = true)
+    @Mapping(target = "precoUnitario", ignore = true)
+    @Mapping(target = "precoTotal", ignore = true)
     void updateEntityFromDTO(ItemPedidoRequestDTO requestDTO, @MappingTarget ItemPedido itemPedido);
 }

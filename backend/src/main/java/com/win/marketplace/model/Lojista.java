@@ -3,80 +3,75 @@ package com.win.marketplace.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 @Entity
+@Table(name = "lojistas")
 @Data
+@EqualsAndHashCode(exclude = {"usuario"})
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "lojistas")
 public class Lojista {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
     private Usuario usuario;
 
-    @Column(name = "nome_loja", length = 200, nullable = false)
-    private String nomeLoja;
-
-    @Column(length = 18, unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 14)
     private String cnpj;
+
+    @Column(name = "nome_fantasia", nullable = false, length = 200)
+    private String nomeFantasia;
+
+    @Column(name = "razao_social", nullable = false, length = 200)
+    private String razaoSocial;
 
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
+    @Column(length = 20)
+    private String telefone;
+
+    // Campos de Endereço
+    @Column(length = 8)
+    private String cep;
+
+    @Column(length = 255)
+    private String logradouro;
+
+    @Column(length = 10)
+    private String numero;
+
     @Column(length = 100)
-    private String categoria;
+    private String complemento;
+
+    @Column(length = 100)
+    private String bairro;
+
+    @Column(length = 100)
+    private String cidade;
+
+    @Column(length = 2)
+    private String uf;
 
     @Column(nullable = false)
-    private Boolean aprovado = false;
+    private Boolean ativo = true;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private StatusLojista status = StatusLojista.ATIVO;
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    @CreationTimestamp
+    private OffsetDateTime criadoEm;
 
-    @Column(name = "data_aprovacao", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    private OffsetDateTime dataAprovacao;
-
-    @Column(name = "taxa_comissao", precision = 5, scale = 2)
-    private BigDecimal taxaComissao = BigDecimal.valueOf(5.00);
-
-    @Column(precision = 3, scale = 2)
-    private BigDecimal avaliacao = BigDecimal.ZERO;
-
-    @Column(name = "quantidade_avaliacoes")
-    private Integer quantidadeAvaliacoes = 0;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "horario_funcionamento", columnDefinition = "jsonb")
-    private Map<String, Object> horarioFuncionamento;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "conta_bancaria", columnDefinition = "jsonb")
-    private Map<String, Object> contaBancaria;
-
-    @Column(name = "inscricao_estadual", length = 20)
-    private String inscricaoEstadual;
-
-    @Column(name = "regime_tributario", length = 50)
-    private String regimeTributario;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "configuracao_fiscal_api", columnDefinition = "jsonb")
-    private Map<String, Object> configuracaoFiscalApi;
-
-    public enum StatusLojista {
-        ATIVO, INATIVO, SUSPENSO
-    }
+    @Column(name = "atualizado_em", nullable = false)
+    @UpdateTimestamp
+    private OffsetDateTime atualizadoEm;
 }

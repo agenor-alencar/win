@@ -9,14 +9,14 @@ public record ItemPedidoRequestDTO(
     UUID produtoId,
 
     @NotNull(message = "Quantidade é obrigatória")
-    @Min(value = 1, message = "Quantidade deve ser maior que zero")
+    @Min(value = 1, message = "Quantidade deve ser no mínimo 1")
     Integer quantidade,
 
     @NotNull(message = "Preço unitário é obrigatório")
-    @DecimalMin(value = "0.01", message = "Preço deve ser maior que zero")
+    @DecimalMin(value = "0.01", message = "Preço unitário deve ser maior que zero")
     BigDecimal precoUnitario,
 
-    UUID variacaoProdutoId,
+    UUID variacaoId,
 
     @Size(max = 200, message = "Observações devem ter no máximo 200 caracteres")
     String observacoes

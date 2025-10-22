@@ -12,5 +12,5 @@ import java.util.UUID;
 public interface NotaFiscalRepository extends JpaRepository<NotaFiscal, UUID> {
     Optional<NotaFiscal> findByPedidoId(UUID pedidoId);
     List<NotaFiscal> findByLojistaId(UUID lojistaId);
-    Optional<NotaFiscal> findByNumero(String numero);
+    Optional<NotaFiscal> findByNumeroNota(String numeroNota);
 }

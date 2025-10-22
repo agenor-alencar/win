@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,8 +39,11 @@ public class LojistaService {
 
         Lojista lojista = lojistaMapper.toEntity(requestDTO);
         lojista.setUsuario(usuario);
-        lojista.setDataCriacao(OffsetDateTime.now());
-        lojista.setDataAtualizacao(OffsetDateTime.now());
+        
+        // Valores padrão
+        if (lojista.getAtivo() == null) {
+            lojista.setAtivo(true);
+        }
 
         Lojista savedLojista = lojistaRepository.save(lojista);
         return lojistaMapper.toResponseDTO(savedLojista);
@@ -74,6 +76,15 @@ public class LojistaService {
     }
 
     @Transactional(readOnly = true)
+    public LojistaResponseDTO buscarPorEmail(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        Lojista lojista = lojistaRepository.findByUsuarioId(usuario.getId())
+                .orElseThrow(() -> new RuntimeException("Lojista não encontrado para este usuário"));
+        return lojistaMapper.toResponseDTO(lojista);
+    }
+
+    @Transactional(readOnly = true)
     public LojistaResponseDTO buscarPorCnpj(String cnpj) {
         Lojista lojista = lojistaRepository.findByCnpj(cnpj)
                 .orElseThrow(() -> new RuntimeException("Lojista não encontrado com este CNPJ"));
@@ -91,39 +102,26 @@ public class LojistaService {
         }
 
         lojistaMapper.updateEntityFromDTO(requestDTO, lojista);
-        lojista.setDataAtualizacao(OffsetDateTime.now());
 
         Lojista savedLojista = lojistaRepository.save(lojista);
         return lojistaMapper.toResponseDTO(savedLojista);
     }
 
-    public void desativarLojista(UUID id) {
+    public LojistaResponseDTO ativarLojista(UUID id) {
+        Lojista lojista = lojistaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
+
+        lojista.setAtivo(true);
+        Lojista savedLojista = lojistaRepository.save(lojista);
+        return lojistaMapper.toResponseDTO(savedLojista);
+    }
+
+    public LojistaResponseDTO desativarLojista(UUID id) {
         Lojista lojista = lojistaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
 
         lojista.setAtivo(false);
-        lojista.setDataAtualizacao(OffsetDateTime.now());
-
-        lojistaRepository.save(lojista);
-    }
-
-    public void atualizarAvaliacaoMedia(UUID lojistaId) {
-        Lojista lojista = lojistaRepository.findById(lojistaId)
-                .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
-
-        if (lojista.getAvaliacoes() != null && !lojista.getAvaliacoes().isEmpty()) {
-            double media = lojista.getAvaliacoes().stream()
-                    .mapToInt(avaliacao -> avaliacao.getNota())
-                    .average()
-                    .orElse(0.0);
-
-            lojista.setAvaliacaoMedia(java.math.BigDecimal.valueOf(media));
-            lojista.setTotalAvaliacoes(lojista.getAvaliacoes().size());
-        } else {
-            lojista.setAvaliacaoMedia(java.math.BigDecimal.ZERO);
-            lojista.setTotalAvaliacoes(0);
-        }
-
-        lojistaRepository.save(lojista);
+        Lojista savedLojista = lojistaRepository.save(lojista);
+        return lojistaMapper.toResponseDTO(savedLojista);
     }
 }

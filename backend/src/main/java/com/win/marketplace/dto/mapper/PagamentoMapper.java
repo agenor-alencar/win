@@ -14,24 +14,19 @@ public interface PagamentoMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "pedido", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true)
     @Mapping(target = "status", constant = "PENDENTE")
-    @Mapping(target = "codigoTransacao", ignore = true)
-    @Mapping(target = "urlComprovante", ignore = true)
-    @Mapping(target = "dataProcessamento", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
     Pagamento toEntity(PagamentoRequestDTO requestDTO);
 
     @Mapping(source = "pedido.id", target = "pedidoId")
+    @Mapping(source = "pedido.numeroPedido", target = "numeroPedido")
     PagamentoResponseDTO toResponseDTO(Pagamento pagamento);
 
     List<PagamentoResponseDTO> toResponseDTOList(List<Pagamento> pagamentos);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "pedido", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true)
     @Mapping(target = "status", ignore = true)
-    @Mapping(target = "codigoTransacao", ignore = true)
-    @Mapping(target = "urlComprovante", ignore = true)
-    @Mapping(target = "dataProcessamento", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
     void updateEntityFromDTO(PagamentoRequestDTO requestDTO, @MappingTarget Pagamento pagamento);
 }

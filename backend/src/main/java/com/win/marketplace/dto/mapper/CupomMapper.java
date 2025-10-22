@@ -15,9 +15,8 @@ public interface CupomMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "vezesUsado", constant = "0")
     @Mapping(target = "ativo", constant = "true")
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
-    @Mapping(target = "pedidoCupons", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true)
+    @Mapping(target = "atualizadoEm", ignore = true)
     Cupom toEntity(CupomRequestDTO requestDTO);
 
     CupomResponseDTO toResponseDTO(Cupom cupom);
@@ -26,8 +25,7 @@ public interface CupomMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "vezesUsado", ignore = true)
-    @Mapping(target = "dataCriacao", ignore = true)
-    @Mapping(target = "dataAtualizacao", ignore = true)
-    @Mapping(target = "pedidoCupons", ignore = true)
+    @Mapping(target = "criadoEm", ignore = true)
+    @Mapping(target = "atualizadoEm", ignore = true)
     void updateEntityFromDTO(CupomRequestDTO requestDTO, @MappingTarget Cupom cupom);
 }

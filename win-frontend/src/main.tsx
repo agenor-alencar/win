@@ -3,6 +3,7 @@ import "./global.css";
 
 import { NotificationToaster } from "@/components/ui/NotificationToaster";
 import { createRoot } from "react-dom/client";
+import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -16,6 +17,8 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 // Páginas compartilhadas
 import Index from "./pages/shared/Index";
 import Login from "./pages/shared/Login";
+import ForgotPassword from "./pages/shared/ForgotPassword";
+import ResetPassword from "./pages/shared/ResetPassword";
 import Categories from "./pages/shared/Categories";
 import Product from "./pages/shared/Product";
 import SearchResults from "./pages/shared/SearchResults";
@@ -23,19 +26,21 @@ import Help from "./pages/shared/Help";
 import Terms from "./pages/shared/Terms";
 import Privacy from "./pages/shared/Privacy";
 import BecomeASeller from "./pages/shared/BecomeASeller";
+import BecomeMerchant from "./pages/shared/BecomeMerchant";
 import TrackOrder from "./pages/shared/TrackOrder";
 import Deals from "./pages/shared/Deals";
 import NewArrivals from "./pages/shared/NewArrivals";
 import NotFound from "./pages/shared/NotFound";
+import Unauthorized from "./pages/shared/Unauthorized";
 
 // Páginas da loja/merchant
-import MerchantDashboard from "./pages/merchant/MerchantDashboardNew";
-import MerchantProducts from "./pages/merchant/MerchantProducts";
+import MerchantDashboard from "./pages/merchant/MerchantDashboardImproved";
+import ProductsPage from "./pages/merchant/ProductsPage";
+import ProductFormPage from "./pages/merchant/ProductFormPage";
 import MerchantOrders from "./pages/merchant/MerchantOrders";
 import MerchantProfile from "./pages/merchant/MerchantProfile";
 import MerchantAuth from "./pages/merchant/MerchantAuth";
 import MerchantReturns from "./pages/merchant/MerchantReturns";
-import MerchantProductForm from "./pages/merchant/MerchantProductForm";
 import MerchantFinancial from "./pages/merchant/MerchantFinancial";
 import MerchantSettings from "./pages/merchant/MerchantSettings";
 
@@ -60,6 +65,7 @@ const App = () => (
       <SearchProvider>
         <NotificationProvider>
           <TooltipProvider>
+            <Toaster />
             <NotificationToaster />
             <Sonner />
             <BrowserRouter>
@@ -67,6 +73,8 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/categories" element={<Categories />} />
                   <Route path="/category/:category" element={<Categories />} />
                   <Route path="/search" element={<SearchResults />} />
@@ -75,12 +83,14 @@ const App = () => (
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/sell" element={<BecomeASeller />} />
+                  <Route path="/become-merchant" element={<BecomeMerchant />} />
                   <Route path="/track" element={<TrackOrder />} />
                   <Route path="/deals" element={<Deals />} />
                   <Route path="/new-arrivals" element={<NewArrivals />} />
 
                   {/* Merchant Routes */}
                   <Route path="/merchant/login" element={<MerchantAuth />} />
+                  <Route path="/merchant/auth" element={<MerchantAuth />} />
                   <Route
                     path="/merchant/dashboard"
                     element={
@@ -93,7 +103,7 @@ const App = () => (
                     path="/merchant/products"
                     element={
                       <ProtectedRoute requiredRoles={["merchant"]}>
-                        <MerchantProducts />
+                        <ProductsPage />
                       </ProtectedRoute>
                     }
                   />
@@ -101,7 +111,7 @@ const App = () => (
                     path="/merchant/products/new"
                     element={
                       <ProtectedRoute requiredRoles={["merchant"]}>
-                        <MerchantProductForm />
+                        <ProductFormPage />
                       </ProtectedRoute>
                     }
                   />
@@ -109,7 +119,7 @@ const App = () => (
                     path="/merchant/products/edit/:id"
                     element={
                       <ProtectedRoute requiredRoles={["merchant"]}>
-                        <MerchantProductForm />
+                        <ProductFormPage />
                       </ProtectedRoute>
                     }
                   />
@@ -243,6 +253,9 @@ const App = () => (
                       </ProtectedRoute>
                     }
                   />
+
+                  {/* Unauthorized Route */}
+                  <Route path="/unauthorized" element={<Unauthorized />} />
 
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

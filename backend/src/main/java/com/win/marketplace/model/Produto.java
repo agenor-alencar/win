@@ -3,24 +3,30 @@ package com.win.marketplace.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
-@Entity
 @Data
+@EqualsAndHashCode(exclude = {"lojista", "categoria", "imagens", "itensPedido", "avaliacoes"})
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "produtos")
+@Entity
+@Table(name = "produtos", indexes = {
+    @Index(name = "idx_produto_nome", columnList = "nome"),
+    @Index(name = "idx_produto_lojista", columnList = "lojista_id"),
+    @Index(name = "idx_produto_categoria", columnList = "categoria_id"),
+    @Index(name = "idx_produto_ativo", columnList = "ativo")
+})
 public class Produto {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -31,26 +37,17 @@ public class Produto {
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
 
-    @Column(length = 255, nullable = false)
+    @Column(name = "nome", nullable = false, length = 255)
     private String nome;
 
-    @Column(length = 300, unique = true, nullable = false)
-    private String slug;
-
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "descricao", columnDefinition = "TEXT")
     private String descricao;
 
-    @Column(precision = 10, scale = 2, nullable = false)
+    @Column(name = "preco", nullable = false, precision = 10, scale = 2)
     private BigDecimal preco;
 
-    @Column(name = "preco_comparacao", precision = 10, scale = 2)
-    private BigDecimal precoComparacao;
-
-    @Column(nullable = false)
+    @Column(name = "estoque", nullable = false)
     private Integer estoque = 0;
-
-    @Column(name = "controlar_estoque", nullable = false)
-    private Boolean controlarEstoque = true;
 
     @Column(name = "peso_kg", precision = 8, scale = 3)
     private BigDecimal pesoKg;
@@ -64,34 +61,48 @@ public class Produto {
     @Column(name = "altura_cm", precision = 8, scale = 2)
     private BigDecimal alturaCm;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20, nullable = false)
-    private StatusProduto status = StatusProduto.RASCUNHO;
+    @Column(name = "ativo", nullable = false)
+    private Boolean ativo = true;
 
-    @Column(name = "criado_em", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @CreationTimestamp
-    private OffsetDateTime criadoEm;
-
-    @Column(name = "atualizado_em", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @UpdateTimestamp
-    private OffsetDateTime atualizadoEm;
-
-    @Column(precision = 3, scale = 2)
-    private BigDecimal avaliacao = BigDecimal.ZERO;
+    @Column(name = "avaliacao", precision = 3, scale = 2)
+    private BigDecimal avaliacao;
 
     @Column(name = "quantidade_avaliacoes")
     private Integer quantidadeAvaliacoes = 0;
 
-    @Column(name = "quantidade_vendas")
-    private Integer quantidadeVendas = 0;
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private OffsetDateTime criadoEm;
+
+    @Column(name = "atualizado_em", nullable = false)
+    private OffsetDateTime atualizadoEm;
 
     @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ImagemProduto> imagens;
+    private Set<ImagemProduto> imagens = new HashSet<>();
 
     @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<VariacaoProduto> variacoes;
+    private Set<ItemPedido> itensPedido = new HashSet<>();
 
-    public enum StatusProduto {
-        RASCUNHO, ATIVO, INATIVO
+    @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<AvaliacaoProduto> avaliacoes = new HashSet<>();
+
+    @PrePersist
+    protected void onCreate() {
+        OffsetDateTime now = OffsetDateTime.now();
+        criadoEm = now;
+        atualizadoEm = now;
+        if (ativo == null) {
+            ativo = true;
+        }
+        if (estoque == null) {
+            estoque = 0;
+        }
+        if (quantidadeAvaliacoes == null) {
+            quantidadeAvaliacoes = 0;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        atualizadoEm = OffsetDateTime.now();
     }
 }

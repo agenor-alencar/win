@@ -1,5 +1,7 @@
 package com.win.marketplace.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -7,25 +9,35 @@ import java.util.UUID;
 
 public record ProdutoResponseDTO(
     UUID id,
-    UUID lojistaId,
-    String lojistaNome,
+    LojistaBasicInfoDTO lojista,
+    CategoriaBasicInfoDTO categoria,
     String nome,
     String descricao,
     BigDecimal preco,
-    UUID categoriaId,
-    String categoriaNome,
     Integer estoque,
-    String sku,
-    BigDecimal peso,
-    String unidadeMedida,
-    String marca,
-    String modelo,
-    String caracteristicas,
-    String status, // ATIVO, INATIVO, INDISPONIVEL
-    BigDecimal avaliacaoMedia,
-    Integer totalAvaliacoes,
-    List<ImagemProdutoResponseDTO> imagens,
-    List<VariacaoProdutoResponseDTO> variacoes,
-    OffsetDateTime dataCriacao,
-    OffsetDateTime dataAtualizacao
-) {}
+    BigDecimal pesoKg,
+    BigDecimal comprimentoCm,
+    BigDecimal larguraCm,
+    BigDecimal alturaCm,
+    Boolean ativo,
+    BigDecimal avaliacao,
+    Integer quantidadeAvaliacoes,
+    List<String> imagensUrls,
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    OffsetDateTime criadoEm,
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    OffsetDateTime atualizadoEm
+) {
+    public record LojistaBasicInfoDTO(
+        UUID id,
+        String nomeFantasia,
+        String cnpj
+    ) {}
+    
+    public record CategoriaBasicInfoDTO(
+        UUID id,
+        String nome
+    ) {}
+}

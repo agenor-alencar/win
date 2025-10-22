@@ -10,43 +10,49 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(name = "avaliacoes")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "avaliacoes")
 public class Avaliacao {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "produto_id") // Tornando nulo para permitir avaliações de lojistas/motoristas
+    private Produto produto;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pedido_id", nullable = false)
+    @JoinColumn(name = "pedido_id")
     private Pedido pedido;
 
-    @Column(nullable = false)
-    private Integer nota;
-
-    @Column(columnDefinition = "TEXT")
-    private String comentario;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "produto_id")
-    private Produto produto;
+    // ===================================================================
+    // ADICIONE ESTES DOIS NOVOS RELACIONAMENTOS ABAIXO
+    // ===================================================================
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lojista_id")
     private Lojista lojista;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "entregador_id")
-    private Entregador entregador;
+    @JoinColumn(name = "motorista_id")
+    private Motorista motorista;
 
-    @Column(name = "criado_em", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    // ===================================================================
+
+    @Column(nullable = false)
+    private Integer nota; // 1 a 5 estrelas
+
+    @Column(columnDefinition = "TEXT")
+    private String comentario;
+
+    @Column(name = "criado_em", nullable = false, updatable = false)
     @CreationTimestamp
     private OffsetDateTime criadoEm;
 }

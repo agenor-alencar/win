@@ -12,14 +12,14 @@ import java.util.Map;
 import java.util.UUID;
 
 @Entity
+@Table(name = "variacoes_produtos")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "variacoes_produtos")
 public class VariacaoProduto {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -32,6 +32,7 @@ public class VariacaoProduto {
     @Column(precision = 10, scale = 2)
     private BigDecimal preco;
 
+    @Column
     private Integer estoque;
 
     @JdbcTypeCode(SqlTypes.JSON)

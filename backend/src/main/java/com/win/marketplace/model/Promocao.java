@@ -9,49 +9,61 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "promocoes")
+@Entity
+@Table(name = "promocoes", indexes = {
+    @Index(name = "idx_promocao_produto", columnList = "produto_id"),
+    @Index(name = "idx_promocao_ativa", columnList = "ativa"),
+    @Index(name = "idx_promocao_datas", columnList = "data_inicio,data_fim")
+})
 public class Promocao {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String descricao;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_desconto", length = 20, nullable = false)
-    private TipoDesconto tipoDesconto;
-
-    @Column(precision = 10, scale = 2, nullable = false)
-    private BigDecimal valor;
-
-    @Column(name = "data_inicio", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    private OffsetDateTime dataInicio;
-
-    @Column(name = "data_fim", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    private OffsetDateTime dataFim;
-
-    @Column(nullable = false)
-    private Boolean ativo = true;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "produto_id")
+    @JoinColumn(name = "produto_id", nullable = false)
     private Produto produto;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categoria_id")
-    private Categoria categoria;
+    @Column(name = "descricao", nullable = false, length = 255)
+    private String descricao;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lojista_id")
-    private Lojista lojista;
+    @Column(name = "percentual_desconto", precision = 5, scale = 2)
+    private BigDecimal percentualDesconto;
 
-    public enum TipoDesconto {
-        PERCENTUAL, VALOR_FIXO
+    @Column(name = "preco_promocional", precision = 10, scale = 2)
+    private BigDecimal precoPromocional;
+
+    @Column(name = "data_inicio", nullable = false)
+    private OffsetDateTime dataInicio;
+
+    @Column(name = "data_fim", nullable = false)
+    private OffsetDateTime dataFim;
+
+    @Column(name = "ativa", nullable = false)
+    private Boolean ativa = true;
+
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private OffsetDateTime criadoEm;
+
+    @Column(name = "atualizado_em", nullable = false)
+    private OffsetDateTime atualizadoEm;
+
+    @PrePersist
+    protected void onCreate() {
+        OffsetDateTime now = OffsetDateTime.now();
+        criadoEm = now;
+        atualizadoEm = now;
+        if (ativa == null) {
+            ativa = true;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        atualizadoEm = OffsetDateTime.now();
     }
 }

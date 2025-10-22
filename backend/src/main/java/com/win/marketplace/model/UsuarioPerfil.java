@@ -1,39 +1,40 @@
 package com.win.marketplace.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.*;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
-@Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "usuarios_perfis")
-@IdClass(UsuarioPerfilId.class)
+@EqualsAndHashCode(exclude = {"usuario", "perfil"})
+@ToString(exclude = {"usuario", "perfil"})
+@Entity
+@Table(name = "usuario_perfis")
 public class UsuarioPerfil {
 
-    @Id
-    @Column(name = "usuario_id")
-    private UUID usuarioId;
-
-    @Id
-    @Column(name = "perfil_id")
-    private UUID perfilId;
+    @EmbeddedId
+    private UsuarioPerfilId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id", insertable = false, updatable = false)
+    @MapsId("usuarioId")
+    @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "perfil_id", insertable = false, updatable = false)
+    @MapsId("perfilId")
+    @JoinColumn(name = "perfil_id")
     private Perfil perfil;
 
-    @Column(name = "criado_em", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @CreationTimestamp
-    private OffsetDateTime criadoEm;
+    @Column(name = "data_atribuicao", nullable = false, updatable = false)
+    private OffsetDateTime dataAtribuicao; // ✅ ADICIONAR ESTE CAMPO
+
+    @PrePersist
+    protected void onCreate() {
+        if (dataAtribuicao == null) {
+            dataAtribuicao = OffsetDateTime.now();
+        }
+    }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,18 +42,65 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  RefreshCw,
 } from "lucide-react";
-import MerchantNavbar from "../../components/MerchantNavbar";
+import { MerchantLayout } from "@/components/MerchantLayout";
+import { api } from "@/lib/Api";
+import { useNotification } from "@/contexts/NotificationContext";
 
-// Mock data
-const revenueData = [
-  { month: "Jan", receita: 12500, vendas: 85 },
-  { month: "Fev", receita: 15200, vendas: 102 },
-  { month: "Mar", receita: 18900, vendas: 127 },
-  { month: "Abr", receita: 16700, vendas: 89 },
-  { month: "Mai", receita: 22300, vendas: 156 },
-  { month: "Jun", receita: 25800, vendas: 178 },
-];
+// TypeScript interfaces
+interface Order {
+  id: string;
+  numeroPedido: string;
+  usuarioId: string;
+  usuarioNome: string;
+  status: string;
+  subtotal: number;
+  desconto: number;
+  frete: number;
+  total: number;
+  criadoEm: string;
+  confirmadoEm: string | null;
+  entregueEm: string | null;
+  itens: OrderItem[];
+  pagamento?: {
+    metodoPagamento: string;
+    statusPagamento: string;
+  };
+}
+
+interface OrderItem {
+  id: string;
+  quantidade: number;
+  precoUnitario: number;
+  subtotal: number;
+  produto: {
+    nome: string;
+  };
+}
+
+interface Lojista {
+  id: string;
+  usuarioId: string;
+  nomeFantasia: string;
+}
+
+interface MonthlyData {
+  month: string;
+  receita: number;
+  vendas: number;
+}
+
+interface Transaction {
+  id: string;
+  type: string;
+  description: string;
+  amount: number;
+  fee: number;
+  net: number;
+  date: string;
+  status: string;
+}
 
 const expenseData = [
   { category: "Produtos", value: 15000, color: "#3DBEAB" },
@@ -63,52 +110,170 @@ const expenseData = [
   { category: "Outros", value: 900, color: "#EF4444" },
 ];
 
-const transactions = [
-  {
-    id: "TXN001",
-    type: "credit",
-    description: "Venda - Pedido #12345",
-    amount: 125.9,
-    fee: 6.3,
-    net: 119.6,
-    date: "2024-01-15",
-    status: "completed",
-  },
-  {
-    id: "TXN002",
-    type: "credit",
-    description: "Venda - Pedido #12346",
-    amount: 89.5,
-    fee: 4.48,
-    net: 85.02,
-    date: "2024-01-15",
-    status: "completed",
-  },
-  {
-    id: "TXN003",
-    type: "debit",
-    description: "Estorno - Pedido #12340",
-    amount: -65.0,
-    fee: 0,
-    net: -65.0,
-    date: "2024-01-14",
-    status: "completed",
-  },
-  {
-    id: "TXN004",
-    type: "credit",
-    description: "Venda - Pedido #12347",
-    amount: 45.2,
-    fee: 2.26,
-    net: 42.94,
-    date: "2024-01-14",
-    status: "pending",
-  },
-];
-
 export default function MerchantFinancial() {
+  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [lojista, setLojista] = useState<Lojista | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const { error: showError } = useNotification();
+
+  // Estados para dados calculados
+  const [revenueData, setRevenueData] = useState<MonthlyData[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [averageTicket, setAverageTicket] = useState(0);
+  const [totalFees, setTotalFees] = useState(0);
+
+  useEffect(() => {
+    fetchFinancialData();
+  }, [selectedPeriod]);
+
+  const fetchFinancialData = async () => {
+    try {
+      setLoading(true);
+
+      // 1. Buscar lojista logado
+      const lojistaResponse = await api.get("/api/v1/lojistas/me");
+      const lojistaData: Lojista = lojistaResponse.data;
+      setLojista(lojistaData);
+
+      // 2. Buscar pedidos do lojista
+      const ordersResponse = await api.get(
+        `/api/v1/pedidos/lojista/${lojistaData.id}`
+      );
+      const ordersData: Order[] = ordersResponse.data;
+
+      // 3. Filtrar pedidos por período
+      const filteredOrders = filterOrdersByPeriod(ordersData, selectedPeriod);
+      setOrders(filteredOrders);
+
+      // 4. Calcular estatísticas
+      calculateFinancialStats(filteredOrders);
+      
+      // 5. Gerar dados de gráficos
+      generateChartData(filteredOrders);
+      
+      // 6. Gerar transações
+      generateTransactions(filteredOrders);
+
+    } catch (err: any) {
+      console.error("Erro ao buscar dados financeiros:", err);
+      showError(
+        "Erro ao carregar dados",
+        err.response?.data?.message || "Não foi possível carregar os dados financeiros"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterOrdersByPeriod = (orders: Order[], period: string): Order[] => {
+    const now = new Date();
+    const filterDate = new Date();
+
+    switch (period) {
+      case "7d":
+        filterDate.setDate(now.getDate() - 7);
+        break;
+      case "30d":
+        filterDate.setDate(now.getDate() - 30);
+        break;
+      case "90d":
+        filterDate.setDate(now.getDate() - 90);
+        break;
+      case "1y":
+        filterDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        return orders;
+    }
+
+    return orders.filter((order) => {
+      const orderDate = new Date(order.criadoEm);
+      return orderDate >= filterDate;
+    });
+  };
+
+  const calculateFinancialStats = (orders: Order[]) => {
+    // Filtrar apenas pedidos confirmados/entregues para receita
+    const completedOrders = orders.filter(
+      (o) => o.status === "CONFIRMADO" || o.status === "ENTREGUE"
+    );
+
+    const revenue = completedOrders.reduce((sum, order) => sum + order.total, 0);
+    const orderCount = completedOrders.length;
+    const avgTicket = orderCount > 0 ? revenue / orderCount : 0;
+    
+    // Taxa WIN: 5% sobre o subtotal
+    const fees = completedOrders.reduce((sum, order) => sum + (order.subtotal * 0.05), 0);
+
+    setTotalRevenue(revenue);
+    setTotalOrders(orderCount);
+    setAverageTicket(avgTicket);
+    setTotalFees(fees);
+  };
+
+  const generateChartData = (orders: Order[]) => {
+    // Agrupar pedidos por mês
+    const monthlyStats: { [key: string]: { receita: number; vendas: number } } = {};
+
+    orders.forEach((order) => {
+      if (order.status === "CONFIRMADO" || order.status === "ENTREGUE") {
+        const date = new Date(order.criadoEm);
+        const monthKey = date.toLocaleDateString("pt-BR", {
+          month: "short",
+          year: "numeric",
+        });
+
+        if (!monthlyStats[monthKey]) {
+          monthlyStats[monthKey] = { receita: 0, vendas: 0 };
+        }
+
+        monthlyStats[monthKey].receita += order.total;
+        monthlyStats[monthKey].vendas += 1;
+      }
+    });
+
+    // Converter para array e ordenar
+    const chartData = Object.entries(monthlyStats)
+      .map(([month, data]) => ({
+        month,
+        receita: data.receita,
+        vendas: data.vendas,
+      }))
+      .sort((a, b) => {
+        // Ordenar por data
+        return new Date(a.month).getTime() - new Date(b.month).getTime();
+      });
+
+    setRevenueData(chartData);
+  };
+
+  const generateTransactions = (orders: Order[]) => {
+    const txns: Transaction[] = orders
+      .filter((o) => o.status === "CONFIRMADO" || o.status === "ENTREGUE")
+      .map((order) => {
+        const fee = order.subtotal * 0.05; // 5% de taxa WIN
+        const net = order.total - fee;
+
+        return {
+          id: order.numeroPedido,
+          type: "credit",
+          description: `Venda - Pedido #${order.numeroPedido}`,
+          amount: order.total,
+          fee,
+          net,
+          date: new Date(order.criadoEm).toLocaleDateString("pt-BR"),
+          status: "completed",
+        };
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 20); // Últimas 20 transações
+
+    setTransactions(txns);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -139,12 +304,10 @@ export default function MerchantFinancial() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <MerchantNavbar />
-
-      <div className="max-w-7xl mx-auto p-6">
+    <MerchantLayout>
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               Centro Financeiro
@@ -173,28 +336,39 @@ export default function MerchantFinancial() {
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Receita Total
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">R$ 25.847</p>
-                  <div className="flex items-center mt-2">
-                    <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">+12.5%</span>
-                    <span className="text-sm text-gray-500 ml-2">
-                      vs mês ant.
-                    </span>
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <RefreshCw className="h-12 w-12 animate-spin text-[#3DBEAB] mx-auto mb-4" />
+              <p className="text-gray-600">Carregando dados financeiros...</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">
+                        Receita Total
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        R$ {totalRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </p>
+                      <div className="flex items-center mt-2">
+                        <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
+                        <span className="text-sm text-gray-500 ml-2">
+                          {totalOrders} vendas
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <DollarSign className="h-6 w-6 text-green-600" />
+                    </div>
                   </div>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
             </CardContent>
           </Card>
 
@@ -205,12 +379,12 @@ export default function MerchantFinancial() {
                   <p className="text-sm font-medium text-gray-600">
                     Lucro Líquido
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">R$ 18.420</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    R$ {(totalRevenue - totalFees).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </p>
                   <div className="flex items-center mt-2">
-                    <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">+8.2%</span>
-                    <span className="text-sm text-gray-500 ml-2">
-                      vs mês ant.
+                    <span className="text-sm text-gray-500">
+                      Após taxas WIN
                     </span>
                   </div>
                 </div>
@@ -226,14 +400,14 @@ export default function MerchantFinancial() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">
-                    Custos Totais
+                    Taxas WIN (5%)
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">R$ 7.427</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    R$ {totalFees.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </p>
                   <div className="flex items-center mt-2">
-                    <ArrowDownRight className="h-4 w-4 text-red-500 mr-1" />
-                    <span className="text-sm text-red-600">+3.1%</span>
-                    <span className="text-sm text-gray-500 ml-2">
-                      vs mês ant.
+                    <span className="text-sm text-gray-500">
+                      Sobre subtotal
                     </span>
                   </div>
                 </div>
@@ -249,14 +423,14 @@ export default function MerchantFinancial() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">
-                    Margem de Lucro
+                    Ticket Médio
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">71.2%</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    R$ {averageTicket.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </p>
                   <div className="flex items-center mt-2">
-                    <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">+2.1%</span>
-                    <span className="text-sm text-gray-500 ml-2">
-                      vs mês ant.
+                    <span className="text-sm text-gray-500">
+                      Por pedido
                     </span>
                   </div>
                 </div>
@@ -618,7 +792,9 @@ export default function MerchantFinancial() {
             </div>
           </TabsContent>
         </Tabs>
+        </>
+        )}
       </div>
-    </div>
+    </MerchantLayout>
   );
 }

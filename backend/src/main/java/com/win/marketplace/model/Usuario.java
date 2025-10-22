@@ -3,75 +3,89 @@ package com.win.marketplace.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
-@Entity
 @Data
+@EqualsAndHashCode(exclude = {"lojista", "motorista", "administrador", "enderecos", "pedidos", "avaliacoes", "notificacoes", "usuarioPerfis"})
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
 @Table(name = "usuarios")
 public class Usuario {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(length = 255, unique = true, nullable = false)
-    private String email;
-
-    @Column(name = "senha_hash", length = 255, nullable = false)
-    private String senhaHash;
-
-    @Column(length = 100, nullable = false)
+    @Column(name = "nome", nullable = false, length = 255)
     private String nome;
 
-    @Column(length = 100, nullable = false)
-    private String sobrenome;
+    @Column(name = "email", nullable = false, unique = true, length = 255)
+    private String email;
 
-    @Column(length = 14, unique = true)
+    @Column(name = "senha_hash", nullable = false, length = 255)
+    private String senhaHash; // ✅ senhaHash (não "senha")
+
+    @Column(name = "cpf", unique = true, length = 14)
     private String cpf;
 
-    @Column(name = "data_nascimento")
-    private LocalDate dataNascimento;
-
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private StatusUsuario status = StatusUsuario.ATIVO;
-
-    @Column(name = "email_verificado")
-    private Boolean emailVerificado = false;
-
-    @Column(length = 20)
+    @Column(name = "telefone", length = 20)
     private String telefone;
 
-    @Column(name = "criado_em", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @CreationTimestamp
-    private OffsetDateTime criadoEm;
+    @Column(name = "ativo", nullable = false)
+    private Boolean ativo = true;
 
-    @Column(name = "atualizado_em", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @UpdateTimestamp
-    private OffsetDateTime atualizadoEm;
+    @Column(name = "ultimo_acesso")
+    private OffsetDateTime ultimoAcesso;
 
-    @Column(name = "ultimo_login", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    private OffsetDateTime ultimoLogin;
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private OffsetDateTime criadoEm; // ✅ criadoEm (não "dataCriacao")
 
-    @Column(name = "url_imagem_perfil")
-    private String urlImagemPerfil;
+    @Column(name = "atualizado_em", nullable = false)
+    private OffsetDateTime atualizadoEm; // ✅ atualizadoEm (não "dataAtualizacao")
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Endereco> enderecos;
+    private Set<Endereco> enderecos = new HashSet<>();
 
-    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<UsuarioPerfil> usuarioPerfis;
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Pedido> pedidos = new HashSet<>();
 
-    public enum StatusUsuario {
-        ATIVO, INATIVO, SUSPENSO, PENDENTE
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<AvaliacaoProduto> avaliacoes = new HashSet<>();
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Notificacao> notificacoes = new HashSet<>();
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UsuarioPerfil> usuarioPerfis = new HashSet<>();
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Lojista lojista;
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Motorista motorista;
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Administrador administrador;
+
+    @PrePersist
+    protected void onCreate() {
+        OffsetDateTime now = OffsetDateTime.now();
+        criadoEm = now;
+        atualizadoEm = now;
+        if (ativo == null) {
+            ativo = true;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        atualizadoEm = OffsetDateTime.now();
     }
 }

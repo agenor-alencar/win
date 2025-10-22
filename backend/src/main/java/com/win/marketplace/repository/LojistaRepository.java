@@ -10,7 +10,14 @@ import java.util.UUID;
 
 @Repository
 public interface LojistaRepository extends JpaRepository<Lojista, UUID> {
+    
     Optional<Lojista> findByUsuarioId(UUID usuarioId);
+    
     Optional<Lojista> findByCnpj(String cnpj);
+    
+    boolean existsByCnpj(String cnpj);
+    
     List<Lojista> findByAtivoTrue();
+    
+    List<Lojista> findByNomeFantasiaContainingIgnoreCase(String nomeFantasia);
 }

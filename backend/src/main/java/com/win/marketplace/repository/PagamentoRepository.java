@@ -10,7 +10,12 @@ import java.util.UUID;
 
 @Repository
 public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
+    
     Optional<Pagamento> findByPedidoId(UUID pedidoId);
+    
     List<Pagamento> findByStatus(Pagamento.StatusPagamento status);
-    List<Pagamento> findByMetodoPagamento(Pagamento.MetodoPagamento metodoPagamento);
+    
+    List<Pagamento> findByMetodoPagamento(String metodoPagamento);
+    
+    Optional<Pagamento> findByTransacaoId(String transacaoId);
 }

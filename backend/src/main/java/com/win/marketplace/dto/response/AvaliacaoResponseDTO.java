@@ -5,13 +5,12 @@ import java.util.UUID;
 
 public record AvaliacaoResponseDTO(
     UUID id,
-    UUID clienteId,
-    String clienteNome,
-    UUID avaliadoId,  // Pode ser produtoId, lojistaId
-    String avaliadoNome,
-    String avaliadoTipo, // "PRODUTO", "LOJISTA"
+    UUID usuarioId,
+    String usuarioNome,
+    UUID produtoId,
+    String produtoNome,
     UUID pedidoId,
     Integer nota,
     String comentario,
-    OffsetDateTime dataAvaliacao
+    OffsetDateTime criadoEm
 ) {}

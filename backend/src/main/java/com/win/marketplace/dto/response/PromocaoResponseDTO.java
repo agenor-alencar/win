@@ -1,20 +1,30 @@
 package com.win.marketplace.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record PromocaoResponseDTO(
     UUID id,
     UUID produtoId,
-    String produtoNome,
-    String nome,
+    String nomeProduto,
     String descricao,
-    String tipoDesconto, // PERCENTUAL, VALOR_FIXO
-    BigDecimal valorDesconto,
-    LocalDateTime dataInicio,
-    LocalDateTime dataFim,
+    BigDecimal percentualDesconto,
+    BigDecimal precoPromocional,
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    OffsetDateTime dataInicio,
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    OffsetDateTime dataFim,
+    
     Boolean ativa,
-    LocalDateTime dataCriacao,
-    LocalDateTime dataAtualizacao
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    OffsetDateTime criadoEm,
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    OffsetDateTime atualizadoEm
 ) {}

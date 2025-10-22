@@ -8,8 +8,10 @@ public record PagamentoRequestDTO(
     @NotNull(message = "ID do pedido é obrigatório")
     UUID pedidoId,
 
-    @NotNull(message = "Método de pagamento é obrigatório")
-    String metodoPagamento, // CARTAO_CREDITO, CARTAO_DEBITO, PIX, BOLETO, DINHEIRO
+    @NotBlank(message = "Método de pagamento é obrigatório")
+    @Pattern(regexp = "CARTAO_CREDITO|CARTAO_DEBITO|PIX|BOLETO|DINHEIRO", 
+             message = "Método de pagamento inválido")
+    String metodoPagamento,
 
     @NotNull(message = "Valor é obrigatório")
     @DecimalMin(value = "0.01", message = "Valor deve ser maior que zero")
@@ -18,6 +20,9 @@ public record PagamentoRequestDTO(
     @Min(value = 1, message = "Parcelas deve ser maior que zero")
     @Max(value = 12, message = "Máximo de 12 parcelas")
     Integer parcelas,
+
+    @Size(max = 100, message = "ID da transação deve ter no máximo 100 caracteres")
+    String transacaoId,
 
     @Size(max = 100, message = "Informações do cartão devem ter no máximo 100 caracteres")
     String informacoesCartao,

@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,8 +29,6 @@ public class EnderecoService {
 
         Endereco endereco = enderecoMapper.toEntity(requestDTO);
         endereco.setUsuario(usuario);
-        endereco.setDataCriacao(OffsetDateTime.now());
-        endereco.setDataAtualizacao(OffsetDateTime.now());
 
         // Se este for o primeiro endereço ou for marcado como principal,
         // desmarcar outros endereços principais
@@ -52,6 +49,13 @@ public class EnderecoService {
     }
 
     @Transactional(readOnly = true)
+    public EnderecoResponseDTO buscarEnderecoPrincipal(UUID usuarioId) {
+        Endereco endereco = enderecoRepository.findByUsuarioIdAndPrincipalTrueAndAtivoTrue(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Endereço principal não encontrado"));
+        return enderecoMapper.toResponseDTO(endereco);
+    }
+
+    @Transactional(readOnly = true)
     public EnderecoResponseDTO buscarPorId(UUID id) {
         Endereco endereco = enderecoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
@@ -68,7 +72,21 @@ public class EnderecoService {
         }
 
         enderecoMapper.updateEntityFromDTO(requestDTO, endereco);
-        endereco.setDataAtualizacao(OffsetDateTime.now());
+
+        Endereco savedEndereco = enderecoRepository.save(endereco);
+        return enderecoMapper.toResponseDTO(savedEndereco);
+    }
+
+    public EnderecoResponseDTO definirComoPrincipal(UUID id) {
+        Endereco endereco = enderecoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
+
+        if (!Boolean.TRUE.equals(endereco.getAtivo())) {
+            throw new RuntimeException("Não é possível definir um endereço inativo como principal");
+        }
+
+        desmarcarEnderecosPrincipais(endereco.getUsuario().getId());
+        endereco.setPrincipal(true);
 
         Endereco savedEndereco = enderecoRepository.save(endereco);
         return enderecoMapper.toResponseDTO(savedEndereco);
@@ -78,8 +96,22 @@ public class EnderecoService {
         Endereco endereco = enderecoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
 
+        // Se for o endereço principal, verificar se há outros endereços ativos
+        if (Boolean.TRUE.equals(endereco.getPrincipal())) {
+            List<Endereco> outrosEnderecos = enderecoRepository.findByUsuarioIdAndAtivoTrue(endereco.getUsuario().getId())
+                    .stream()
+                    .filter(e -> !e.getId().equals(id))
+                    .toList();
+
+            if (!outrosEnderecos.isEmpty()) {
+                // Definir o primeiro endereço encontrado como principal
+                Endereco novoEnderecoPrincipal = outrosEnderecos.get(0);
+                novoEnderecoPrincipal.setPrincipal(true);
+                enderecoRepository.save(novoEnderecoPrincipal);
+            }
+        }
+
         endereco.setAtivo(false);
-        endereco.setDataAtualizacao(OffsetDateTime.now());
         enderecoRepository.save(endereco);
     }
 
@@ -89,10 +121,7 @@ public class EnderecoService {
                 .filter(e -> Boolean.TRUE.equals(e.getPrincipal()))
                 .toList();
 
-        enderecosPrincipais.forEach(e -> {
-            e.setPrincipal(false);
-            e.setDataAtualizacao(OffsetDateTime.now());
-        });
+        enderecosPrincipais.forEach(e -> e.setPrincipal(false));
 
         enderecoRepository.saveAll(enderecosPrincipais);
     }

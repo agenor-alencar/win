@@ -4,37 +4,43 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
+@Table(name = "categorias")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "categorias")
 public class Categoria {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(length = 100, nullable = false)
+    @Column(nullable = false, length = 100)
     private String nome;
 
-    @Column(length = 100, unique = true, nullable = false)
-    private String slug;
+    @Column(columnDefinition = "TEXT")
+    private String descricao;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_pai_id")
     private Categoria categoriaPai;
 
-    @OneToMany(mappedBy = "categoriaPai")
-    private List<Categoria> subCategorias;
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    @CreationTimestamp
+    private OffsetDateTime criadoEm;
 
-    @OneToMany(mappedBy = "categoria")
-    private List<Produto> produtos;
+    @Column(name = "atualizado_em", nullable = false)
+    @UpdateTimestamp
+    private OffsetDateTime atualizadoEm;
 
-    @Column(nullable = false)
-    private Boolean ativo = true;
+    // Relacionamento com produtos (opcional - se quiser validar ao deletar)
+    // @OneToMany(mappedBy = "categoria", fetch = FetchType.LAZY)
+    // private List<Produto> produtos;
 }

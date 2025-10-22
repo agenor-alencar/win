@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,9 +22,7 @@ public class CategoriaService {
 
     public CategoriaResponseDTO criarCategoria(CategoriaCreateRequestDTO requestDTO) {
         Categoria categoria = categoriaMapper.toEntity(requestDTO);
-        categoria.setDataCriacao(OffsetDateTime.now());
-        categoria.setDataAtualizacao(OffsetDateTime.now());
-
+        
         Categoria savedCategoria = categoriaRepository.save(categoria);
         return categoriaMapper.toResponseDTO(savedCategoria);
     }
@@ -36,8 +33,6 @@ public class CategoriaService {
 
         Categoria categoria = categoriaMapper.toEntity(requestDTO);
         categoria.setCategoriaPai(categoriaPai);
-        categoria.setDataCriacao(OffsetDateTime.now());
-        categoria.setDataAtualizacao(OffsetDateTime.now());
 
         Categoria savedCategoria = categoriaRepository.save(categoria);
         return categoriaMapper.toResponseDTO(savedCategoria);
@@ -79,7 +74,6 @@ public class CategoriaService {
                 .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
 
         categoriaMapper.updateEntityFromDTO(requestDTO, categoria);
-        categoria.setDataAtualizacao(OffsetDateTime.now());
 
         Categoria savedCategoria = categoriaRepository.save(categoria);
         return categoriaMapper.toResponseDTO(savedCategoria);
@@ -89,13 +83,16 @@ public class CategoriaService {
         Categoria categoria = categoriaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
 
-        if (!categoria.getSubcategorias().isEmpty()) {
+        // Verificar se possui subcategorias
+        List<Categoria> subcategorias = categoriaRepository.findByCategoriaPaiId(id);
+        if (!subcategorias.isEmpty()) {
             throw new RuntimeException("Não é possível deletar categoria que possui subcategorias");
         }
 
-        if (!categoria.getProdutos().isEmpty()) {
-            throw new RuntimeException("Não é possível deletar categoria que possui produtos");
-        }
+        // Verificar se possui produtos (implementar quando tiver o relacionamento)
+        // if (categoria.getProdutos() != null && !categoria.getProdutos().isEmpty()) {
+        //     throw new RuntimeException("Não é possível deletar categoria que possui produtos");
+        // }
 
         categoriaRepository.delete(categoria);
     }

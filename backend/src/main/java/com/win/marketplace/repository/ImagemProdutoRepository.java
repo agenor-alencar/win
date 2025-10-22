@@ -9,6 +9,10 @@ import java.util.UUID;
 
 @Repository
 public interface ImagemProdutoRepository extends JpaRepository<ImagemProduto, UUID> {
+    
+    List<ImagemProduto> findByProdutoId(UUID produtoId);
+    
     List<ImagemProduto> findByProdutoIdOrderByOrdemExibicao(UUID produtoId);
+    
     void deleteByProdutoId(UUID produtoId);
 }

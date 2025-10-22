@@ -14,51 +14,47 @@ import java.util.UUID;
  * Entidade que representa uma transação de pagamento associada a um pedido.
  */
 @Entity
+@Table(name = "pagamentos")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "pagamentos")
 public class Pagamento {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pedido_id", nullable = false)
+    @JoinColumn(name = "pedido_id", nullable = false, unique = true)
     private Pedido pedido;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "metodo_pagamento", nullable = false)
-    private MetodoPagamento metodoPagamento;
+    @Column(name = "metodo_pagamento", length = 50, nullable = false)
+    private String metodoPagamento; // VARCHAR, não enum
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private StatusPagamento status = StatusPagamento.PENDENTE;
-
-    @Column(nullable = false)
+    @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal valor;
 
-    @Column(name = "id_transacao")
-    private String idTransacao; // ID retornado pelo gateway de pagamento
+    @Column(name = "parcelas")
+    private Integer parcelas;
 
-    @Column(name = "resposta_gateway", columnDefinition = "JSONB")
-    private String respostaGateway; // Para armazenar o JSON completo da resposta do gateway
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private StatusPagamento status = StatusPagamento.PENDENTE;
 
-    @Column(name = "criado_em", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "transacao_id", length = 100)
+    private String transacaoId;
+
+    @Column(name = "informacoes_cartao", length = 100)
+    private String informacoesCartao;
+
+    @Column(name = "observacoes", length = 200)
+    private String observacoes;
+
+    @Column(name = "criado_em", nullable = false, updatable = false)
     @CreationTimestamp
     private OffsetDateTime criadoEm;
 
-    public enum MetodoPagamento {
-        PIX
-        //CARTAO_CREDITO,
-        //BOLETO  (para quando a gateway estiver recebendo esses outros métodos de pagamentos )
-    }
-
     public enum StatusPagamento {
-        PENDENTE,
-        APROVADO,
-        RECUSADO,
-        ESTORNADO
+        PENDENTE, PROCESSANDO, APROVADO, RECUSADO, CANCELADO, ESTORNADO
     }
 }

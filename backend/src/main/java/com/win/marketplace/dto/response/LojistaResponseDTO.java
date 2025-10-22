@@ -1,6 +1,5 @@
 package com.win.marketplace.dto.response;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -10,15 +9,11 @@ public record LojistaResponseDTO(
     String usuarioNome,
     String usuarioEmail,
     String cnpj,
-    String razaoSocial,
     String nomeFantasia,
-    String inscricaoEstadual,
-    String inscricaoMunicipal,
-    String telefone,
+    String razaoSocial,
     String descricao,
-    BigDecimal avaliacaoMedia,
-    Integer totalAvaliacoes,
+    String telefone,
     Boolean ativo,
-    OffsetDateTime dataCriacao,
-    OffsetDateTime dataAtualizacao
+    OffsetDateTime criadoEm,
+    OffsetDateTime atualizadoEm
 ) {}

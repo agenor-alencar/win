@@ -7,14 +7,19 @@ import com.win.marketplace.model.Promocao;
 import com.win.marketplace.model.Produto;
 import com.win.marketplace.repository.PromocaoRepository;
 import com.win.marketplace.repository.ProdutoRepository;
+import com.win.marketplace.exception.ResourceNotFoundException;
+import com.win.marketplace.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -24,152 +29,235 @@ public class PromocaoService {
     private final ProdutoRepository produtoRepository;
     private final PromocaoMapper promocaoMapper;
 
+    /**
+     * Cria uma nova promoção
+     */
     public PromocaoResponseDTO criarPromocao(PromocaoRequestDTO requestDTO) {
+        log.info("Criando promoção para produto ID: {}", requestDTO.produtoId());
+        
         Produto produto = produtoRepository.findById(requestDTO.produtoId())
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com ID: " + requestDTO.produtoId()));
 
         // Verificar se as datas são válidas
         if (requestDTO.dataFim().isBefore(requestDTO.dataInicio())) {
-            throw new RuntimeException("Data de fim deve ser posterior à data de início");
+            throw new BusinessException("Data de fim deve ser posterior à data de início");
         }
 
         // Verificar se não há promoção ativa para o mesmo período
         List<Promocao> promocoesConflitantes = promocaoRepository
-                .findByDataInicioLessThanEqualAndDataFimGreaterThanEqual(requestDTO.dataFim(), requestDTO.dataInicio())
-                .stream()
-                .filter(p -> p.getProduto().getId().equals(requestDTO.produtoId()) && p.getAtiva())
-                .toList();
+                .findPromocoesSobrepostasAtivasPorProduto(
+                    requestDTO.produtoId(), 
+                    requestDTO.dataInicio(), 
+                    requestDTO.dataFim()
+                );
 
         if (!promocoesConflitantes.isEmpty()) {
-            throw new RuntimeException("Já existe uma promoção ativa para este produto no período informado");
+            throw new BusinessException("Já existe uma promoção ativa para este produto no período informado");
         }
 
         Promocao promocao = promocaoMapper.toEntity(requestDTO);
         promocao.setProduto(produto);
-        promocao.setDataCriacao(LocalDateTime.now());
-        promocao.setDataAtualizacao(LocalDateTime.now());
 
         Promocao savedPromocao = promocaoRepository.save(promocao);
+        log.info("Promoção criada com sucesso. ID: {}", savedPromocao.getId());
+        
         return promocaoMapper.toResponseDTO(savedPromocao);
     }
 
+    /**
+     * Lista todas as promoções
+     */
     @Transactional(readOnly = true)
     public List<PromocaoResponseDTO> listarPromocoes() {
+        log.info("Listando todas as promoções");
+        
         List<Promocao> promocoes = promocaoRepository.findAll();
-        return promocaoMapper.toResponseDTOList(promocoes);
+        
+        return promocoes.stream()
+                .map(promocaoMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
+    /**
+     * Lista promoções ativas
+     */
     @Transactional(readOnly = true)
     public List<PromocaoResponseDTO> listarPromocoesAtivas() {
+        log.info("Listando promoções ativas");
+        
         List<Promocao> promocoes = promocaoRepository.findByAtivaTrue();
-        return promocaoMapper.toResponseDTOList(promocoes);
+        
+        return promocoes.stream()
+                .map(promocaoMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
+    /**
+     * Lista promoções de um produto
+     */
     @Transactional(readOnly = true)
     public List<PromocaoResponseDTO> listarPromocoesPorProduto(UUID produtoId) {
-        List<Promocao> promocoes = promocaoRepository.findByProdutoId(produtoId);
-        return promocaoMapper.toResponseDTOList(promocoes);
+        log.info("Listando promoções do produto ID: {}", produtoId);
+        
+        List<Promocao> promocoes = promocaoRepository.findByProdutoIdOrderByDataInicioDesc(produtoId);
+        
+        return promocoes.stream()
+                .map(promocaoMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
+    /**
+     * Lista promoções vigentes (dentro do período e ativas)
+     */
     @Transactional(readOnly = true)
     public List<PromocaoResponseDTO> listarPromocoesVigentes() {
-        LocalDateTime agora = LocalDateTime.now();
-        List<Promocao> promocoes = promocaoRepository
-                .findByDataInicioLessThanEqualAndDataFimGreaterThanEqual(agora, agora)
-                .stream()
-                .filter(Promocao::getAtiva)
-                .toList();
-        return promocaoMapper.toResponseDTOList(promocoes);
+        log.info("Listando promoções vigentes");
+        
+        OffsetDateTime agora = OffsetDateTime.now();
+        List<Promocao> promocoes = promocaoRepository.findPromocoesVigentesAtivas(agora);
+        
+        return promocoes.stream()
+                .map(promocaoMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
+    /**
+     * Busca promoção por ID
+     */
     @Transactional(readOnly = true)
     public PromocaoResponseDTO buscarPorId(UUID id) {
+        log.info("Buscando promoção ID: {}", id);
+        
         Promocao promocao = promocaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Promoção não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Promoção não encontrada com ID: " + id));
+        
         return promocaoMapper.toResponseDTO(promocao);
     }
 
+    /**
+     * Atualiza uma promoção
+     */
     public PromocaoResponseDTO atualizarPromocao(UUID id, PromocaoRequestDTO requestDTO) {
+        log.info("Atualizando promoção ID: {}", id);
+        
         Promocao promocao = promocaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Promoção não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Promoção não encontrada com ID: " + id));
 
         // Verificar se as datas são válidas
         if (requestDTO.dataFim().isBefore(requestDTO.dataInicio())) {
-            throw new RuntimeException("Data de fim deve ser posterior à data de início");
+            throw new BusinessException("Data de fim deve ser posterior à data de início");
         }
 
         // Se o produto foi alterado, validar se existe
         if (!promocao.getProduto().getId().equals(requestDTO.produtoId())) {
             Produto novoProduto = produtoRepository.findById(requestDTO.produtoId())
-                    .orElseThrow(() -> new RuntimeException("Novo produto não encontrado"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com ID: " + requestDTO.produtoId()));
             promocao.setProduto(novoProduto);
         }
 
+        // Verificar conflitos (excluindo a promoção atual)
+        List<Promocao> promocoesConflitantes = promocaoRepository
+                .findPromocoesSobrepostasAtivasPorProduto(
+                    requestDTO.produtoId(), 
+                    requestDTO.dataInicio(), 
+                    requestDTO.dataFim()
+                )
+                .stream()
+                .filter(p -> !p.getId().equals(id))
+                .collect(Collectors.toList());
+
+        if (!promocoesConflitantes.isEmpty()) {
+            throw new BusinessException("Há conflito com outras promoções ativas para este produto");
+        }
+
         promocaoMapper.updateEntityFromDTO(requestDTO, promocao);
-        promocao.setDataAtualizacao(LocalDateTime.now());
 
         Promocao savedPromocao = promocaoRepository.save(promocao);
+        log.info("Promoção atualizada com sucesso");
+        
         return promocaoMapper.toResponseDTO(savedPromocao);
     }
 
+    /**
+     * Ativa uma promoção
+     */
     public PromocaoResponseDTO ativarPromocao(UUID id) {
+        log.info("Ativando promoção ID: {}", id);
+        
         Promocao promocao = promocaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Promoção não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Promoção não encontrada com ID: " + id));
 
         // Verificar se não há conflito com outras promoções ativas
         List<Promocao> promocoesConflitantes = promocaoRepository
-                .findByDataInicioLessThanEqualAndDataFimGreaterThanEqual(promocao.getDataFim(), promocao.getDataInicio())
+                .findPromocoesSobrepostasAtivasPorProduto(
+                    promocao.getProduto().getId(),
+                    promocao.getDataInicio(),
+                    promocao.getDataFim()
+                )
                 .stream()
-                .filter(p -> p.getProduto().getId().equals(promocao.getProduto().getId()) &&
-                           p.getAtiva() && !p.getId().equals(id))
-                .toList();
+                .filter(p -> !p.getId().equals(id))
+                .collect(Collectors.toList());
 
         if (!promocoesConflitantes.isEmpty()) {
-            throw new RuntimeException("Há conflito com outras promoções ativas para este produto");
+            throw new BusinessException("Há conflito com outras promoções ativas para este produto");
         }
 
         promocao.setAtiva(true);
-        promocao.setDataAtualizacao(LocalDateTime.now());
 
         Promocao savedPromocao = promocaoRepository.save(promocao);
+        log.info("Promoção ativada com sucesso");
+        
         return promocaoMapper.toResponseDTO(savedPromocao);
     }
 
+    /**
+     * Desativa uma promoção
+     */
     public PromocaoResponseDTO desativarPromocao(UUID id) {
+        log.info("Desativando promoção ID: {}", id);
+        
         Promocao promocao = promocaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Promoção não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Promoção não encontrada com ID: " + id));
 
         promocao.setAtiva(false);
-        promocao.setDataAtualizacao(LocalDateTime.now());
 
         Promocao savedPromocao = promocaoRepository.save(promocao);
+        log.info("Promoção desativada com sucesso");
+        
         return promocaoMapper.toResponseDTO(savedPromocao);
     }
 
+    /**
+     * Deleta uma promoção
+     */
     public void deletarPromocao(UUID id) {
+        log.info("Deletando promoção ID: {}", id);
+        
         Promocao promocao = promocaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Promoção não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Promoção não encontrada com ID: " + id));
 
         // Só permitir deletar se a promoção não estiver ativa
         if (promocao.getAtiva()) {
-            throw new RuntimeException("Não é possível deletar promoção ativa. Desative-a primeiro.");
+            throw new BusinessException("Não é possível deletar promoção ativa. Desative-a primeiro.");
         }
 
         promocaoRepository.delete(promocao);
+        log.info("Promoção deletada com sucesso");
     }
 
+    /**
+     * Verifica e atualiza promoções expiradas (job agendado)
+     */
     public void verificarEAtualizarPromocoesExpiradas() {
-        LocalDateTime agora = LocalDateTime.now();
-        List<Promocao> promocoesExpiradas = promocaoRepository.findByAtivaTrue()
-                .stream()
-                .filter(p -> p.getDataFim().isBefore(agora))
-                .toList();
-
-        promocoesExpiradas.forEach(promocao -> {
-            promocao.setAtiva(false);
-            promocao.setDataAtualizacao(agora);
-        });
-
-        promocaoRepository.saveAll(promocoesExpiradas);
+        log.info("Verificando promoções expiradas");
+        
+        OffsetDateTime agora = OffsetDateTime.now();
+        int quantidadeDesativadas = promocaoRepository.desativarPromocoesExpiradas(agora);
+        
+        if (quantidadeDesativadas > 0) {
+            log.info("{} promoções expiradas foram desativadas", quantidadeDesativadas);
+        } else {
+            log.info("Nenhuma promoção expirada encontrada");
+        }
     }
 }

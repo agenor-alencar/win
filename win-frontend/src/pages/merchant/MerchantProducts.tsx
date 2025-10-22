@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,8 +36,44 @@ import {
   Upload,
   DollarSign,
   Hash,
+  RefreshCw,
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
+import { MerchantLayout } from "@/components/MerchantLayout";
+import { api } from "@/lib/Api";
+
+// TypeScript interfaces
+interface Product {
+  id: string;
+  nome: string;
+  descricao: string;
+  preco: number;
+  estoque: number;
+  ativo: boolean;
+  categoria: {
+    id: string;
+    nome: string;
+  };
+  lojista: {
+    id: string;
+    nomeFantasia: string;
+  };
+  imagens: Array<{
+    id: string;
+    url: string;
+    principal: boolean;
+  }>;
+}
+
+interface Lojista {
+  id: string;
+  nomeFantasia: string;
+}
+
+interface Category {
+  id: string;
+  nome: string;
+}
 
 // Mock data
 const products = [
@@ -86,12 +122,94 @@ const categories = [
 ];
 
 export default function MerchantProducts() {
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [lojista, setLojista] = useState<Lojista | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [showAddProduct, setShowAddProduct] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const { success, error: notifyError } = useNotification();
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      
+      // 1. Buscar lojista logado
+      const lojistaResponse = await api.get("/api/v1/lojistas/me");
+      const lojistaData: Lojista = lojistaResponse.data;
+      setLojista(lojistaData);
+
+      // 2. Buscar produtos do lojista
+      const productsResponse = await api.get(
+        `/api/v1/produtos/lojista/${lojistaData.id}`
+      );
+      setProducts(productsResponse.data);
+    } catch (err: any) {
+      console.error("Erro ao buscar produtos:", err);
+      notifyError(
+        "Erro ao carregar produtos",
+        err.response?.data?.message || "Não foi possível carregar os produtos"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get("/api/v1/categorias");
+      setCategories(response.data);
+    } catch (err: any) {
+      console.error("Erro ao buscar categorias:", err);
+    }
+  };
+
+  const handleToggleStatus = async (productId: string, currentStatus: boolean) => {
+    try {
+      const endpoint = currentStatus 
+        ? `/api/v1/produtos/${productId}/desativar`
+        : `/api/v1/produtos/${productId}/ativar`;
+      
+      await api.patch(endpoint);
+      success(
+        "Status atualizado!",
+        `Produto ${currentStatus ? "desativado" : "ativado"} com sucesso`
+      );
+      
+      // Recarregar produtos
+      await fetchProducts();
+    } catch (err: any) {
+      console.error("Erro ao alterar status:", err);
+      notifyError(
+        "Erro ao alterar status",
+        err.response?.data?.message || "Não foi possível alterar o status do produto"
+      );
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+
+    try {
+      await api.delete(`/api/v1/produtos/${productId}`);
+      success("Produto excluído!", "O produto foi removido com sucesso");
+      await fetchProducts();
+    } catch (err: any) {
+      console.error("Erro ao excluir produto:", err);
+      notifyError(
+        "Erro ao excluir",
+        err.response?.data?.message || "Não foi possível excluir o produto"
+      );
+    }
+  };
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -127,13 +245,15 @@ export default function MerchantProducts() {
   };
 
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name
+    const matchesSearch = product.nome
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
-      filterCategory === "all" || product.category === filterCategory;
+      filterCategory === "all" || product.categoria.id === filterCategory;
     const matchesStatus =
-      filterStatus === "all" || product.status === filterStatus;
+      filterStatus === "all" ||
+      (filterStatus === "active" && product.ativo) ||
+      (filterStatus === "inactive" && !product.ativo);
 
     return matchesSearch && matchesCategory && matchesStatus;
   });
@@ -146,33 +266,29 @@ export default function MerchantProducts() {
     return { label: "Em estoque", color: "#10B981", bg: "#F0FDF4" };
   };
 
+  if (loading) {
+    return (
+      <MerchantLayout>
+        <div className="flex items-center justify-center py-20">
+          <RefreshCw className="h-12 w-12 animate-spin text-[#3DBEAB] mr-3" />
+          <p className="text-lg text-gray-600">Carregando produtos...</p>
+        </div>
+      </MerchantLayout>
+    );
+  }
+
   return (
-    <div
-      style={{
-        backgroundColor: "#FFFFFF",
-        minHeight: "100vh",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
-      {/* Header */}
-      <header
-        className="border-b px-6 py-4"
-        style={{ backgroundColor: "#FFFFFF", borderColor: "#E5E7EB" }}
-      >
+    <MerchantLayout>
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Package className="h-8 w-8 mr-3" style={{ color: "#3DBEAB" }} />
+          <div className="flex items-center gap-3">
+            <Package className="h-6 w-6 text-[#3DBEAB]" />
             <div>
-              <h1
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  color: "#333333",
-                }}
-              >
+              <h1 className="text-2xl font-bold text-gray-900">
                 Gestão de Produtos
               </h1>
-              <p style={{ fontSize: "12px", color: "#666666" }}>
+              <p className="text-sm text-gray-600">
                 Gerencie o catálogo da sua loja
               </p>
             </div>
@@ -181,28 +297,18 @@ export default function MerchantProducts() {
           <div className="flex items-center space-x-4">
             <Button
               onClick={() => setShowAddProduct(true)}
-              className="h-12 text-white font-medium"
-              style={{
-                backgroundColor: "#3DBEAB",
-                borderRadius: "12px",
-                fontSize: "16px",
-              }}
+              className="h-12 text-white font-medium bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] rounded-xl"
             >
               <Plus className="h-5 w-5 mr-2" />
               Novo Produto
             </Button>
           </div>
         </div>
-      </header>
 
-      <div className="p-6">
         {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1">
-            <Search
-              className="absolute left-3 top-3 h-5 w-5"
-              style={{ color: "#666666" }}
-            />
+            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
             <Input
               placeholder="Buscar produtos..."
               value={searchQuery}
@@ -222,8 +328,8 @@ export default function MerchantProducts() {
             <SelectContent>
               <SelectItem value="all">Todas as categorias</SelectItem>
               {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
+                <SelectItem key={category.id} value={category.id}>
+                  {category.nome}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -282,7 +388,7 @@ export default function MerchantProducts() {
                       color: "#333333",
                     }}
                   >
-                    {products.filter((p) => p.status === "active").length}
+                    {products.filter((p) => p.ativo).length}
                   </p>
                 </div>
                 <Eye className="h-8 w-8" style={{ color: "#10B981" }} />
@@ -305,7 +411,7 @@ export default function MerchantProducts() {
                     }}
                   >
                     {
-                      products.filter((p) => p.stock <= 10 && p.stock > 0)
+                      products.filter((p) => p.estoque <= 10 && p.estoque > 0)
                         .length
                     }
                   </p>
@@ -329,7 +435,7 @@ export default function MerchantProducts() {
                       color: "#333333",
                     }}
                   >
-                    {products.filter((p) => p.stock === 0).length}
+                    {products.filter((p) => p.estoque === 0).length}
                   </p>
                 </div>
                 <Package className="h-8 w-8" style={{ color: "#EF4444" }} />
@@ -341,7 +447,10 @@ export default function MerchantProducts() {
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => {
-            const stockStatus = getStockStatus(product.stock);
+            const stockStatus = getStockStatus(product.estoque);
+            const mainImage = product.imagens?.find((img) => img.principal)?.url || 
+                            product.imagens?.[0]?.url || 
+                            'https://placehold.co/400x300?text=Sem+Imagem';
 
             return (
               <Card
@@ -351,8 +460,8 @@ export default function MerchantProducts() {
                 <CardContent className="p-6">
                   <div className="relative mb-4">
                     <img
-                      src={product.image}
-                      alt={product.name}
+                      src={mainImage}
+                      alt={product.nome}
                       className="w-full h-48 object-cover rounded-lg"
                     />
                     <div className="absolute top-3 right-3 flex space-x-2">
@@ -368,13 +477,13 @@ export default function MerchantProducts() {
                       <Badge
                         style={{
                           backgroundColor:
-                            product.status === "active" ? "#F0FDF4" : "#FEF2F2",
+                            product.ativo ? "#F0FDF4" : "#FEF2F2",
                           color:
-                            product.status === "active" ? "#10B981" : "#EF4444",
+                            product.ativo ? "#10B981" : "#EF4444",
                           fontSize: "10px",
                         }}
                       >
-                        {product.status === "active" ? "Ativo" : "Inativo"}
+                        {product.ativo ? "Ativo" : "Inativo"}
                       </Badge>
                     </div>
                   </div>
@@ -389,10 +498,10 @@ export default function MerchantProducts() {
                           lineHeight: "1.4",
                         }}
                       >
-                        {product.name}
+                        {product.nome}
                       </h3>
                       <p style={{ fontSize: "12px", color: "#666666" }}>
-                        SKU: {product.sku} • {product.category}
+                        ID: {product.id} • {product.categoria.nome}
                       </p>
                     </div>
 
@@ -408,7 +517,7 @@ export default function MerchantProducts() {
                             color: "#3DBEAB",
                           }}
                         >
-                          R$ {product.price.toFixed(2).replace(".", ",")}
+                          R$ {product.preco.toFixed(2).replace(".", ",")}
                         </p>
                       </div>
                       <div className="text-right">
@@ -422,7 +531,7 @@ export default function MerchantProducts() {
                             color: stockStatus.color,
                           }}
                         >
-                          {product.stock} un
+                          {product.estoque} un
                         </p>
                       </div>
                     </div>
@@ -442,16 +551,16 @@ export default function MerchantProducts() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => toggleProductStatus(product.id)}
+                        onClick={() => handleToggleStatus(product.id, product.ativo)}
                         style={{
                           borderRadius: "12px",
                           borderColor:
-                            product.status === "active" ? "#F59E0B" : "#10B981",
+                            product.ativo ? "#F59E0B" : "#10B981",
                           color:
-                            product.status === "active" ? "#F59E0B" : "#10B981",
+                            product.ativo ? "#F59E0B" : "#10B981",
                         }}
                       >
-                        {product.status === "active" ? (
+                        {product.ativo ? (
                           <EyeOff className="h-4 w-4" />
                         ) : (
                           <Eye className="h-4 w-4" />
@@ -461,7 +570,7 @@ export default function MerchantProducts() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => deleteProduct(product.id)}
+                        onClick={() => handleDeleteProduct(product.id)}
                         style={{
                           borderRadius: "12px",
                           borderColor: "#EF4444",
@@ -662,8 +771,8 @@ export default function MerchantProducts() {
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -697,49 +806,6 @@ export default function MerchantProducts() {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Mobile Bottom Navigation */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50"
-        style={{ borderColor: "#E5E7EB" }}
-      >
-        <div className="grid grid-cols-4 h-16">
-          <Link
-            to="/merchant/dashboard"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Store className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>
-              Dashboard
-            </span>
-          </Link>
-          <Link
-            to="/merchant/orders"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Package className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Pedidos</span>
-          </Link>
-          <Link
-            to="/merchant/products"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#3DBEAB" }}
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Produtos</span>
-          </Link>
-          <Link
-            to="/merchant/profile"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Settings className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Perfil</span>
-          </Link>
-        </div>
-      </nav>
-    </div>
+    </MerchantLayout>
   );
 }

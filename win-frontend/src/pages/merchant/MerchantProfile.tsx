@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,12 +22,34 @@ import {
   ShoppingBag,
   User,
   FileText,
+  RefreshCw,
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
+import { MerchantLayout } from "@/components/MerchantLayout";
+import { api } from "@/lib/Api";
+
+// TypeScript interfaces
+interface Lojista {
+  id: string;
+  usuarioId: string;
+  usuarioNome: string;
+  usuarioEmail: string;
+  cnpj: string;
+  nomeFantasia: string;
+  razaoSocial: string;
+  descricao: string;
+  telefone: string;
+  ativo: boolean;
+  criadoEm: string;
+  atualizadoEm: string;
+}
 
 export default function MerchantProfile() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [lojista, setLojista] = useState<Lojista | null>(null);
   const [isActive, setIsActive] = useState(true);
-  const { success } = useNotification();
+  const { success, error: showError } = useNotification();
 
   const [notifications, setNotifications] = useState({
     newOrders: true,
@@ -37,16 +59,51 @@ export default function MerchantProfile() {
   });
 
   const [storeInfo, setStoreInfo] = useState({
-    storeName: "Ferragens Silva",
-    legalName: "Silva Comércio de Ferragens Ltda",
-    description:
-      "Loja especializada em ferragens, ferramentas e materiais de construção. Atendemos toda a região metropolitana com produtos de qualidade.",
+    storeName: "",
+    legalName: "",
+    description: "",
     address: "Rua das Flores, 123 - Centro, São Paulo - SP",
-    phone: "(11) 3333-4444",
-    email: "contato@ferragenssilva.com.br",
-    cnpj: "12.345.678/0001-90",
+    phone: "",
+    email: "",
+    cnpj: "",
     cpf: "123.456.789-00",
   });
+
+  // Buscar dados do lojista
+  useEffect(() => {
+    fetchLojistaData();
+  }, []);
+
+  const fetchLojistaData = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/v1/lojistas/me");
+      const data: Lojista = response.data;
+      
+      setLojista(data);
+      setIsActive(data.ativo);
+      
+      // Atualizar formulário com dados reais
+      setStoreInfo({
+        storeName: data.nomeFantasia || "",
+        legalName: data.razaoSocial || "",
+        description: data.descricao || "",
+        address: "Rua das Flores, 123 - Centro, São Paulo - SP", // TODO: Adicionar endereço no backend
+        phone: data.telefone || "",
+        email: data.usuarioEmail || "",
+        cnpj: data.cnpj || "",
+        cpf: "123.456.789-00", // TODO: Adicionar CPF no backend
+      });
+    } catch (err: any) {
+      console.error("Erro ao buscar dados do lojista:", err);
+      showError(
+        "Erro ao carregar perfil",
+        err.response?.data?.message || "Não foi possível carregar os dados da loja"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [workingHours, setWorkingHours] = useState({
     monday: { open: "08:00", close: "18:00", closed: false },
@@ -78,37 +135,49 @@ export default function MerchantProfile() {
     }));
   };
 
-  const handleSave = () => {
-    success("Perfil atualizado!", "Todas as alterações foram salvas");
+  const handleSave = async () => {
+    if (!lojista) return;
+
+    try {
+      setSaving(true);
+
+      const updateData = {
+        cnpj: storeInfo.cnpj,
+        nomeFantasia: storeInfo.storeName,
+        razaoSocial: storeInfo.legalName,
+        descricao: storeInfo.description,
+        telefone: storeInfo.phone,
+      };
+
+      await api.put(`/api/v1/lojistas/${lojista.id}`, updateData);
+      
+      success("Perfil atualizado!", "Todas as alterações foram salvas com sucesso");
+      
+      // Recarregar dados atualizados
+      await fetchLojistaData();
+    } catch (err: any) {
+      console.error("Erro ao atualizar perfil:", err);
+      showError(
+        "Erro ao salvar",
+        err.response?.data?.message || "Não foi possível salvar as alterações"
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: "#FFFFFF",
-        minHeight: "100vh",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
-      {/* Header */}
-      <header
-        className="border-b px-6 py-4"
-        style={{ backgroundColor: "#FFFFFF", borderColor: "#E5E7EB" }}
-      >
+    <MerchantLayout>
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Store className="h-8 w-8 mr-3" style={{ color: "#3DBEAB" }} />
+          <div className="flex items-center gap-3">
+            <Store className="h-6 w-6 text-[#3DBEAB]" />
             <div>
-              <h1
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  color: "#333333",
-                }}
-              >
+              <h1 className="text-2xl font-bold text-gray-900">
                 Perfil da Loja
               </h1>
-              <p style={{ fontSize: "12px", color: "#666666" }}>
+              <p className="text-sm text-gray-600">
                 Configure as informações da sua loja
               </p>
             </div>
@@ -116,21 +185,33 @@ export default function MerchantProfile() {
 
           <Button
             onClick={handleSave}
-            className="h-12 text-white font-medium"
-            style={{
-              backgroundColor: "#3DBEAB",
-              borderRadius: "12px",
-              fontSize: "16px",
-            }}
+            disabled={saving || loading}
+            className="h-12 text-white font-medium bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] rounded-xl"
           >
-            <Save className="h-5 w-5 mr-2" />
-            Salvar Alterações
+            {saving ? (
+              <>
+                <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="h-5 w-5 mr-2" />
+                Salvar Alterações
+              </>
+            )}
           </Button>
         </div>
-      </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="space-y-8">
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <RefreshCw className="h-12 w-12 animate-spin text-[#3DBEAB] mx-auto mb-4" />
+              <p className="text-gray-600">Carregando dados da loja...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-4xl mx-auto space-y-8">
           {/* Store Banner and Basic Info */}
           <Card style={{ borderRadius: "12px", border: "1px solid #E5E7EB" }}>
             <CardHeader className="pb-4">
@@ -636,51 +717,9 @@ export default function MerchantProfile() {
               </Button>
             </CardContent>
           </Card>
-        </div>
+          </div>
+        )}
       </div>
-
-      {/* Mobile Bottom Navigation */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50"
-        style={{ borderColor: "#E5E7EB" }}
-      >
-        <div className="grid grid-cols-4 h-16">
-          <Link
-            to="/merchant/dashboard"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Store className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>
-              Dashboard
-            </span>
-          </Link>
-          <Link
-            to="/merchant/orders"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <Package className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Pedidos</span>
-          </Link>
-          <Link
-            to="/merchant/products"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#666666" }}
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Produtos</span>
-          </Link>
-          <Link
-            to="/merchant/profile"
-            className="flex flex-col items-center justify-center"
-            style={{ color: "#3DBEAB" }}
-          >
-            <Settings className="h-5 w-5" />
-            <span style={{ fontSize: "10px", marginTop: "2px" }}>Perfil</span>
-          </Link>
-        </div>
-      </nav>
-    </div>
+    </MerchantLayout>
   );
 }
