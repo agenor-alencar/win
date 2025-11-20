@@ -39,7 +39,7 @@ const PaymentSuccess: React.FC = () => {
     // Opcional: Notificar o backend sobre o pagamento aprovado
     if (params.payment_id && params.external_reference) {
       api
-        .patch(`/api/v1/pagamentos/${params.payment_id}/aprovar`)
+        .patch(`/v1/pagamentos/${params.payment_id}/aprovar`)
         .catch((err) => console.error("Erro ao atualizar pagamento:", err));
     }
   }, [searchParams]);

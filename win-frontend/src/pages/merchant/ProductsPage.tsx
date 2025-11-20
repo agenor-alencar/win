@@ -72,7 +72,7 @@ export default function ProductsPage() {
       try {
         console.log("Buscando lojista para:", user.email);
         // Busca o lojista logado diretamente
-        const lojistaResponse = await api.get(`/api/v1/lojistas/me`);
+        const lojistaResponse = await api.get(`/v1/lojistas/me`);
         console.log("Lojista encontrado:", lojistaResponse.data);
         setLojistaId(lojistaResponse.data.id);
       } catch (error: any) {
@@ -100,7 +100,7 @@ export default function ProductsPage() {
       setIsLoading(true);
       try {
         console.log("Carregando produtos do lojista:", lojistaId);
-        const response = await api.get(`/api/v1/produtos/lojista/${lojistaId}`);
+        const response = await api.get(`/v1/produtos/lojista/${lojistaId}`);
         console.log("Produtos carregados:", response.data);
         setProdutos(response.data);
         setFilteredProdutos(response.data);
@@ -177,7 +177,7 @@ export default function ProductsPage() {
     }
 
     try {
-      await api.delete(`/api/v1/produtos/${produtoId}`);
+      await api.delete(`/v1/produtos/${produtoId}`);
       
       // Remover da lista local
       setProdutos(produtos.filter(p => p.id !== produtoId));

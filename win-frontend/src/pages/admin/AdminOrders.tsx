@@ -102,7 +102,7 @@ const AdminOrders: React.FC = () => {
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      await api.put(`/api/v1/pedidos/${orderId}/status`, { status: newStatus });
+      await api.put(`/v1/pedidos/${orderId}/status`, { status: newStatus });
       showNotification("Status do pedido atualizado com sucesso", "success");
       loadOrders();
     } catch (error: any) {

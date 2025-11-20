@@ -89,7 +89,7 @@ const AdminProducts: React.FC = () => {
     }
 
     try {
-      await api.delete(`/api/v1/produtos/${product.id}`);
+      await api.delete(`/v1/produtos/${product.id}`);
       showNotification("Produto excluído com sucesso", "success");
       loadProducts();
     } catch (error: any) {

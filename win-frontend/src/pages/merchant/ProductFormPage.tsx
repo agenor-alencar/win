@@ -75,7 +75,7 @@ export default function ProductFormPage() {
       try {
         console.log("Buscando lojista para:", user.email);
         // Busca o lojista logado diretamente
-        const lojistaResponse = await api.get(`/api/v1/lojistas/me`);
+        const lojistaResponse = await api.get(`/v1/lojistas/me`);
         console.log("Lojista encontrado:", lojistaResponse.data);
         setLojistaId(lojistaResponse.data.id);
       } catch (error: any) {
@@ -127,7 +127,7 @@ export default function ProductFormPage() {
     const fetchProduto = async () => {
       setIsLoading(true);
       try {
-        const response = await api.get(`/api/v1/produtos/${id}`);
+        const response = await api.get(`/v1/produtos/${id}`);
         const produto = response.data;
         
         console.log("Produto carregado:", produto);
@@ -143,7 +143,7 @@ export default function ProductFormPage() {
 
         // Carregar imagens do produto
         try {
-          const imagensResponse = await api.get(`/api/v1/imagens-produto/produto/${id}`);
+          const imagensResponse = await api.get(`/v1/imagens-produto/produto/${id}`);
           setImagens(imagensResponse.data);
         } catch (error) {
           console.error("Erro ao carregar imagens:", error);
@@ -185,7 +185,7 @@ export default function ProductFormPage() {
         formData.append("arquivo", selectedFiles[i]);
         formData.append("ordemExibicao", (imagens.length + i + 1).toString());
 
-        await api.post(`/api/v1/imagens-produto/produto/${produtoId}`, formData, {
+        await api.post(`/v1/imagens-produto/produto/${produtoId}`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -200,7 +200,7 @@ export default function ProductFormPage() {
       setSelectedFiles([]);
       
       // Recarregar imagens
-      const imagensResponse = await api.get(`/api/v1/imagens-produto/produto/${produtoId}`);
+      const imagensResponse = await api.get(`/v1/imagens-produto/produto/${produtoId}`);
       setImagens(imagensResponse.data);
     } catch (error: any) {
       console.error("Erro ao enviar imagens:", error);
@@ -216,7 +216,7 @@ export default function ProductFormPage() {
 
   const deleteImage = async (imagemId: string) => {
     try {
-      await api.delete(`/api/v1/imagens-produto/${imagemId}`);
+      await api.delete(`/v1/imagens-produto/${imagemId}`);
       setImagens(prev => prev.filter(img => img.id !== imagemId));
       toast({
         title: "Imagem removida",
@@ -290,7 +290,7 @@ export default function ProductFormPage() {
 
       if (isEditing) {
         // Atualizar produto existente
-        await api.put(`/api/v1/produtos/${id}`, payload);
+        await api.put(`/v1/produtos/${id}`, payload);
         
         toast({
           title: "✅ Produto atualizado!",
@@ -303,7 +303,7 @@ export default function ProductFormPage() {
         // Criar novo produto
         console.log("Criando produto para lojista:", lojistaId);
         console.log("Payload:", payload);
-        const response = await api.post(`/api/v1/produtos/lojista/${lojistaId}`, payload);
+        const response = await api.post(`/v1/produtos/lojista/${lojistaId}`, payload);
         console.log("Produto criado:", response.data);
         const produtoId = response.data.id;
         

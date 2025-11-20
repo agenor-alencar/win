@@ -175,7 +175,7 @@ const Checkout: React.FC = () => {
       if (paymentMethod === "pix") {
         // Criar preferência de pagamento PIX
         const pixResponse = await api.post(
-          `/api/v1/pagamentos/mercadopago/pix/${pedido.id}`,
+          `/v1/pagamentos/mercadopago/pix/${pedido.id}`,
           {
             cpf: pixData.cpf.replace(/\D/g, ""),
             email: pixData.email,

@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { createServer } from "./server";
 
-// Define the API base URL (backend direct URL without /api prefix)
+// Define the API base URL (backend direct URL)
 const API_BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:8080'; // Backend URL
 
 // https://vitejs.dev/config/
@@ -12,10 +12,10 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: Number(process.env.FRONTEND_PORT) || 3000,
     proxy: {
-      '/api': {
+      '/v1': {
         target: API_BASE_URL,
         changeOrigin: true,
-        rewrite: (path) => path, // Keep the /api prefix in the request to backend
+        rewrite: (path) => `/api${path}`, // Adiciona /api antes de encaminhar para o backend
       },
     },
   },

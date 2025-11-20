@@ -67,7 +67,7 @@ export default function MerchantReviews() {
     try {
       setLoading(true);
       const response = await api.get(
-        `/api/v1/avaliacoes-produtos/lojista/${lojistaId}`,
+        `/v1/avaliacoes-produtos/lojista/${lojistaId}`,
         {
           params: {
             page: 0,

@@ -137,12 +137,12 @@ export default function MerchantFinancial() {
       if (selectedPeriod === "30d") {
         // Últimos 30 dias
         reportResponse = await api.get(
-          `/api/v1/relatorios-financeiros/lojista/${lojistaData.id}/ultimos-30-dias`
+          `/v1/relatorios-financeiros/lojista/${lojistaData.id}/ultimos-30-dias`
         );
       } else if (selectedPeriod === "custom" && customDateRange.start && customDateRange.end) {
         // Período customizado
         reportResponse = await api.get(
-          `/api/v1/relatorios-financeiros/lojista/${lojistaData.id}`,
+          `/v1/relatorios-financeiros/lojista/${lojistaData.id}`,
           {
             params: {
               dataInicio: customDateRange.start,
@@ -153,7 +153,7 @@ export default function MerchantFinancial() {
       } else {
         // Mês atual (padrão)
         reportResponse = await api.get(
-          `/api/v1/relatorios-financeiros/lojista/${lojistaData.id}/mes-atual`
+          `/v1/relatorios-financeiros/lojista/${lojistaData.id}/mes-atual`
         );
       }
 

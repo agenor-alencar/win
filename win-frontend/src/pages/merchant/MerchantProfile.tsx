@@ -187,7 +187,7 @@ const MerchantProfile: React.FC = () => {
     try {
       setSaving(true);
       
-      await api.put(`/api/v1/lojistas/${lojista.id}`, {
+      await api.put(`/v1/lojistas/${lojista.id}`, {
         usuarioId: lojista.usuarioId,
         cnpj: profileData.cnpj,
         nomeFantasia: profileData.storeName,

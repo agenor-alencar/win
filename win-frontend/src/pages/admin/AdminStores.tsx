@@ -90,8 +90,8 @@ const AdminStores: React.FC = () => {
   const handleToggleStoreStatus = async (store: any) => {
     try {
       const endpoint = store.ativo
-        ? `/api/v1/lojistas/${store.id}/desativar`
-        : `/api/v1/lojistas/${store.id}/ativar`;
+        ? `/v1/lojistas/${store.id}/desativar`
+        : `/v1/lojistas/${store.id}/ativar`;
 
       await api.patch(endpoint);
       showNotification(

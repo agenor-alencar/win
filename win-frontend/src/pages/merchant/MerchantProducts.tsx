@@ -149,7 +149,7 @@ export default function MerchantProducts() {
 
       // 2. Buscar produtos do lojista
       const productsResponse = await api.get(
-        `/api/v1/produtos/lojista/${lojistaData.id}`
+        `/v1/produtos/lojista/${lojistaData.id}`
       );
       setProducts(productsResponse.data);
     } catch (err: any) {
@@ -175,8 +175,8 @@ export default function MerchantProducts() {
   const handleToggleStatus = async (productId: string, currentStatus: boolean) => {
     try {
       const endpoint = currentStatus 
-        ? `/api/v1/produtos/${productId}/desativar`
-        : `/api/v1/produtos/${productId}/ativar`;
+        ? `/v1/produtos/${productId}/desativar`
+        : `/v1/produtos/${productId}/ativar`;
       
       await api.patch(endpoint);
       success(
@@ -199,7 +199,7 @@ export default function MerchantProducts() {
     if (!confirm("Tem certeza que deseja excluir este produto?")) return;
 
     try {
-      await api.delete(`/api/v1/produtos/${productId}`);
+      await api.delete(`/v1/produtos/${productId}`);
       success("Produto excluído!", "O produto foi removido com sucesso");
       await fetchProducts();
     } catch (err: any) {
@@ -282,7 +282,7 @@ export default function MerchantProducts() {
         ativo: editingProduct.ativo,
       };
 
-      await api.put(`/api/v1/produtos/${editingProduct.id}`, productData);
+      await api.put(`/v1/produtos/${editingProduct.id}`, productData);
       
       success("Produto atualizado!", "Alterações salvas com sucesso");
       setEditingProduct(null);
@@ -299,7 +299,7 @@ export default function MerchantProducts() {
   // Função para atualizar estoque
   const handleUpdateStock = async (productId: string, newQuantity: number) => {
     try {
-      await api.patch(`/api/v1/produtos/${productId}/estoque`, {
+      await api.patch(`/v1/produtos/${productId}/estoque`, {
         quantidadeEstoque: newQuantity,
       });
       

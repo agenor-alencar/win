@@ -175,7 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Backend login endpoint is POST /api/v1/auth/login and currently returns the user object.
       // The frontend previously attempted to call /auth/login/${role} and expected a token.
       // Call the canonical endpoint and normalize the response in handleAuthSuccess.
-      const response = await api.post(`/api/v1/auth/login`, { email, senha });
+      const response = await api.post(`/v1/auth/login`, { email, senha });
       handleAuthSuccess(response.data);
       return true;
     } catch (error: any) {

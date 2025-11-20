@@ -112,7 +112,7 @@ export default function MerchantOrders() {
 
       // 2. Buscar pedidos do lojista usando o novo endpoint otimizado
       const { data: ordersData } = await api.get<Order[]>(
-        `/api/v1/pedidos/lojista/${lojistaData.id}`
+        `/v1/pedidos/lojista/${lojistaData.id}`
       );
       
       setOrders(ordersData);
@@ -141,7 +141,7 @@ export default function MerchantOrders() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      await api.patch(`/api/v1/pedidos/${orderId}/status`, { status: newStatus });
+      await api.patch(`/v1/pedidos/${orderId}/status`, { status: newStatus });
       success("Status atualizado!", `Pedido atualizado para: ${getStatusLabel(newStatus)}`);
       await fetchOrders();
     } catch (error: any) {
@@ -151,7 +151,7 @@ export default function MerchantOrders() {
 
   const confirmOrder = async (orderId: string) => {
     try {
-      await api.patch(`/api/v1/pedidos/${orderId}/confirmar`);
+      await api.patch(`/v1/pedidos/${orderId}/confirmar`);
       success("Pedido confirmado!", "Pedido foi confirmado com sucesso");
       await fetchOrders();
     } catch (error: any) {
@@ -161,7 +161,7 @@ export default function MerchantOrders() {
 
   const startPreparingOrder = async (orderId: string) => {
     try {
-      await api.patch(`/api/v1/pedidos/${orderId}/preparando`);
+      await api.patch(`/v1/pedidos/${orderId}/preparando`);
       success("Preparação iniciada!", "Pedido está sendo preparado");
       await fetchOrders();
     } catch (error: any) {
@@ -171,7 +171,7 @@ export default function MerchantOrders() {
 
   const markAsReady = async (orderId: string) => {
     try {
-      await api.patch(`/api/v1/pedidos/${orderId}/pronto`);
+      await api.patch(`/v1/pedidos/${orderId}/pronto`);
       success("Pedido pronto!", "Pedido está pronto para retirada");
       await fetchOrders();
     } catch (error: any) {
@@ -183,7 +183,7 @@ export default function MerchantOrders() {
     if (!confirm("Tem certeza que deseja cancelar este pedido?")) return;
     
     try {
-      await api.patch(`/api/v1/pedidos/${orderId}/cancelar`);
+      await api.patch(`/v1/pedidos/${orderId}/cancelar`);
       success("Pedido cancelado!", "O pedido foi cancelado");
       await fetchOrders();
     } catch (error: any) {
@@ -198,7 +198,7 @@ export default function MerchantOrders() {
     }
 
     try {
-      await api.patch(`/api/v1/pedidos/${orderId}/entregar`, { codigoEntrega: code });
+      await api.patch(`/v1/pedidos/${orderId}/entregar`, { codigoEntrega: code });
       success("Retirada confirmada!", "Pedido em rota de entrega");
       setDriverCode("");
       await fetchOrders();

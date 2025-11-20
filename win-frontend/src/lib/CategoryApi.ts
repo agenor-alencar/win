@@ -1,4 +1,4 @@
-ï»¿import { api } from "./Api";
+import { api } from "./Api";
 
 const API_BASE_URL = "/api/v1";
 
@@ -6,7 +6,7 @@ export interface Category {
   id: string;
   nome: string;
   descricao: string;
-  icone?: string; // Nome do Ã­cone do Lucide React
+  icone?: string; // Nome do ícone do Lucide React
   categoriaPaiId?: string | null;
   criadoEm: string;
   atualizadoEm: string;
@@ -16,7 +16,7 @@ export interface Category {
 export interface CategoryCreateRequest {
   nome: string;
   descricao?: string;
-  icone?: string; // Nome do Ã­cone
+  icone?: string; // Nome do ícone
 }
 
 class CategoryApiService {
@@ -78,7 +78,7 @@ class CategoryApiService {
 
   /**
    * Busca categorias principais com suas subcategorias aninhadas
-   * Ãštil para menus dropdown hierÃ¡rquicos
+   * Útil para menus dropdown hierárquicos
    */
   async getCategoriesWithSubcategories(): Promise<Category[]> {
     const mainCategories = await this.getMainCategories();

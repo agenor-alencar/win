@@ -36,7 +36,7 @@ const OrderSuccess: React.FC = () => {
     const fetchOrder = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`/api/v1/pedidos/${orderId}`, {
+        const response = await fetch(`/v1/pedidos/${orderId}`, {
           headers: {
             ...(token && { Authorization: `Bearer ${token}` }),
           },

@@ -91,8 +91,8 @@ const AdminUsers: React.FC = () => {
   const handleToggleUserStatus = async (user: any) => {
     try {
       const endpoint = user.ativo
-        ? `/api/v1/usuario/desativar/${user.id}`
-        : `/api/v1/usuario/ativar/${user.id}`;
+        ? `/v1/usuario/desativar/${user.id}`
+        : `/v1/usuario/ativar/${user.id}`;
 
       await api.patch(endpoint);
       showNotification(

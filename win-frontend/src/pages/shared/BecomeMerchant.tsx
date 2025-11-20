@@ -298,7 +298,7 @@ export default function BecomeMerchant() {
       await api.post("/api/v1/usuario/tornar-lojista", dataToSend);
 
       // 2. Obter novo token com perfis atualizados (USER + LOJISTA)
-      const refreshResponse = await api.post(`/api/v1/auth/refresh-token?email=${user?.email}`);
+      const refreshResponse = await api.post(`/v1/auth/refresh-token?email=${user?.email}`);
       
       // 3. Mapear dados do backend para o formato do frontend
       if (refreshResponse.data.access_token && refreshResponse.data.usuario) {

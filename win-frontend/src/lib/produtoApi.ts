@@ -59,7 +59,7 @@ export const produtoApi = {
    * Lista produtos com paginação
    */
   listarProdutos: async (page = 0, size = 20): Promise<PageResponse<ProdutoSummary>> => {
-    const response = await api.get(`/api/v1/produtos?page=${page}&size=${size}`);
+    const response = await api.get(`/v1/produtos?page=${page}&size=${size}`);
     return response.data;
   },
 
@@ -67,7 +67,7 @@ export const produtoApi = {
    * Busca produto por ID
    */
   buscarPorId: async (id: string): Promise<Produto> => {
-    const response = await api.get(`/api/v1/produtos/${id}`);
+    const response = await api.get(`/v1/produtos/${id}`);
     return response.data;
   },
 
@@ -75,7 +75,7 @@ export const produtoApi = {
    * Lista produtos de uma categoria
    */
   listarPorCategoria: async (categoriaId: string): Promise<Produto[]> => {
-    const response = await api.get(`/api/v1/produtos/categoria/${categoriaId}`);
+    const response = await api.get(`/v1/produtos/categoria/${categoriaId}`);
     return response.data;
   },
 
@@ -83,7 +83,7 @@ export const produtoApi = {
    * Busca produtos por nome
    */
   buscarPorNome: async (nome: string): Promise<Produto[]> => {
-    const response = await api.get(`/api/v1/produtos/buscar?nome=${encodeURIComponent(nome)}`);
+    const response = await api.get(`/v1/produtos/buscar?nome=${encodeURIComponent(nome)}`);
     return response.data;
   },
 
@@ -91,7 +91,7 @@ export const produtoApi = {
    * Lista produtos de um lojista
    */
   listarPorLojista: async (lojistaId: string): Promise<Produto[]> => {
-    const response = await api.get(`/api/v1/produtos/lojista/${lojistaId}`);
+    const response = await api.get(`/v1/produtos/lojista/${lojistaId}`);
     return response.data;
   },
 
@@ -99,7 +99,7 @@ export const produtoApi = {
    * Produtos em destaque (ordenados por avaliação)
    */
   listarDestaques: async (limit = 10): Promise<ProdutoSummary[]> => {
-    const response = await api.get(`/api/v1/produtos?size=${limit}&sort=avaliacaoMedia,desc`);
+    const response = await api.get(`/v1/produtos?size=${limit}&sort=avaliacaoMedia,desc`);
     return response.data.content;
   },
 
@@ -107,7 +107,7 @@ export const produtoApi = {
    * Produtos em promoção
    */
   listarPromocoes: async (limit = 10): Promise<ProdutoSummary[]> => {
-    const response = await api.get(`/api/v1/produtos/promocoes?size=${limit}`);
+    const response = await api.get(`/v1/produtos/promocoes?size=${limit}`);
     return response.data.content || response.data;
   },
 };

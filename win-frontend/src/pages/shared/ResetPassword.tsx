@@ -33,7 +33,7 @@ export default function ResetPassword() {
     // Validar token ao carregar a página
     const validarToken = async () => {
       try {
-        await api.get(`/api/v1/password-reset/validate/${token}`);
+        await api.get(`/v1/password-reset/validate/${token}`);
         setTokenValido(true);
       } catch (err: any) {
         console.error("Token inválido:", err);

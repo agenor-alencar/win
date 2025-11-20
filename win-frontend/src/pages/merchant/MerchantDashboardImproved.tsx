@@ -111,13 +111,13 @@ const MerchantDashboard: React.FC = () => {
 
       // 2. Buscar produtos do lojista
       const { data: productsData } = await api.get<Product[]>(
-        `/api/v1/produtos/lojista/${lojistaData.id}`
+        `/v1/produtos/lojista/${lojistaData.id}`
       );
       setProducts(productsData);
 
       // 3. Buscar pedidos do lojista usando o novo endpoint otimizado
       const { data: ordersData } = await api.get<Order[]>(
-        `/api/v1/pedidos/lojista/${lojistaData.id}`
+        `/v1/pedidos/lojista/${lojistaData.id}`
       );
       
       setOrders(ordersData);
