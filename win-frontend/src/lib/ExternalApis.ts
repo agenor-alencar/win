@@ -5,6 +5,8 @@
  * - ViaCEP: Busca dados de CEP
  */
 
+import { api } from './Api';
+
 // ============= RECEITA WS (CNPJ) =============
 
 export interface ReceitaWSResponse {
@@ -43,35 +45,26 @@ export async function buscarCNPJ(cnpj: string): Promise<ReceitaWSResponse> {
   
   try {
     // Usar nosso backend como proxy para evitar CORS
-    const response = await fetch(
-      `http://localhost:8080/api/v1/external/cnpj/${cnpjNumeros}`,
-      {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      }
+    const response = await api.get<ReceitaWSResponse>(
+      `/v1/external/cnpj/${cnpjNumeros}`
     );
     
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('CNPJ não encontrado na base da Receita Federal');
-      }
-      throw new Error('CNPJ não encontrado ou API indisponível');
-    }
-    
-    const data: ReceitaWSResponse = await response.json();
-    
-    if (data.status === 'ERROR') {
+    if (response.data.status === 'ERROR') {
       throw new Error('CNPJ inválido ou não encontrado');
     }
     
-    return data;
-  } catch (error) {
+    return response.data;
+  } catch (error: any) {
     console.error('Erro ao buscar CNPJ:', error);
+    
+    if (error.response?.status === 404) {
+      throw new Error('CNPJ não encontrado na base da Receita Federal');
+    }
+    
     if (error instanceof Error) {
       throw error;
     }
+    
     throw new Error('Não foi possível buscar os dados do CNPJ. Tente novamente mais tarde.');
   }
 }
@@ -110,35 +103,26 @@ export async function buscarCEP(cep: string): Promise<ViaCEPResponse> {
   
   try {
     // Usar nosso backend como proxy para evitar CORS
-    const response = await fetch(
-      `http://localhost:8080/api/v1/external/cep/${cepNumeros}`,
-      {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      }
+    const response = await api.get<ViaCEPResponse>(
+      `/v1/external/cep/${cepNumeros}`
     );
     
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('CEP não encontrado');
-      }
-      throw new Error('CEP não encontrado ou API indisponível');
-    }
-    
-    const data: ViaCEPResponse = await response.json();
-    
-    if (data.erro) {
+    if (response.data.erro) {
       throw new Error('CEP não encontrado');
     }
     
-    return data;
-  } catch (error) {
+    return response.data;
+  } catch (error: any) {
     console.error('Erro ao buscar CEP:', error);
+    
+    if (error.response?.status === 404) {
+      throw new Error('CEP não encontrado');
+    }
+    
     if (error instanceof Error) {
       throw error;
     }
+    
     throw new Error('Não foi possível buscar os dados do CEP. Verifique e tente novamente.');
   }
 }
