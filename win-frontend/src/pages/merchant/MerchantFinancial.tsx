@@ -127,7 +127,7 @@ export default function MerchantFinancial() {
       setLoading(true);
 
       // 1. Buscar lojista logado
-      const lojistaResponse = await api.get("/api/v1/lojistas/me");
+      const lojistaResponse = await api.get("/v1/lojistas/me");
       const lojistaData: Lojista = lojistaResponse.data;
       setLojista(lojistaData);
 

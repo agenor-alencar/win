@@ -50,7 +50,7 @@ const AdminStores: React.FC = () => {
   const loadStores = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/v1/lojistas");
+      const response = await api.get("/v1/lojistas");
       const lojistasData: Lojista[] = response.data;
 
       // Transformar dados para o formato da tabela

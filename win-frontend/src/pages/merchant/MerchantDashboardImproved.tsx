@@ -106,7 +106,7 @@ const MerchantDashboard: React.FC = () => {
       setLoading(true);
 
       // 1. Buscar dados do lojista logado
-      const { data: lojistaData } = await api.get<Lojista>("/api/v1/lojistas/me");
+      const { data: lojistaData } = await api.get<Lojista>("/v1/lojistas/me");
       setLojista(lojistaData);
 
       // 2. Buscar produtos do lojista

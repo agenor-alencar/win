@@ -143,7 +143,7 @@ export default function MerchantProducts() {
       setLoading(true);
       
       // 1. Buscar lojista logado
-      const lojistaResponse = await api.get("/api/v1/lojistas/me");
+      const lojistaResponse = await api.get("/v1/lojistas/me");
       const lojistaData: Lojista = lojistaResponse.data;
       setLojista(lojistaData);
 
@@ -165,7 +165,7 @@ export default function MerchantProducts() {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get("/api/v1/categorias");
+      const response = await api.get("/v1/categorias");
       setCategories(response.data);
     } catch (err: any) {
       console.error("Erro ao buscar categorias:", err);
@@ -241,7 +241,7 @@ export default function MerchantProducts() {
         sku: newProduct.sku || undefined,
       };
 
-      await api.post("/api/v1/produtos", productData);
+      await api.post("/v1/produtos", productData);
       
       success("Produto adicionado!", "Produto criado com sucesso");
       setShowAddProduct(false);

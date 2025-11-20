@@ -45,7 +45,7 @@ const AdminUsers: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/v1/usuario/list/all");
+      const response = await api.get("/v1/usuario/list/all");
       const usuariosData: Usuario[] = response.data;
 
       // Transformar dados para o formato da tabela

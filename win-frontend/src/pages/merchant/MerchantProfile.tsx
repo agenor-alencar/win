@@ -144,7 +144,7 @@ const MerchantProfile: React.FC = () => {
   const fetchLojistaData = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/v1/lojistas/me");
+      const response = await api.get("/v1/lojistas/me");
       const data: Lojista = response.data;
 
       setLojista(data);

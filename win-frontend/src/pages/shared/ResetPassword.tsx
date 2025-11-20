@@ -85,7 +85,7 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
-      await api.post("/api/v1/password-reset/confirm", {
+      await api.post("/v1/password-reset/confirm", {
         token,
         novaSenha,
       });

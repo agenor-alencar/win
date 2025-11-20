@@ -41,7 +41,7 @@ export default function MerchantReviews() {
   useEffect(() => {
     const fetchLojistaId = async () => {
       try {
-        const response = await api.get("/api/v1/lojistas/me");
+        const response = await api.get("/v1/lojistas/me");
         setLojistaId(response.data.id);
       } catch (error) {
         console.error("Erro ao buscar dados do lojista:", error);

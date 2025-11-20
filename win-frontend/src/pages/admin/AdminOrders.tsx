@@ -46,7 +46,7 @@ const AdminOrders: React.FC = () => {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/v1/pedidos/listar");
+      const response = await api.get("/v1/pedidos/listar");
       const pedidosData: Pedido[] = response.data;
 
       const formattedOrders = pedidosData.map((pedido) => ({

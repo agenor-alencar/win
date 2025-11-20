@@ -295,7 +295,7 @@ export default function BecomeMerchant() {
       };
 
       // 1. Cadastrar como lojista
-      await api.post("/api/v1/usuario/tornar-lojista", dataToSend);
+      await api.post("/v1/usuario/tornar-lojista", dataToSend);
 
       // 2. Obter novo token com perfis atualizados (USER + LOJISTA)
       const refreshResponse = await api.post(`/v1/auth/refresh-token?email=${user?.email}`);

@@ -39,11 +39,11 @@ const AdminDashboard: React.FC = () => {
       setLoading(true);
       
       // Buscar usuários
-      const usersResponse = await api.get("/api/v1/usuario/list/all");
+      const usersResponse = await api.get("/v1/usuario/list/all");
       const totalUsers = usersResponse.data.length;
 
       // Buscar lojistas
-      const storesResponse = await api.get("/api/v1/lojistas");
+      const storesResponse = await api.get("/v1/lojistas");
       const totalStores = storesResponse.data.length;
       
       // Pegar as 4 lojas mais recentes

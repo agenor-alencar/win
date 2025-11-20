@@ -48,7 +48,7 @@ const AdminFinances: React.FC = () => {
     setLoading(true);
     try {
       // Buscar todos os pedidos para calcular estatísticas financeiras
-      const pedidosResponse = await api.get("/api/v1/pedidos");
+      const pedidosResponse = await api.get("/v1/pedidos");
       const pedidos = pedidosResponse.data;
 
       // Calcular receita total (soma de todos os pedidos concluídos)

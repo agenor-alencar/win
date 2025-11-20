@@ -96,7 +96,7 @@ export default function ProductFormPage() {
   useEffect(() => {
     const fetchCategorias = async () => {
       try {
-        const response = await api.get("/api/v1/categoria/list/all");
+        const response = await api.get("/v1/categoria/list/all");
         console.log("Categorias carregadas:", response.data);
         
         // Garantir que seja um array

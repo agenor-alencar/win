@@ -168,7 +168,7 @@ const Checkout: React.FC = () => {
       };
 
       // Criar pedido no backend
-      const pedidoResponse = await api.post("/api/v1/pedidos", pedidoData);
+      const pedidoResponse = await api.post("/v1/pedidos", pedidoData);
       const pedido = pedidoResponse.data;
 
       // Processar pagamento via Mercado Pago
@@ -196,7 +196,7 @@ const Checkout: React.FC = () => {
 
       } else if (paymentMethod === "credit_card") {
         // Criar checkout de cartão
-        const cartaoResponse = await api.post("/api/v1/pagamentos/mercadopago/cartao", null, {
+        const cartaoResponse = await api.post("/v1/pagamentos/mercadopago/cartao", null, {
           params: {
             pedidoId: pedido.id
           }
@@ -227,7 +227,7 @@ const Checkout: React.FC = () => {
           informacoesCartao: null,
         };
 
-        await api.post("/api/v1/pagamentos/processar", pagamentoData);
+        await api.post("/v1/pagamentos/processar", pagamentoData);
 
         success(
           "Pedido criado!",

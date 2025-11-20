@@ -50,7 +50,7 @@ const AdminProducts: React.FC = () => {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/v1/produtos");
+      const response = await api.get("/v1/produtos");
       const produtosData: Produto[] = response.data;
 
       const formattedProducts = produtosData.map((produto) => ({

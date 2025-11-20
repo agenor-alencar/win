@@ -22,7 +22,7 @@ export default function ForgotPassword() {
     setSuccess(false);
 
     try {
-      await api.post("/api/v1/password-reset/request", { email });
+      await api.post("/v1/password-reset/request", { email });
       setSuccess(true);
       setEmail("");
     } catch (err: any) {
