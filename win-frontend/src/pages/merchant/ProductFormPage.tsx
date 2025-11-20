@@ -15,7 +15,7 @@ import {
 import { ArrowLeft, Loader2, Package, Upload, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/lib/Api";
+import { api, getImageUrl } from "@/lib/Api";
 import { MerchantLayout } from "@/components/MerchantLayout";
 
 interface ProductFormData {
@@ -563,9 +563,13 @@ export default function ProductFormPage() {
                       {imagens.map((imagem) => (
                         <div key={imagem.id} className="relative group">
                           <img
-                            src={imagem.url}
+                            src={getImageUrl(imagem.url)}
                             alt={imagem.textoAlternativo || "Imagem do produto"}
                             className="w-full h-32 object-cover rounded-lg"
+                            onError={(e) => {
+                              // Fallback para imagem quebrada
+                              e.currentTarget.src = 'https://via.placeholder.com/150?text=Imagem+Indisponível';
+                            }}
                           />
                           <button
                             type="button"

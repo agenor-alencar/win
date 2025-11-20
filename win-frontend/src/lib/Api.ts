@@ -39,4 +39,25 @@ api.interceptors.request.use(
   }
 );
 
+/**
+ * Constrói a URL completa para uma imagem do produto
+ * @param url - URL relativa retornada pelo backend (ex: /uploads/produtos/xxx.jpg)
+ * @returns URL completa para acessar a imagem
+ */
+export const getImageUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  
+  // Se já é uma URL completa (http:// ou https://), retorna como está
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  // Remove barra inicial se existir
+  const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+  
+  // Constrói URL completa
+  const baseURL = getBaseURL();
+  return `${baseURL}/${cleanUrl}`;
+};
+
 

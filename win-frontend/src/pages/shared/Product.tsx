@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { useCart } from "../../contexts/CartContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { produtoApi, type Produto } from "@/lib/produtoApi";
+import { getImageUrl } from "@/lib/Api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -83,7 +84,7 @@ export default function Product() {
   }
 
   const images = produto.imagensUrls && produto.imagensUrls.length > 0 
-    ? produto.imagensUrls 
+    ? produto.imagensUrls.map(url => getImageUrl(url))
     : ['/placeholder.svg'];
 
   const formatPrice = (value: number) => {
