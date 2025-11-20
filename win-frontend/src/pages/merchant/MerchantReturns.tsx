@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
 import { MerchantLayout } from "@/components/MerchantLayout";
+import { api } from "../../lib/Api";
 
 // Mock data
 const returnRequests = [

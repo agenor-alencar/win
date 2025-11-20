@@ -50,4 +50,10 @@ public interface AvaliacaoProdutoRepository extends JpaRepository<AvaliacaoProdu
      */
     @Query("SELECT AVG(a.nota) FROM AvaliacaoProduto a WHERE a.produto.id = :produtoId")
     Double calcularMediaAvaliacoes(@Param("produtoId") UUID produtoId);
+
+    /**
+     * Busca avaliações dos produtos de um lojista específico
+     */
+    @Query("SELECT a FROM AvaliacaoProduto a WHERE a.produto.lojista.id = :lojistaId ORDER BY a.criadoEm DESC")
+    Page<AvaliacaoProduto> findByProdutoLojistaId(@Param("lojistaId") UUID lojistaId, Pageable pageable);
 }

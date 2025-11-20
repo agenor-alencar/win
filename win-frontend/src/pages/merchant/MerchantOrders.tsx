@@ -47,7 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 interface Order {
   id: string;
   numeroPedido: string;
-  usuario: {
+  usuario?: {
     id: string;
     nome: string;
     email: string;
@@ -57,7 +57,7 @@ interface Order {
   desconto: number;
   frete: number;
   total: number;
-  enderecoEntrega: {
+  enderecoEntrega?: {
     logradouro: string;
     numero: string;
     complemento?: string;
@@ -131,9 +131,7 @@ export default function MerchantOrders() {
   const generateDeliveryCode = async (orderId: string) => {
     try {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
-      // TODO: Criar endpoint no backend para salvar o código de entrega
-      // await api.patch(`/api/v1/pedidos/${orderId}/codigo-entrega`, { codigo: code });
-      
+      // TODO: Implementar endpoint no backend para salvar código de entrega
       success("Código gerado!", `Código de retirada: ${code}`);
       console.log(`Generated code ${code} for order ${orderId}`);
     } catch (error: any) {
@@ -141,13 +139,55 @@ export default function MerchantOrders() {
     }
   };
 
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      await api.patch(`/api/v1/pedidos/${orderId}/status`, { status: newStatus });
+      success("Status atualizado!", `Pedido atualizado para: ${getStatusLabel(newStatus)}`);
+      await fetchOrders();
+    } catch (error: any) {
+      notifyError("Erro", error.response?.data?.message || "Não foi possível atualizar o status");
+    }
+  };
+
+  const confirmOrder = async (orderId: string) => {
+    try {
+      await api.patch(`/api/v1/pedidos/${orderId}/confirmar`);
+      success("Pedido confirmado!", "Pedido foi confirmado com sucesso");
+      await fetchOrders();
+    } catch (error: any) {
+      notifyError("Erro", error.response?.data?.message || "Não foi possível confirmar o pedido");
+    }
+  };
+
+  const startPreparingOrder = async (orderId: string) => {
+    try {
+      await api.patch(`/api/v1/pedidos/${orderId}/preparando`);
+      success("Preparação iniciada!", "Pedido está sendo preparado");
+      await fetchOrders();
+    } catch (error: any) {
+      notifyError("Erro", error.response?.data?.message || "Não foi possível iniciar a preparação");
+    }
+  };
+
   const markAsReady = async (orderId: string) => {
     try {
       await api.patch(`/api/v1/pedidos/${orderId}/pronto`);
-      success("Pedido marcado como pronto!", "Aguardando motorista");
-      fetchOrders(); // Recarregar pedidos
+      success("Pedido pronto!", "Pedido está pronto para retirada");
+      await fetchOrders();
     } catch (error: any) {
       notifyError("Erro", error.response?.data?.message || "Não foi possível atualizar o pedido");
+    }
+  };
+
+  const cancelOrder = async (orderId: string) => {
+    if (!confirm("Tem certeza que deseja cancelar este pedido?")) return;
+    
+    try {
+      await api.patch(`/api/v1/pedidos/${orderId}/cancelar`);
+      success("Pedido cancelado!", "O pedido foi cancelado");
+      await fetchOrders();
+    } catch (error: any) {
+      notifyError("Erro", error.response?.data?.message || "Não foi possível cancelar o pedido");
     }
   };
 
@@ -158,10 +198,10 @@ export default function MerchantOrders() {
     }
 
     try {
-      await api.patch(`/api/v1/pedidos/${orderId}/entregar?codigoEntrega=${code}`);
+      await api.patch(`/api/v1/pedidos/${orderId}/entregar`, { codigoEntrega: code });
       success("Retirada confirmada!", "Pedido em rota de entrega");
       setDriverCode("");
-      fetchOrders(); // Recarregar pedidos
+      await fetchOrders();
     } catch (error: any) {
       notifyError("Erro", error.response?.data?.message || "Código de entrega inválido");
     }
@@ -178,7 +218,7 @@ export default function MerchantOrders() {
 
     const matchesSearch =
       order.numeroPedido.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.usuario.nome.toLowerCase().includes(searchQuery.toLowerCase());
+      (order.usuario?.nome || "").toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesTab && matchesSearch;
   });
@@ -458,7 +498,7 @@ export default function MerchantOrders() {
                                     style={{ color: "#666666" }}
                                   />
                                   <span style={{ fontSize: "14px" }}>
-                                    {order.usuario.nome}
+                                    {order.usuario?.nome || "Cliente"}
                                   </span>
                                 </div>
                                 <div className="flex items-center">
@@ -467,7 +507,7 @@ export default function MerchantOrders() {
                                     style={{ color: "#666666" }}
                                   />
                                   <span style={{ fontSize: "14px" }}>
-                                    {order.usuario.email}
+                                    {order.usuario?.email || "N/A"}
                                   </span>
                                 </div>
                                 <div className="flex items-center">
@@ -476,7 +516,9 @@ export default function MerchantOrders() {
                                     style={{ color: "#666666" }}
                                   />
                                   <span style={{ fontSize: "14px" }}>
-                                    {order.enderecoEntrega.logradouro}, {order.enderecoEntrega.numero} - {order.enderecoEntrega.bairro}, {order.enderecoEntrega.cidade}/{order.enderecoEntrega.uf}
+                                    {order.enderecoEntrega 
+                                      ? `${order.enderecoEntrega.logradouro}, ${order.enderecoEntrega.numero} - ${order.enderecoEntrega.bairro}, ${order.enderecoEntrega.cidade}/${order.enderecoEntrega.uf}`
+                                      : "Endereço não informado"}
                                   </span>
                                 </div>
                               </div>
@@ -495,7 +537,7 @@ export default function MerchantOrders() {
                                 Itens do Pedido
                               </h4>
                               <div className="space-y-2">
-                                {order.itens.map((item, index) => (
+                                {order.itens?.map((item, index) => (
                                   <div
                                     key={index}
                                     className="flex justify-between items-center p-3 rounded-lg"
@@ -747,7 +789,7 @@ export default function MerchantOrders() {
                           color: "#333333",
                         }}
                       >
-                        {order.usuario.nome}
+                        {order.usuario?.nome || "Cliente"}
                       </p>
                     </div>
 
@@ -792,7 +834,7 @@ export default function MerchantOrders() {
                           color: "#333333",
                         }}
                       >
-                        {order.itens.length} produto(s)
+                        {order.itens?.length || 0} produto(s)
                       </p>
                     </div>
                   </div>

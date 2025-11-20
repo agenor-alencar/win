@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../components/admin/AdminLayout";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
@@ -10,16 +10,105 @@ import {
   LockOpenIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import { api } from "@/lib/Api";
+import { useNotification } from "@/contexts/NotificationContext";
+
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  cpf: string;
+  ativo: boolean;
+  criadoEm: string;
+  perfis: string[];
+}
 
 const AdminUsers: React.FC = () => {
+  const { showNotification } = useNotification();
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    clientes: 0,
+    lojistas: 0,
+    motoristas: 0,
+    bloqueados: 0,
+  });
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/v1/usuario/list/all");
+      const usuariosData: Usuario[] = response.data;
+
+      // Transformar dados para o formato da tabela
+      const formattedUsers = usuariosData.map((user) => {
+        // Determinar tipo principal do usuário
+        let type = "Cliente";
+        if (user.perfis.includes("ADMIN")) type = "Admin";
+        else if (user.perfis.includes("LOJISTA")) type = "Lojista";
+        else if (user.perfis.includes("MOTORISTA")) type = "Motorista";
+
+        return {
+          id: user.id,
+          name: user.nome,
+          email: user.email,
+          type,
+          status: user.ativo ? "Ativo" : "Bloqueado",
+          createdAt: new Date(user.criadoEm).toLocaleDateString("pt-BR"),
+          lastLogin: "-",
+          phone: user.telefone || "-",
+          cpf: user.cpf || "-",
+          perfis: user.perfis,
+          ativo: user.ativo,
+        };
+      });
+
+      setUsers(formattedUsers);
+
+      // Calcular estatísticas
+      const clientes = formattedUsers.filter((u) => u.type === "Cliente").length;
+      const lojistas = formattedUsers.filter((u) => u.type === "Lojista").length;
+      const motoristas = formattedUsers.filter((u) => u.type === "Motorista").length;
+      const bloqueados = formattedUsers.filter((u) => u.status === "Bloqueado").length;
+
+      setStats({ clientes, lojistas, motoristas, bloqueados });
+    } catch (error: any) {
+      console.error("Erro ao carregar usuários:", error);
+      showNotification("Erro ao carregar usuários", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleUserStatus = async (user: any) => {
+    try {
+      const endpoint = user.ativo
+        ? `/api/v1/usuario/desativar/${user.id}`
+        : `/api/v1/usuario/ativar/${user.id}`;
+
+      await api.patch(endpoint);
+      showNotification(
+        `Usuário ${user.ativo ? "bloqueado" : "desbloqueado"} com sucesso`,
+        "success"
+      );
+      loadUsers();
+    } catch (error: any) {
+      console.error("Erro ao alterar status do usuário:", error);
+      showNotification("Erro ao alterar status do usuário", "error");
+    }
+  };
 
   const handleCreateUser = (userData: any) => {
     console.log("Creating user:", userData);
-    // Here you would typically send the data to your backend
-    // For now, we'll just log it and close the modal
+    // TODO: Implementar criação de usuário
     setShowCreateUserModal(false);
   };
 
@@ -67,65 +156,6 @@ const AdminUsers: React.FC = () => {
     { key: "lastLogin", label: "Último Acesso", sortable: true },
   ];
 
-  const users = [
-    {
-      id: "1001",
-      name: "João Silva",
-      email: "joao@email.com",
-      type: "Cliente",
-      status: "Ativo",
-      createdAt: "15/01/2024",
-      lastLogin: "23/07/2024",
-      phone: "(11) 99999-9999",
-      cpf: "123.456.789-00",
-      addresses: [
-        { street: "Rua das Flores, 123", city: "São Paulo", state: "SP" },
-      ],
-      orders: 45,
-    },
-    {
-      id: "1002",
-      name: "Maria Santos",
-      email: "maria@email.com",
-      type: "Lojista",
-      status: "Ativo",
-      createdAt: "10/02/2024",
-      lastLogin: "24/07/2024",
-      phone: "(11) 88888-8888",
-      cpf: "987.654.321-00",
-      store: "Fashion Plus",
-      cnpj: "12.345.678/0001-90",
-    },
-    {
-      id: "1003",
-      name: "Pedro Costa",
-      email: "pedro@email.com",
-      type: "Motorista",
-      status: "Ativo",
-      createdAt: "05/03/2024",
-      lastLogin: "24/07/2024",
-      phone: "(11) 77777-7777",
-      cpf: "456.789.123-00",
-      vehicle: "Honda CG 160",
-      deliveries: 127,
-    },
-    {
-      id: "1004",
-      name: "Ana Paula",
-      email: "ana@email.com",
-      type: "Cliente",
-      status: "Bloqueado",
-      createdAt: "20/01/2024",
-      lastLogin: "15/07/2024",
-      phone: "(11) 66666-6666",
-      cpf: "789.123.456-00",
-      addresses: [
-        { street: "Av. Paulista, 1000", city: "São Paulo", state: "SP" },
-      ],
-      orders: 12,
-    },
-  ];
-
   const actions: Action[] = [
     {
       label: "Ver Detalhes",
@@ -137,9 +167,7 @@ const AdminUsers: React.FC = () => {
     },
     {
       label: "Bloquear/Desbloquear",
-      onClick: (user) => {
-        console.log("Toggle block user:", user.id);
-      },
+      onClick: handleToggleUserStatus,
       color: "danger",
     },
     {
@@ -165,9 +193,13 @@ const AdminUsers: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <ArrowPathIcon className="w-4 h-4" />
-              <span>Atualizar</span>
+            <button 
+              onClick={loadUsers}
+              disabled={loading}
+              className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>{loading ? 'Atualizando...' : 'Atualizar'}</span>
             </button>
             <button
               onClick={() => setShowCreateUserModal(true)}
@@ -188,7 +220,7 @@ const AdminUsers: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Clientes</p>
-                <p className="text-xl font-semibold text-[#111827]">8,492</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.clientes}</p>
               </div>
             </div>
           </div>
@@ -199,7 +231,7 @@ const AdminUsers: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Lojistas</p>
-                <p className="text-xl font-semibold text-[#111827]">1,429</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.lojistas}</p>
               </div>
             </div>
           </div>
@@ -210,7 +242,7 @@ const AdminUsers: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Motoristas</p>
-                <p className="text-xl font-semibold text-[#111827]">326</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.motoristas}</p>
               </div>
             </div>
           </div>
@@ -221,7 +253,7 @@ const AdminUsers: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Bloqueados</p>
-                <p className="text-xl font-semibold text-[#111827]">23</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.bloqueados}</p>
               </div>
             </div>
           </div>

@@ -9,20 +9,23 @@ import {
   FolderIcon,
   FolderOpenIcon,
 } from "@heroicons/react/24/outline";
-import { categoryApi, Category, CategoryCreateRequest } from "../../lib/CategoryApi";
+import { categoryApi, type Category, type CategoryCreateRequest } from "../../lib/CategoryApi";
 import { useToast } from "../../hooks/use-toast";
+import { CategoryIcon, availableIcons } from "../../lib/categoryIcons";
 
 const AdminCategories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [parentCategoryId, setParentCategoryId] = useState<string | null>(null); // Para criar subcategoria
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState<CategoryCreateRequest>({
     nome: "",
     descricao: "",
+    icone: "",
   });
 
   // Carregar categorias
@@ -49,10 +52,19 @@ const AdminCategories: React.FC = () => {
 
   const handleEdit = (category: Category) => {
     setEditingCategory(category);
+    setParentCategoryId(null);
     setFormData({
       nome: category.nome,
       descricao: category.descricao || "",
+      icone: category.icone || "",
     });
+    setShowModal(true);
+  };
+
+  const handleAddSubcategory = (parentId: string) => {
+    setParentCategoryId(parentId);
+    setEditingCategory(null);
+    setFormData({ nome: "", descricao: "", icone: "" });
     setShowModal(true);
   };
 
@@ -91,12 +103,21 @@ const AdminCategories: React.FC = () => {
     try {
       setIsSubmitting(true);
       if (editingCategory) {
+        // Atualizar categoria existente
         await categoryApi.updateCategory(editingCategory.id, formData);
         toast({
           title: "Sucesso",
           description: "Categoria atualizada com sucesso!",
         });
+      } else if (parentCategoryId) {
+        // Criar subcategoria
+        await categoryApi.createSubCategory(parentCategoryId, formData);
+        toast({
+          title: "Sucesso",
+          description: "Subcategoria criada com sucesso!",
+        });
       } else {
+        // Criar categoria principal
         await categoryApi.createCategory(formData);
         toast({
           title: "Sucesso",
@@ -120,7 +141,8 @@ const AdminCategories: React.FC = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingCategory(null);
-    setFormData({ nome: "", descricao: "" });
+    setParentCategoryId(null);
+    setFormData({ nome: "", descricao: "", icone: "" });
   };
 
   // Organizar categorias em árvore (principais e subcategorias)
@@ -251,7 +273,10 @@ const AdminCategories: React.FC = () => {
                         <tr className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <FolderIcon className="h-5 w-5 text-blue-500 mr-3" />
+                              <CategoryIcon 
+                                iconName={category.icone} 
+                                className="h-5 w-5 text-blue-500 mr-3" 
+                              />
                               <div className="text-sm font-medium text-gray-900">
                                 {category.nome}
                               </div>
@@ -272,6 +297,13 @@ const AdminCategories: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
+                              onClick={() => handleAddSubcategory(category.id)}
+                              className="text-green-600 hover:text-green-900 mr-4"
+                              title="Adicionar Subcategoria"
+                            >
+                              <PlusIcon className="h-5 w-5 inline" />
+                            </button>
+                            <button
                               onClick={() => handleEdit(category)}
                               className="text-blue-600 hover:text-blue-900 mr-4"
                             >
@@ -290,7 +322,10 @@ const AdminCategories: React.FC = () => {
                           <tr key={subCategory.id} className="hover:bg-gray-50 bg-gray-50/50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center pl-8">
-                                <FolderOpenIcon className="h-4 w-4 text-gray-400 mr-2" />
+                                <CategoryIcon 
+                                  iconName={subCategory.icone} 
+                                  className="h-4 w-4 text-gray-400 mr-2" 
+                                />
                                 <div className="text-sm text-gray-700">
                                   {subCategory.nome}
                                 </div>
@@ -339,21 +374,60 @@ const AdminCategories: React.FC = () => {
       <AdminModal
         isOpen={showModal}
         onClose={handleCloseModal}
-        title={editingCategory ? "Editar Categoria" : "Nova Categoria"}
+        title={
+          editingCategory 
+            ? "Editar Categoria" 
+            : parentCategoryId 
+            ? "Nova Subcategoria" 
+            : "Nova Categoria Principal"
+        }
       >
         <div className="space-y-4">
+          {parentCategoryId && !editingCategory && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                📁 <strong>Criando subcategoria de:</strong> {categories.find(c => c.id === parentCategoryId)?.nome}
+              </p>
+            </div>
+          )}
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nome da Categoria *
+              Nome da {parentCategoryId ? "Subcategoria" : "Categoria"} *
             </label>
             <input
               type="text"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Ex: Eletrônicos"
+              placeholder={parentCategoryId ? "Ex: Parafusos" : "Ex: Ferragens"}
               disabled={isSubmitting}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ícone
+            </label>
+            <select
+              value={formData.icone}
+              onChange={(e) => setFormData({ ...formData, icone: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={isSubmitting}
+            >
+              <option value="">Selecione um ícone (opcional)</option>
+              {availableIcons.map((icon) => (
+                <option key={icon.value} value={icon.value}>
+                  {icon.label}
+                </option>
+              ))}
+            </select>
+            {formData.icone && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                <CategoryIcon iconName={formData.icone} className="h-5 w-5" />
+                <span>Pré-visualização do ícone selecionado</span>
+              </div>
+            )}
           </div>
 
           <div>

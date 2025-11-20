@@ -34,8 +34,25 @@ public class FileUploadConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        // Origens permitidas para upload de arquivos
+        String allowedOriginsEnv = System.getenv("ALLOWED_ORIGINS");
+        
+        // Padrão: localhost para desenvolvimento
+        java.util.List<String> allowedOrigins = new java.util.ArrayList<>();
+        allowedOrigins.add("http://localhost:3000");
+        allowedOrigins.add("http://localhost:5173");
+        allowedOrigins.add("http://127.0.0.1:3000");
+        
+        // Adiciona origens da variável de ambiente (VPS/produção)
+        if (allowedOriginsEnv != null && !allowedOriginsEnv.trim().isEmpty()) {
+            String[] origins = allowedOriginsEnv.split(",");
+            for (String origin : origins) {
+                allowedOrigins.add(origin.trim());
+            }
+        }
+        
         registry.addMapping("/uploads/produtos/**")
-                .allowedOrigins("http://localhost:3000", "http://localhost:5173")
+                .allowedOrigins(allowedOrigins.toArray(new String[0]))
                 .allowedMethods("GET");
     }
 }

@@ -6,7 +6,7 @@ import React, {
 } from "react";
 
 export interface CartItem {
-  id: number;
+  id: number | string;
   name: string;
   price: number;
   originalPrice?: number;
@@ -165,10 +165,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch("/api/v1/pedidos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify({
           usuarioId: usuarioId,

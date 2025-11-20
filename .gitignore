@@ -1,1 +1,127 @@
+# ========================================.env
+# WIN Marketplace - .gitignore
+# ========================================
+
+# ========================================
+# 🔐 SEGURANÇA - NUNCA COMMITAR
+# ========================================
 .env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+secrets/
+credentials/
+
+# ========================================
+# 🗄️ BANCO DE DADOS
+# ========================================
+*.sql.backup
+*.dump
+*.db
+*.sqlite
+*.sqlite3
+postgres_data/
+
+# ========================================
+# ☕ JAVA / SPRING BOOT
+# ========================================
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/pom.xml.tag
+backend/pom.xml.releaseBackup
+backend/pom.xml.versionsBackup
+backend/pom.xml.next
+backend/release.properties
+backend/dependency-reduced-pom.xml
+backend/buildNumber.properties
+backend/.mvn/timing.properties
+backend/!**/src/main/**/target/
+backend/!**/src/test/**/target/
+backend/*.log
+backend/logs/
+backend/spring.log
+backend/*.class
+backend/*.jar
+backend/*.war
+backend/*.ear
+backend/hs_err_pid*
+
+# ========================================
+# ⚛️ REACT / NODE.JS
+# ========================================
+win-frontend/node_modules/
+win-frontend/.pnp
+win-frontend/.pnp.js
+win-frontend/coverage/
+win-frontend/build/
+win-frontend/dist/
+win-frontend/.DS_Store
+win-frontend/.env.local
+win-frontend/.env.development.local
+win-frontend/.env.test.local
+win-frontend/.env.production.local
+win-frontend/npm-debug.log*
+win-frontend/yarn-debug.log*
+win-frontend/yarn-error.log*
+win-frontend/pnpm-debug.log*
+win-frontend/.vite
+win-frontend/dist-ssr
+win-frontend/*.local
+
+# ========================================
+# 🐳 DOCKER
+# ========================================
+docker-compose.override.yml
+
+# ========================================
+# 📤 UPLOADS
+# ========================================
+uploads/*
+!uploads/.gitkeep
+temp/
+tmp/
+*.tmp
+
+# ========================================
+# 💻 IDEs
+# ========================================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.settings/
+.classpath
+.project
+.metadata
+bin/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# ========================================
+# 🖥️ OS
+# ========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*~
+
+# ========================================
+# 📝 TEMPORÁRIOS
+# ========================================
+*.log
+*.bak
+*.swp
+*.tmp
+temp_*
+tmp_*
+
+# ========================================
+# ✅ EXCEÇÕES
+# ========================================
+!.gitkeep
+!.env.example

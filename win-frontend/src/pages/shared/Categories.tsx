@@ -152,8 +152,10 @@ export default function Categories() {
   // Filter products by URL category if specified
   const categoryFilteredProducts = useMemo(() => {
     if (!urlCategory || urlCategory === "all") return products;
+    // Converte a URL (ex: "ferragens-gerais") para "ferragens gerais" para comparar
+    const categoryName = urlCategory.replace(/-/g, ' ');
     return products.filter(
-      (product) => product.category.toLowerCase() === urlCategory.toLowerCase(),
+      (product) => product.category.toLowerCase() === categoryName.toLowerCase(),
     );
   }, [urlCategory]);
 
@@ -308,7 +310,9 @@ export default function Categories() {
               </Link>
               <h1 className="text-xl font-bold text-primary">
                 {urlCategory
-                  ? urlCategory.charAt(0).toUpperCase() + urlCategory.slice(1)
+                  ? urlCategory.split('-').map(word => 
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')
                   : "Ferragens"}
               </h1>
             </div>
@@ -318,7 +322,11 @@ export default function Categories() {
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar em ferragens..."
+                  placeholder={`Buscar em ${urlCategory 
+                    ? urlCategory.split('-').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                      ).join(' ')
+                    : 'todas as categorias'}...`}
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10"
@@ -346,7 +354,11 @@ export default function Categories() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar em ferragens..."
+                placeholder={`Buscar em ${urlCategory 
+                  ? urlCategory.split('-').map(word => 
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')
+                  : 'todas as categorias'}...`}
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"

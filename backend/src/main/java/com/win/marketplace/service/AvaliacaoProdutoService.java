@@ -148,4 +148,15 @@ public class AvaliacaoProdutoService {
         
         // Nota: O trigger do banco atualiza automaticamente produto.avaliacao e produto.quantidadeAvaliacoes
     }
+
+    /**
+     * Lista avaliações dos produtos de um lojista
+     */
+    @Transactional(readOnly = true)
+    public Page<AvaliacaoProdutoResponseDTO> listarPorLojista(UUID lojistaId, Pageable pageable) {
+        log.info("Listando avaliações dos produtos do lojista ID: {}", lojistaId);
+        
+        Page<AvaliacaoProduto> avaliacoes = avaliacaoRepository.findByProdutoLojistaId(lojistaId, pageable);
+        return avaliacoes.map(avaliacaoMapper::toResponseDTO);
+    }
 }

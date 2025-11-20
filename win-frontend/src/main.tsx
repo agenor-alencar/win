@@ -30,6 +30,13 @@ import BecomeMerchant from "./pages/shared/BecomeMerchant";
 import TrackOrder from "./pages/shared/TrackOrder";
 import Deals from "./pages/shared/Deals";
 import NewArrivals from "./pages/shared/NewArrivals";
+import Cart from "./pages/shared/Cart";
+import Checkout from "./pages/shared/Checkout";
+import OrderSuccess from "./pages/shared/OrderSuccess";
+import PaymentPix from "./pages/shared/PaymentPix";
+import PaymentSuccess from "./pages/shared/PaymentSuccess";
+import PaymentFailure from "./pages/shared/PaymentFailure";
+import PaymentPending from "./pages/shared/PaymentPending";
 import NotFound from "./pages/shared/NotFound";
 import Unauthorized from "./pages/shared/Unauthorized";
 
@@ -42,6 +49,7 @@ import MerchantProfile from "./pages/merchant/MerchantProfile";
 import MerchantAuth from "./pages/merchant/MerchantAuth";
 import MerchantReturns from "./pages/merchant/MerchantReturns";
 import MerchantFinancial from "./pages/merchant/MerchantFinancial";
+import MerchantReviews from "./pages/merchant/MerchantReviews";
 import MerchantSettings from "./pages/merchant/MerchantSettings";
 
 // Páginas do admin
@@ -87,6 +95,13 @@ const App = () => (
                   <Route path="/track" element={<TrackOrder />} />
                   <Route path="/deals" element={<Deals />} />
                   <Route path="/new-arrivals" element={<NewArrivals />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/pagamento/pix" element={<PaymentPix />} />
+                  <Route path="/payment/success" element={<PaymentSuccess />} />
+                  <Route path="/payment/failure" element={<PaymentFailure />} />
+                  <Route path="/payment/pending" element={<PaymentPending />} />
+                  <Route path="/orders/:orderId" element={<OrderSuccess />} />
 
                   {/* Merchant Routes */}
                   <Route path="/merchant/login" element={<MerchantAuth />} />
@@ -144,6 +159,14 @@ const App = () => (
                     element={
                       <ProtectedRoute requiredRoles={["merchant"]}>
                         <MerchantFinancial />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/merchant/reviews"
+                    element={
+                      <ProtectedRoute requiredRoles={["merchant"]}>
+                        <MerchantReviews />
                       </ProtectedRoute>
                     }
                   />

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -102,20 +101,13 @@ interface Transaction {
   status: string;
 }
 
-const expenseData = [
-  { category: "Produtos", value: 15000, color: "#3DBEAB" },
-  { category: "Frete", value: 3200, color: "#2D9CDB" },
-  { category: "Comissões WIN", value: 2100, color: "#8B5CF6" },
-  { category: "Marketing", value: 1800, color: "#F59E0B" },
-  { category: "Outros", value: 900, color: "#EF4444" },
-];
-
 export default function MerchantFinancial() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [lojista, setLojista] = useState<Lojista | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
   const { error: showError } = useNotification();
 
   // Estados para dados calculados
@@ -139,24 +131,77 @@ export default function MerchantFinancial() {
       const lojistaData: Lojista = lojistaResponse.data;
       setLojista(lojistaData);
 
-      // 2. Buscar pedidos do lojista
-      const ordersResponse = await api.get(
-        `/api/v1/pedidos/lojista/${lojistaData.id}`
-      );
-      const ordersData: Order[] = ordersResponse.data;
-
-      // 3. Filtrar pedidos por período
-      const filteredOrders = filterOrdersByPeriod(ordersData, selectedPeriod);
-      setOrders(filteredOrders);
-
-      // 4. Calcular estatísticas
-      calculateFinancialStats(filteredOrders);
+      // 2. Buscar relatório financeiro do backend
+      let reportResponse;
       
-      // 5. Gerar dados de gráficos
-      generateChartData(filteredOrders);
-      
-      // 6. Gerar transações
-      generateTransactions(filteredOrders);
+      if (selectedPeriod === "30d") {
+        // Últimos 30 dias
+        reportResponse = await api.get(
+          `/api/v1/relatorios-financeiros/lojista/${lojistaData.id}/ultimos-30-dias`
+        );
+      } else if (selectedPeriod === "custom" && customDateRange.start && customDateRange.end) {
+        // Período customizado
+        reportResponse = await api.get(
+          `/api/v1/relatorios-financeiros/lojista/${lojistaData.id}`,
+          {
+            params: {
+              dataInicio: customDateRange.start,
+              dataFim: customDateRange.end,
+            },
+          }
+        );
+      } else {
+        // Mês atual (padrão)
+        reportResponse = await api.get(
+          `/api/v1/relatorios-financeiros/lojista/${lojistaData.id}/mes-atual`
+        );
+      }
+
+      const reportData = reportResponse.data;
+
+      // 3. Atualizar estados com dados do relatório
+      setTotalRevenue(reportData.receitaTotal || 0);
+      setTotalOrders(reportData.totalPedidos || 0);
+      setAverageTicket(reportData.ticketMedio || 0);
+      setTotalFees(reportData.comissaoWin || 0);
+
+      // 4. Gerar dados de gráficos a partir do relatório
+      if (reportData.receitaPorDia && reportData.receitaPorDia.length > 0) {
+        const chartData = reportData.receitaPorDia.map((item: any) => ({
+          month: new Date(item.data).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+          }),
+          receita: item.receita || 0,
+          vendas: item.quantidadePedidos || 0,
+        }));
+        setRevenueData(chartData);
+      } else if (reportData.receitaPorMes && reportData.receitaPorMes.length > 0) {
+        const chartData = reportData.receitaPorMes.map((item: any) => ({
+          month: `${item.mes}/${item.ano}`,
+          receita: item.receita || 0,
+          vendas: item.quantidadePedidos || 0,
+        }));
+        setRevenueData(chartData);
+      }
+
+      // 5. Gerar transações simuladas a partir dos top produtos
+      if (reportData.topProdutos && reportData.topProdutos.length > 0) {
+        const transactionList: Transaction[] = reportData.topProdutos.map(
+          (produto: any, index: number) => ({
+            id: `${index + 1}`,
+            type: "Venda",
+            description: produto.nomeProduto,
+            amount: produto.receitaTotal,
+            fee: produto.receitaTotal * 0.05,
+            net: produto.receitaTotal * 0.95,
+            date: new Date().toLocaleDateString("pt-BR"),
+            status: "completed",
+            method: "Diversos",
+          })
+        );
+        setTransactions(transactionList);
+      }
 
     } catch (err: any) {
       console.error("Erro ao buscar dados financeiros:", err);
@@ -313,7 +358,7 @@ export default function MerchantFinancial() {
               Centro Financeiro
             </h1>
             <p className="text-gray-600">
-              Acompanhe receitas, despesas e extratos
+              Acompanhe receitas, vendas e relatórios financeiros
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -347,7 +392,7 @@ export default function MerchantFinancial() {
         ) : (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -384,35 +429,12 @@ export default function MerchantFinancial() {
                   </p>
                   <div className="flex items-center mt-2">
                     <span className="text-sm text-gray-500">
-                      Após taxas WIN
+                      Receita após descontos
                     </span>
                   </div>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Taxas WIN (5%)
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    R$ {totalFees.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </p>
-                  <div className="flex items-center mt-2">
-                    <span className="text-sm text-gray-500">
-                      Sobre subtotal
-                    </span>
-                  </div>
-                </div>
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <TrendingDown className="h-6 w-6 text-red-600" />
                 </div>
               </div>
             </CardContent>
@@ -443,10 +465,9 @@ export default function MerchantFinancial() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="transactions">Transações</TabsTrigger>
-            <TabsTrigger value="expenses">Despesas</TabsTrigger>
             <TabsTrigger value="payouts">Recebimentos</TabsTrigger>
           </TabsList>
 
@@ -483,81 +504,26 @@ export default function MerchantFinancial() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-
-              {/* Expense Breakdown */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Distribuição de Despesas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={expenseData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {expenseData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: any) => [
-                          `R$ ${value.toLocaleString()}`,
-                          "Valor",
-                        ]}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    {expenseData.map((item) => (
-                      <div key={item.category} className="flex items-center">
-                        <div
-                          className="w-3 h-3 rounded-full mr-2"
-                          style={{ backgroundColor: item.color }}
-                        ></div>
-                        <span className="text-sm text-gray-600">
-                          {item.category}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
-            {/* Monthly Comparison */}
+            {/* Monthly Revenue Chart */}
             <Card>
               <CardHeader>
-                <CardTitle>Comparativo Mensal - Receita vs Despesas</CardTitle>
+                <CardTitle>Evolução de Receita Mensal</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={350}>
-                  <BarChart
-                    data={revenueData.map((item, index) => ({
-                      ...item,
-                      despesas:
-                        expenseData.reduce(
-                          (total, expense) => total + expense.value,
-                          0,
-                        ) / 6,
-                    }))}
-                  >
+                  <BarChart data={revenueData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip
-                      formatter={(value: any, name: any) => [
+                      formatter={(value: any) => [
                         `R$ ${value.toLocaleString()}`,
-                        name === "receita" ? "Receita" : "Despesas",
+                        "Receita",
                       ]}
                     />
                     <Bar dataKey="receita" fill="#3DBEAB" name="receita" />
-                    <Bar dataKey="despesas" fill="#EF4444" name="despesas" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -633,11 +599,6 @@ export default function MerchantFinancial() {
                               {transaction.type === "credit" ? "+" : ""}R${" "}
                               {Math.abs(transaction.amount).toFixed(2)}
                             </p>
-                            {transaction.fee > 0 && (
-                              <p className="text-sm text-gray-500">
-                                Taxa: R$ {transaction.fee.toFixed(2)}
-                              </p>
-                            )}
                             <p className="text-sm font-medium text-gray-900">
                               Líquido: R$ {transaction.net.toFixed(2)}
                             </p>
@@ -650,79 +611,6 @@ export default function MerchantFinancial() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Expenses Tab */}
-          <TabsContent value="expenses" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Despesas por Categoria</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {expenseData.map((expense) => (
-                    <div
-                      key={expense.category}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: expense.color }}
-                        ></div>
-                        <span className="font-medium">{expense.category}</span>
-                      </div>
-                      <span className="font-semibold">
-                        R$ {expense.value.toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Adicionar Despesa</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Input
-                      id="description"
-                      placeholder="Ex: Compra de produtos"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="amount">Valor</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        placeholder="0,00"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Categoria</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="products">Produtos</SelectItem>
-                          <SelectItem value="shipping">Frete</SelectItem>
-                          <SelectItem value="marketing">Marketing</SelectItem>
-                          <SelectItem value="others">Outros</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <Button className="w-full bg-[#3DBEAB] hover:bg-[#3DBEAB]/90">
-                    Adicionar Despesa
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
 
           {/* Payouts Tab */}

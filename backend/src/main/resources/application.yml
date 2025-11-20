@@ -72,6 +72,12 @@ server:
 app:
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
+  dev-tools:
+    enabled: ${DEV_TOOLS_ENABLED:false}  # true apenas em dev/staging, NUNCA em produção
+
+# Mercado Pago Configuration
+mercadopago:
+  access-token: ${MERCADOPAGO_ACCESS_TOKEN:}  # Access Token do Mercado Pago
 
 logging:
   level:
@@ -82,3 +88,8 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  health:
+    mail:
+      enabled: false

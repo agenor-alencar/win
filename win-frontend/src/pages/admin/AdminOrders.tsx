@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../components/admin/AdminLayout";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
@@ -11,12 +11,105 @@ import {
   ExclamationTriangleIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { api } from "@/lib/Api";
+import { useNotification } from "@/contexts/NotificationContext";
+
+interface Pedido {
+  id: string;
+  clienteNome: string;
+  lojistaNome: string;
+  total: number;
+  status: string;
+  criadoEm: string;
+}
 
 const AdminOrders: React.FC = () => {
+  const { showNotification } = useNotification();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("today");
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    pendentes: 0,
+    emAndamento: 0,
+    entregues: 0,
+    cancelados: 0,
+  });
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/v1/pedidos/listar");
+      const pedidosData: Pedido[] = response.data;
+
+      const formattedOrders = pedidosData.map((pedido) => ({
+        id: pedido.id,
+        date: new Date(pedido.criadoEm).toLocaleString("pt-BR"),
+        customer: pedido.clienteNome,
+        store: pedido.lojistaNome,
+        total: pedido.total.toFixed(2),
+        status: getStatusLabel(pedido.status),
+        paymentMethod: "-",
+        deliveryTime: "-",
+        originalStatus: pedido.status,
+      }));
+
+      setOrders(formattedOrders);
+
+      // Calcular estatísticas
+      const total = formattedOrders.length;
+      const pendentes = formattedOrders.filter((o) => 
+        ["PENDENTE", "AGUARDANDO_PAGAMENTO"].includes(o.originalStatus)
+      ).length;
+      const emAndamento = formattedOrders.filter((o) => 
+        ["CONFIRMADO", "EM_PREPARACAO", "EM_TRANSITO"].includes(o.originalStatus)
+      ).length;
+      const entregues = formattedOrders.filter((o) => 
+        o.originalStatus === "ENTREGUE"
+      ).length;
+      const cancelados = formattedOrders.filter((o) => 
+        o.originalStatus === "CANCELADO"
+      ).length;
+
+      setStats({ total, pendentes, emAndamento, entregues, cancelados });
+    } catch (error: any) {
+      console.error("Erro ao carregar pedidos:", error);
+      showNotification("Erro ao carregar pedidos", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusLabel = (status: string): string => {
+    const statusMap: { [key: string]: string } = {
+      PENDENTE: "Pendente",
+      AGUARDANDO_PAGAMENTO: "Aguardando Pagamento",
+      CONFIRMADO: "Confirmado",
+      EM_PREPARACAO: "Em Preparação",
+      EM_TRANSITO: "Em Trânsito",
+      ENTREGUE: "Entregue",
+      CANCELADO: "Cancelado",
+    };
+    return statusMap[status] || status;
+  };
+
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      await api.put(`/api/v1/pedidos/${orderId}/status`, { status: newStatus });
+      showNotification("Status do pedido atualizado com sucesso", "success");
+      loadOrders();
+    } catch (error: any) {
+      console.error("Erro ao atualizar status:", error);
+      showNotification("Erro ao atualizar status do pedido", "error");
+    }
+  };
 
   const columns: Column[] = [
     { key: "id", label: "ID", sortable: true },
@@ -58,7 +151,7 @@ const AdminOrders: React.FC = () => {
     },
   ];
 
-  const orders = [
+  const ordersMock = [
     {
       id: "12847",
       date: "24/07/2024 14:30",
@@ -286,9 +379,13 @@ const AdminOrders: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <ArrowPathIcon className="w-4 h-4" />
-              <span>Atualizar</span>
+            <button 
+              onClick={loadOrders}
+              disabled={loading}
+              className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>{loading ? 'Atualizando...' : 'Atualizar'}</span>
             </button>
           </div>
         </div>
@@ -301,8 +398,8 @@ const AdminOrders: React.FC = () => {
                 <ClipboardDocumentListIcon className="w-6 h-6 text-gray-500" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Total Hoje</p>
-                <p className="text-xl font-semibold text-[#111827]">348</p>
+                <p className="text-sm text-gray-600">Total</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.total}</p>
               </div>
             </div>
           </div>
@@ -312,8 +409,8 @@ const AdminOrders: React.FC = () => {
                 <ClockIcon className="w-6 h-6 text-yellow-500" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Preparando</p>
-                <p className="text-xl font-semibold text-[#111827]">23</p>
+                <p className="text-sm text-gray-600">Em Andamento</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.emAndamento}</p>
               </div>
             </div>
           </div>
@@ -323,8 +420,8 @@ const AdminOrders: React.FC = () => {
                 <ArrowPathIcon className="w-6 h-6 text-blue-500" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Em Entrega</p>
-                <p className="text-xl font-semibold text-[#111827]">67</p>
+                <p className="text-sm text-gray-600">Pendentes</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.pendentes}</p>
               </div>
             </div>
           </div>
@@ -335,7 +432,7 @@ const AdminOrders: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Entregues</p>
-                <p className="text-xl font-semibold text-[#111827]">245</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.entregues}</p>
               </div>
             </div>
           </div>
@@ -346,7 +443,7 @@ const AdminOrders: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Cancelados</p>
-                <p className="text-xl font-semibold text-[#111827]">13</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.cancelados}</p>
               </div>
             </div>
           </div>
@@ -438,37 +535,37 @@ const AdminOrders: React.FC = () => {
                     <div>
                       <span className="text-gray-600">ID:</span>
                       <span className="ml-2 font-medium">
-                        #{selectedOrder.id}
+                        #{selectedOrder?.id || "N/A"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Data:</span>
                       <span className="ml-2 font-medium">
-                        {selectedOrder.date}
+                        {selectedOrder?.date || "N/A"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Status:</span>
                       <span
                         className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${
-                          selectedOrder.status === "Entregue"
+                          selectedOrder?.status === "Entregue"
                             ? "bg-green-100 text-green-800"
-                            : selectedOrder.status === "Em entrega"
+                            : selectedOrder?.status === "Em entrega"
                               ? "bg-blue-100 text-blue-800"
-                              : selectedOrder.status === "Preparando"
+                              : selectedOrder?.status === "Preparando"
                                 ? "bg-yellow-100 text-yellow-800"
-                                : selectedOrder.status === "Cancelado"
+                                : selectedOrder?.status === "Cancelado"
                                   ? "bg-red-100 text-red-800"
                                   : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {selectedOrder.status}
+                        {selectedOrder?.status || "Pendente"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Código Confirmação:</span>
                       <span className="ml-2 font-medium">
-                        {selectedOrder.confirmationCode}
+                        {selectedOrder?.confirmationCode || "N/A"}
                       </span>
                     </div>
                   </div>
@@ -482,19 +579,19 @@ const AdminOrders: React.FC = () => {
                     <div>
                       <span className="text-gray-600">Nome:</span>
                       <span className="ml-2 font-medium">
-                        {selectedOrder.customer}
+                        {selectedOrder?.customer || "N/A"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Telefone:</span>
                       <span className="ml-2 font-medium">
-                        {selectedOrder.customerPhone}
+                        {selectedOrder?.customerPhone || "N/A"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">E-mail:</span>
                       <span className="ml-2 font-medium">
-                        {selectedOrder.customerEmail}
+                        {selectedOrder?.customerEmail || "N/A"}
                       </span>
                     </div>
                   </div>
@@ -507,7 +604,7 @@ const AdminOrders: React.FC = () => {
                   Itens do Pedido
                 </h4>
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  {selectedOrder.items.map((item: any, index: number) => (
+                  {selectedOrder?.items?.map((item: any, index: number) => (
                     <div
                       key={index}
                       className="flex items-center p-4 border-b border-gray-200 last:border-b-0"

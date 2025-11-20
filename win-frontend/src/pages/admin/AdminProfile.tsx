@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../components/admin/AdminLayout";
 import {
   UserCircleIcon,
@@ -8,18 +8,24 @@ import {
   ComputerDesktopIcon,
   CheckIcon,
 } from "@heroicons/react/24/outline";
+import { useAuth } from "../../contexts/AuthContext";
+import { api } from "@/lib/Api";
+import { useNotification } from "@/contexts/NotificationContext";
 
 const AdminProfile: React.FC = () => {
+  const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState("profile");
+  const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
-    name: "Administrator",
-    email: "admin@winmarketplace.com",
-    phone: "(11) 99999-9999",
+    name: "",
+    email: "",
+    phone: "",
     avatar: "",
     role: "Super Admin",
     department: "Administração",
-    lastLogin: "24/07/2024 14:30",
-    createdAt: "15/01/2024",
+    lastLogin: "",
+    createdAt: "",
   });
 
   const [securityData, setSecurityData] = useState({
@@ -34,6 +40,33 @@ const AdminProfile: React.FC = () => {
     newPassword: "",
     confirmPassword: "",
   });
+
+  useEffect(() => {
+    loadProfileData();
+  }, [user]);
+
+  const loadProfileData = async () => {
+    try {
+      setLoading(true);
+      if (user) {
+        setProfileData({
+          name: user.nome || "Administrator",
+          email: user.email || "",
+          phone: user.telefone || "",
+          avatar: "",
+          role: "Super Admin",
+          department: "Administração",
+          lastLogin: new Date().toLocaleString("pt-BR"),
+          createdAt: user.criadoEm ? new Date(user.criadoEm).toLocaleDateString("pt-BR") : "",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar perfil:", error);
+      showNotification("Erro ao carregar dados do perfil", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const tabs = [
     {
@@ -118,9 +151,9 @@ const AdminProfile: React.FC = () => {
                   <UserCircleIcon className="w-12 h-12 text-white" />
                 </div>
                 <h3 className="font-semibold text-[#111827]">
-                  {profileData.name}
+                  {profileData?.name || "Administrator"}
                 </h3>
-                <p className="text-sm text-gray-600">{profileData.role}</p>
+                <p className="text-sm text-gray-600">{profileData?.role || "Admin"}</p>
               </div>
 
               <nav className="space-y-1">

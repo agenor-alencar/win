@@ -71,16 +71,22 @@ public class LojistaService {
     @Transactional(readOnly = true)
     public LojistaResponseDTO buscarPorUsuarioId(UUID usuarioId) {
         Lojista lojista = lojistaRepository.findByUsuarioId(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Lojista não encontrado para este usuário"));
+                .orElseThrow(() -> new RuntimeException(
+                    "Perfil de lojista não encontrado para o usuário com ID: " + usuarioId + 
+                    ". Por favor, complete seu cadastro de lojista antes de acessar esta área."
+                ));
         return lojistaMapper.toResponseDTO(lojista);
     }
 
     @Transactional(readOnly = true)
     public LojistaResponseDTO buscarPorEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com o email: " + email));
         Lojista lojista = lojistaRepository.findByUsuarioId(usuario.getId())
-                .orElseThrow(() -> new RuntimeException("Lojista não encontrado para este usuário"));
+                .orElseThrow(() -> new RuntimeException(
+                    "Perfil de lojista não encontrado para o usuário: " + email + 
+                    ". Por favor, complete seu cadastro de lojista antes de acessar esta área."
+                ));
         return lojistaMapper.toResponseDTO(lojista);
     }
 

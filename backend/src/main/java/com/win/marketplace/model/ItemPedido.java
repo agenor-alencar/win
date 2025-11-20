@@ -44,6 +44,9 @@ public class ItemPedido {
     @Column(name = "preco_unitario", precision = 10, scale = 2, nullable = false)
     private BigDecimal precoUnitario;
 
+    @Column(name = "subtotal", precision = 10, scale = 2, nullable = false)
+    private BigDecimal subtotal;
+
     @Column(name = "preco_total", precision = 10, scale = 2, nullable = false)
     private BigDecimal precoTotal;
 }

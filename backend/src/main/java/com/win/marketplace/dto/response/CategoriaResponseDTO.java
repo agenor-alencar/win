@@ -7,6 +7,7 @@ public record CategoriaResponseDTO(
     UUID id,
     String nome,
     String descricao,
+    String icone,
     UUID categoriaPaiId,
     String categoriaPaiNome,
     OffsetDateTime criadoEm,

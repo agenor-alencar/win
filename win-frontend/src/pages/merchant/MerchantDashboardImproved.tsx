@@ -54,7 +54,7 @@ interface Product {
 interface Order {
   id: string;
   numeroPedido: string;
-  usuario: {
+  usuario?: {
     nome: string;
   };
   total: number;
@@ -489,7 +489,7 @@ const MerchantDashboard: React.FC = () => {
                           {getOrderStatusBadge(order.status)}
                         </div>
                         <p className="text-sm text-gray-600 mb-1">
-                          {order.usuario.nome}
+                          {order.usuario?.nome || "Cliente"}
                         </p>
                         <p className="text-sm text-gray-500">
                           {order.itens && order.itens.length > 0

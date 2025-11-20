@@ -17,7 +17,7 @@ import { useCart } from "../../contexts/CartContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useAuth } from "../../contexts/AuthContext";
 import Header from "../../components/Header";
-import { api } from "@/lib/Api";
+import { produtoApi, type ProdutoSummary } from "@/lib/produtoApi";
 
 const categories = [
   { name: "Ferragens", icon: "🔧", color: "bg-blue-100 text-blue-700" },
@@ -27,37 +27,13 @@ const categories = [
   { name: "Autopeças", icon: "🚗", color: "bg-red-100 text-red-700" },
 ];
 
-interface Produto {
-  id: number;
-  nome: string;
-  descricao: string;
-  preco: number;
-  estoque: number;
-  ativo: boolean;
-  lojista: {
-    id: number;
-    usuario: {
-      nome: string;
-    };
-  };
-  categoria: {
-    id: number;
-    nome: string;
-  };
-  imagens: Array<{
-    id: number;
-    urlImagem: string;
-    imagemPrincipal: boolean;
-  }>;
-}
-
 export default function Index() {
   const { state, addItem } = useCart();
   const { info, success, error } = useNotification();
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [produtos, setProdutos] = useState<ProdutoSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -66,22 +42,12 @@ export default function Index() {
   const fetchProdutos = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/produtos', {
-        params: {
-          page: page,
-          size: 8, // 8 produtos por página
-        },
-      });
-      
-      if (response.data.content) {
-        // Filtrar apenas produtos ativos
-        const produtosAtivos = response.data.content.filter((p: Produto) => p.ativo);
-        setProdutos(produtosAtivos);
-        setTotalPages(response.data.totalPages);
-      }
+      const response = await produtoApi.listarProdutos(page, 12);
+      setProdutos(response.content);
+      setTotalPages(response.totalPages);
     } catch (err) {
       console.error('Erro ao buscar produtos:', err);
-      error('Erro', 'Não foi possível carregar os produtos');
+      error('Erro ao carregar produtos', 'Não foi possível carregar os produtos. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -92,42 +58,25 @@ export default function Index() {
     fetchProdutos();
   }, [page]);
 
-  const handleAddToCart = (produto: Produto) => {
+  const handleAddToCart = (produto: ProdutoSummary) => {
+    if (produto.estoque === 0) {
+      error('Produto sem estoque', 'Este produto não está disponível no momento.');
+      return;
+    }
+    
     addItem({
       id: produto.id,
       name: produto.nome,
       price: produto.preco,
       quantity: 1,
-      image: getProductImage(produto),
-      store: produto.lojista?.usuario?.nome || 'Lojista',
+      image: produto.imagemPrincipal || '/placeholder.svg',
+      store: produto.nomeLojista,
       inStock: produto.estoque > 0,
     });
     success(
-      "Produto adicionado ao carrinho!",
-      `${produto.nome} foi adicionado com sucesso.`,
+      "Produto adicionado!",
+      `${produto.nome} foi adicionado ao carrinho.`,
     );
-  };
-
-  // Função para formatar preço
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(price);
-  };
-
-  // Função para obter URL da imagem principal
-  const getProductImage = (produto: Produto) => {
-    // Verificar se imagens existe e é um array
-    if (!produto.imagens || !Array.isArray(produto.imagens) || produto.imagens.length === 0) {
-      return '/placeholder.svg';
-    }
-    
-    const imagemPrincipal = produto.imagens.find((img) => img.imagemPrincipal);
-    if (imagemPrincipal) {
-      return imagemPrincipal.urlImagem;
-    }
-    return produto.imagens[0].urlImagem;
   };
 
   // Função para lidar com clique em "Venda no WIN"
@@ -267,12 +216,12 @@ export default function Index() {
               {produtos.map((produto) => (
                 <Card
                   key={produto.id}
-                  className="overflow-hidden hover:shadow-lg transition-shadow group"
+                  className="overflow-hidden hover:shadow-lg transition-shadow group relative"
                 >
                   <Link to={`/product/${produto.id}`}>
-                    <div className="relative cursor-pointer">
+                    <div className="relative cursor-pointer overflow-hidden">
                       <img
-                        src={getProductImage(produto)}
+                        src={produto.imagemPrincipal || '/placeholder.svg'}
                         alt={produto.nome}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
                         onError={(e) => {
@@ -281,12 +230,12 @@ export default function Index() {
                       />
                       {produto.estoque === 0 && (
                         <Badge className="absolute top-2 left-2 bg-red-500">
-                          Sem estoque
+                          Esgotado
                         </Badge>
                       )}
                       {produto.estoque > 0 && produto.estoque <= 5 && (
                         <Badge className="absolute top-2 left-2 bg-orange-500">
-                          Últimas unidades
+                          Últimas {produto.estoque} unidades
                         </Badge>
                       )}
                     </div>
@@ -306,14 +255,24 @@ export default function Index() {
                       </h4>
                     </Link>
                     <div className="flex items-center text-xs text-muted-foreground mb-2">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                      {produto.categoria?.nome || 'Sem categoria'}
+                      {produto.avaliacao && produto.quantidadeAvaliacoes > 0 ? (
+                        <>
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
+                          <span>{produto.avaliacao.toFixed(1)}</span>
+                          <span className="mx-1">({produto.quantidadeAvaliacoes})</span>
+                        </>
+                      ) : (
+                        <span>Sem avaliações</span>
+                      )}
                       <span className="mx-2">•</span>
-                      {produto.lojista?.usuario?.nome || 'Lojista'}
+                      {produto.nomeLojista}
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-lg font-bold text-primary">
-                        {formatPrice(produto.preco)}
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(produto.preco)}
                       </span>
                       <Button
                         size="sm"
@@ -324,6 +283,7 @@ export default function Index() {
                           handleAddToCart(produto);
                         }}
                       >
+                        <ShoppingCart className="h-4 w-4 mr-1" />
                         {produto.estoque === 0 ? 'Esgotado' : 'Adicionar'}
                       </Button>
                     </div>

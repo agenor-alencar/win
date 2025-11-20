@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../components/admin/AdminLayout";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
@@ -12,17 +12,95 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
+import { api } from "@/lib/Api";
+import { useNotification } from "@/contexts/NotificationContext";
+
+interface Produto {
+  id: string;
+  nome: string;
+  descricao: string;
+  preco: number;
+  estoque: number;
+  ativo: boolean;
+  lojistaNome: string;
+  categoriaNome: string;
+  criadoEm: string;
+}
 
 const AdminProducts: React.FC = () => {
+  const { showNotification } = useNotification();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCreateProductModal, setShowCreateProductModal] = useState(false);
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    ativos: 0,
+    inativos: 0,
+    semEstoque: 0,
+  });
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/v1/produtos");
+      const produtosData: Produto[] = response.data;
+
+      const formattedProducts = produtosData.map((produto) => ({
+        id: produto.id,
+        image: "/products/placeholder.jpg",
+        title: produto.nome,
+        category: produto.categoriaNome || "Sem categoria",
+        store: produto.lojistaNome || "Sem loja",
+        price: produto.preco.toFixed(2),
+        stock: produto.estoque,
+        status: !produto.ativo ? "Inativo" : produto.estoque === 0 ? "Sem estoque" : "Ativo",
+        createdAt: new Date(produto.criadoEm).toLocaleDateString("pt-BR"),
+        description: produto.descricao,
+        ativo: produto.ativo,
+      }));
+
+      setProducts(formattedProducts);
+
+      const total = formattedProducts.length;
+      const ativos = formattedProducts.filter((p) => p.status === "Ativo").length;
+      const inativos = formattedProducts.filter((p) => p.status === "Inativo").length;
+      const semEstoque = formattedProducts.filter((p) => p.stock === 0).length;
+
+      setStats({ total, ativos, inativos, semEstoque });
+    } catch (error: any) {
+      console.error("Erro ao carregar produtos:", error);
+      showNotification("Erro ao carregar produtos", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async (product: any) => {
+    if (!confirm(`Tem certeza que deseja excluir o produto "${product.title}"?`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/api/v1/produtos/${product.id}`);
+      showNotification("Produto excluído com sucesso", "success");
+      loadProducts();
+    } catch (error: any) {
+      console.error("Erro ao excluir produto:", error);
+      showNotification("Erro ao excluir produto", "error");
+    }
+  };
 
   const handleCreateProduct = (productData: any) => {
     console.log("Creating product:", productData);
-    // Here you would typically send the data to your backend
+    // TODO: Implementar criação de produto
     setShowCreateProductModal(false);
   };
 
@@ -75,7 +153,7 @@ const AdminProducts: React.FC = () => {
     { key: "createdAt", label: "Criado em", sortable: true },
   ];
 
-  const products = [
+  const productsMock = [
     {
       id: "P001",
       image: "/products/iphone.jpg",
@@ -227,9 +305,13 @@ const AdminProducts: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <ArrowPathIcon className="w-4 h-4" />
-              <span>Atualizar</span>
+            <button 
+              onClick={loadProducts}
+              disabled={loading}
+              className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>{loading ? 'Atualizando...' : 'Atualizar'}</span>
             </button>
             <button
               onClick={() => setShowCreateProductModal(true)}
@@ -250,7 +332,7 @@ const AdminProducts: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Produtos Ativos</p>
-                <p className="text-xl font-semibold text-[#111827]">8,547</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.ativos}</p>
               </div>
             </div>
           </div>
@@ -261,7 +343,7 @@ const AdminProducts: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Inativos</p>
-                <p className="text-xl font-semibold text-[#111827]">234</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.inativos}</p>
               </div>
             </div>
           </div>
@@ -271,8 +353,8 @@ const AdminProducts: React.FC = () => {
                 <ExclamationTriangleIcon className="w-6 h-6 text-red-500" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Irregulares</p>
-                <p className="text-xl font-semibold text-[#111827]">12</p>
+                <p className="text-sm text-gray-600">Sem Estoque</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.semEstoque}</p>
               </div>
             </div>
           </div>
@@ -282,8 +364,8 @@ const AdminProducts: React.FC = () => {
                 <ExclamationTriangleIcon className="w-6 h-6 text-yellow-500" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-600">Estoque Baixo</p>
-                <p className="text-xl font-semibold text-[#111827]">89</p>
+                <p className="text-sm text-gray-600">Total</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.total}</p>
               </div>
             </div>
           </div>
@@ -380,25 +462,25 @@ const AdminProducts: React.FC = () => {
                 {/* Basic Info */}
                 <div>
                   <h4 className="text-lg font-semibold text-[#111827] mb-3">
-                    {selectedProduct.title}
+                    {selectedProduct?.title || "Produto"}
                   </h4>
                   <div className="space-y-3 text-sm">
                     <div>
                       <span className="text-gray-600">SKU:</span>
                       <span className="ml-2 font-medium">
-                        {selectedProduct.sku}
+                        {selectedProduct?.sku || "N/A"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Categoria:</span>
                       <span className="ml-2 font-medium">
-                        {selectedProduct.category}
+                        {selectedProduct?.category || "Sem categoria"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Loja:</span>
                       <span className="ml-2 font-medium">
-                        {selectedProduct.store}
+                        {selectedProduct?.store || "N/A"}
                       </span>
                     </div>
                     <div>

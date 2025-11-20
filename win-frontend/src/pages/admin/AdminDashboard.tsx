@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { AdminLayout } from "../../components/admin/AdminLayout";
 import { KPICard } from "../../components/admin/KPICard";
@@ -15,13 +15,79 @@ import {
   BanknotesIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import { api } from "@/lib/Api";
+import { useNotification } from "@/contexts/NotificationContext";
 
 const AdminDashboard: React.FC = () => {
-  // Mock data for KPIs with navigation links
+  const { showNotification } = useNotification();
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    totalUsers: 0,
+    totalStores: 0,
+    totalOrders: 0,
+    monthRevenue: 0,
+  });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentStores, setRecentStores] = useState([]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar usuários
+      const usersResponse = await api.get("/api/v1/usuario/list/all");
+      const totalUsers = usersResponse.data.length;
+
+      // Buscar lojistas
+      const storesResponse = await api.get("/api/v1/lojistas");
+      const totalStores = storesResponse.data.length;
+      
+      // Pegar as 4 lojas mais recentes
+      const recentStoresData = storesResponse.data
+        .slice(-4)
+        .reverse()
+        .map((store: any) => ({
+          name: store.nomeFantasia,
+          category: "Geral", // Categoria padrão por enquanto
+          owner: store.usuarioNome,
+          rating: "4.5",
+          status: store.ativo ? "Ativo" : "Inativo",
+        }));
+      setRecentStores(recentStoresData);
+
+      // Por enquanto, usar valores simulados para pedidos e receita
+      // TODO: Implementar quando endpoints de relatórios estiverem prontos
+      const totalOrders = 0;
+      const monthRevenue = 0;
+
+      setDashboardData({
+        totalUsers,
+        totalStores,
+        totalOrders,
+        monthRevenue,
+      });
+
+      setRecentOrders([]); // Por enquanto vazio
+    } catch (error: any) {
+      console.error("Erro ao carregar dashboard:", error);
+      showNotification(
+        "Erro ao carregar dados do dashboard",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // KPIs com dados reais
   const kpiData = [
     {
       title: "Total Usuários",
-      value: "12,847",
+      value: dashboardData.totalUsers.toString(),
       change: { value: 12, type: "increase" as const, period: "este mês" },
       icon: UsersIcon,
       color: "green" as const,
@@ -29,7 +95,7 @@ const AdminDashboard: React.FC = () => {
     },
     {
       title: "Total Lojas",
-      value: "1,429",
+      value: dashboardData.totalStores.toString(),
       change: { value: 8, type: "increase" as const, period: "este mês" },
       icon: BuildingStorefrontIcon,
       color: "blue" as const,
@@ -37,17 +103,17 @@ const AdminDashboard: React.FC = () => {
     },
     {
       title: "Pedidos Hoje",
-      value: "348",
-      change: { value: 23, type: "increase" as const, period: "vs ontem" },
+      value: dashboardData.totalOrders.toString(),
+      change: { value: 0, type: "increase" as const, period: "vs ontem" },
       icon: ShoppingCartIcon,
       color: "purple" as const,
       link: "/admin/orders",
     },
     {
       title: "Receita Mês",
-      value: "R$ 89.342",
+      value: `R$ ${dashboardData.monthRevenue.toLocaleString("pt-BR")}`,
       change: {
-        value: 15,
+        value: 0,
         type: "increase" as const,
         period: "vs mês anterior",
       },
@@ -118,44 +184,6 @@ const AdminDashboard: React.FC = () => {
     },
   ];
 
-  const recentOrders = [
-    {
-      id: "12847",
-      customer: "João Silva",
-      store: "TechStore",
-      value: "1,299.90",
-      status: "Entregue",
-    },
-    {
-      id: "12846",
-      customer: "Maria Santos",
-      store: "Fashion Plus",
-      value: "89.90",
-      status: "Em entrega",
-    },
-    {
-      id: "12845",
-      customer: "Pedro Costa",
-      store: "Casa & Lar",
-      value: "234.50",
-      status: "Preparando",
-    },
-    {
-      id: "12844",
-      customer: "Ana Paula",
-      store: "SportMax",
-      value: "156.80",
-      status: "Entregue",
-    },
-    {
-      id: "12843",
-      customer: "Carlos Oliveira",
-      store: "TechStore",
-      value: "899.99",
-      status: "Em entrega",
-    },
-  ];
-
   // Recent stores columns
   const storeColumns: Column[] = [
     { key: "name", label: "Nome", sortable: true },
@@ -190,37 +218,6 @@ const AdminDashboard: React.FC = () => {
     },
   ];
 
-  const recentStores = [
-    {
-      name: "TechStore Pro",
-      category: "Eletrônicos",
-      owner: "Roberto Lima",
-      rating: "4.8",
-      status: "Ativo",
-    },
-    {
-      name: "Moda Feminina",
-      category: "Roupas",
-      owner: "Lucia Ferreira",
-      rating: "4.5",
-      status: "Pendente",
-    },
-    {
-      name: "Casa Moderna",
-      category: "Casa & Jardim",
-      owner: "Felipe Santos",
-      rating: "4.7",
-      status: "Ativo",
-    },
-    {
-      name: "Sport Center",
-      category: "Esportes",
-      owner: "Marina Silva",
-      rating: "4.6",
-      status: "Ativo",
-    },
-  ];
-
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -230,9 +227,13 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-2xl font-bold text-[#111827]">Dashboard</h1>
             <p className="text-gray-600">Visão geral do marketplace WIN</p>
           </div>
-          <button className="flex items-center space-x-2 bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-shadow">
-            <ArrowPathIcon className="w-4 h-4" />
-            <span>Atualizar</span>
+          <button 
+            onClick={loadDashboardData}
+            disabled={loading}
+            className="flex items-center space-x-2 bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-shadow disabled:opacity-50"
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>{loading ? 'Atualizando...' : 'Atualizar'}</span>
           </button>
         </div>
 
@@ -288,17 +289,6 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <h3 className="text-lg font-semibold text-[#111827] mb-4">
-              Últimos Pedidos
-            </h3>
-            <DataTable
-              columns={orderColumns}
-              data={recentOrders}
-              searchable={false}
-              itemsPerPage={5}
-            />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-[#111827] mb-4">
               Lojas Recentes
             </h3>
             <DataTable
@@ -307,6 +297,14 @@ const AdminDashboard: React.FC = () => {
               searchable={false}
               itemsPerPage={5}
             />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-[#111827] mb-4">
+              Estatísticas Rápidas
+            </h3>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-full flex items-center justify-center">
+              <p className="text-gray-500">Últimos pedidos em desenvolvimento</p>
+            </div>
           </div>
         </div>
       </div>

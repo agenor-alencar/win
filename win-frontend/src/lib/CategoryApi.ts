@@ -6,6 +6,7 @@ export interface Category {
   id: string;
   nome: string;
   descricao: string;
+  icone?: string; // Nome do ícone do Lucide React
   categoriaPaiId?: string | null;
   criadoEm: string;
   atualizadoEm: string;
@@ -15,6 +16,7 @@ export interface Category {
 export interface CategoryCreateRequest {
   nome: string;
   descricao?: string;
+  icone?: string; // Nome do ícone
 }
 
 class CategoryApiService {
@@ -72,6 +74,35 @@ class CategoryApiService {
       principais: mainCategories.length,
       subcategorias: allCategories.length - mainCategories.length
     };
+  }
+
+  /**
+   * Busca categorias principais com suas subcategorias aninhadas
+   * Útil para menus dropdown hierárquicos
+   */
+  async getCategoriesWithSubcategories(): Promise<Category[]> {
+    const mainCategories = await this.getMainCategories();
+    
+    // Para cada categoria principal, buscar suas subcategorias
+    const categoriesWithSubs = await Promise.all(
+      mainCategories.map(async (category) => {
+        try {
+          const subcategorias = await this.getSubCategories(category.id);
+          return {
+            ...category,
+            subcategorias
+          };
+        } catch (error) {
+          console.error(`Erro ao buscar subcategorias da categoria ${category.nome}:`, error);
+          return {
+            ...category,
+            subcategorias: []
+          };
+        }
+      })
+    );
+
+    return categoriesWithSubs;
   }
 }
 

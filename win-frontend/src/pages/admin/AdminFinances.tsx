@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../components/admin/AdminLayout";
+import { api } from "../../lib/Api";
+import { useNotification } from "../../contexts/NotificationContext";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
 import { KPICard } from "../../components/admin/KPICard";
@@ -16,39 +18,96 @@ import {
   TruckIcon,
 } from "@heroicons/react/24/outline";
 
+interface FinanceData {
+  receitaTotal: number;
+  comissaoWIN: number;
+  repassesLojas: number;
+  pagamentosMotoristas: number;
+}
+
 const AdminFinances: React.FC = () => {
+  const { addNotification } = useNotification();
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [filterPeriod, setFilterPeriod] = useState("month");
   const [filterType, setFilterType] = useState("all");
+  const [loading, setLoading] = useState(false);
+  const [financeData, setFinanceData] = useState<FinanceData>({
+    receitaTotal: 0,
+    comissaoWIN: 0,
+    repassesLojas: 0,
+    pagamentosMotoristas: 0,
+  });
 
-  // Financial KPIs
+  useEffect(() => {
+    loadFinanceData();
+  }, []);
+
+  const loadFinanceData = async () => {
+    setLoading(true);
+    try {
+      // Buscar todos os pedidos para calcular estatísticas financeiras
+      const pedidosResponse = await api.get("/api/v1/pedidos");
+      const pedidos = pedidosResponse.data;
+
+      // Calcular receita total (soma de todos os pedidos concluídos)
+      const receitaTotal = pedidos
+        .filter((p: any) => p.status === "ENTREGUE")
+        .reduce((sum: number, p: any) => sum + p.total, 0);
+
+      // Calcular comissão WIN (7% da receita)
+      const comissaoWIN = receitaTotal * 0.07;
+
+      // Calcular repasses às lojas (93% da receita)
+      const repassesLojas = receitaTotal * 0.93;
+
+      // Estimar pagamentos a motoristas (5% da receita)
+      const pagamentosMotoristas = receitaTotal * 0.05;
+
+      setFinanceData({
+        receitaTotal,
+        comissaoWIN,
+        repassesLojas,
+        pagamentosMotoristas,
+      });
+    } catch (error: any) {
+      console.error("Erro ao carregar dados financeiros:", error);
+      addNotification({
+        type: "error",
+        message: "Erro ao carregar dados financeiros",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Financial KPIs - usando dados reais
   const financialKPIs = [
     {
       title: "Receita Total",
-      value: "R$ 1.247.890",
+      value: `R$ ${financeData.receitaTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: { value: 15, type: "increase" as const, period: "este mês" },
       icon: BanknotesIcon,
       color: "green" as const,
     },
     {
       title: "Comissão WIN",
-      value: "R$ 87.352",
+      value: `R$ ${financeData.comissaoWIN.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: { value: 12, type: "increase" as const, period: "este mês" },
       icon: CreditCardIcon,
       color: "blue" as const,
     },
     {
       title: "Repasses Lojas",
-      value: "R$ 1.098.234",
+      value: `R$ ${financeData.repassesLojas.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: { value: 16, type: "increase" as const, period: "este mês" },
       icon: BuildingLibraryIcon,
       color: "purple" as const,
     },
     {
       title: "Pagtos. Motoristas",
-      value: "R$ 62.304",
+      value: `R$ ${financeData.pagamentosMotoristas.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: { value: 8, type: "increase" as const, period: "este mês" },
       icon: TruckIcon,
       color: "orange" as const,
@@ -270,8 +329,12 @@ const AdminFinances: React.FC = () => {
               <DocumentArrowDownIcon className="w-4 h-4" />
               <span>Exportar</span>
             </button>
-            <button className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <ArrowPathIcon className="w-4 h-4" />
+            <button
+              onClick={loadFinanceData}
+              disabled={loading}
+              className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               <span>Atualizar</span>
             </button>
             <button

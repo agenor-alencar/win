@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,38 +18,12 @@ import { useCart } from "../contexts/CartContext";
 import { useSearch } from "../contexts/SearchContext";
 import { useAuth } from "../contexts/AuthContext";
 import UserNavbar from "./UserNavbar";
+import { categoryApi, type Category } from "@/lib/CategoryApi";
+import { CategoryIcon } from "@/lib/categoryIcons";
 
 interface HeaderProps {
   showCategories?: boolean;
 }
-
-const categories = [
-  {
-    name: "Ferragens",
-    icon: "🔧",
-    subcategories: ["Parafusos", "Porcas", "Arruelas", "Fechaduras"],
-  },
-  {
-    name: "Elétricos",
-    icon: "⚡",
-    subcategories: ["Cabos", "Tomadas", "Interruptores", "Lâmpadas"],
-  },
-  {
-    name: "Limpeza",
-    icon: "🧽",
-    subcategories: ["Detergentes", "Desinfetantes", "Produtos Gerais"],
-  },
-  {
-    name: "Embalagens",
-    icon: "📦",
-    subcategories: ["Caixas", "Sacos", "Fitas", "Bubble Wrap"],
-  },
-  {
-    name: "Autopeças",
-    icon: "🚗",
-    subcategories: ["Filtros", "Óleos", "Pneus", "Baterias"],
-  },
-];
 
 export default function Header({ showCategories = true }: HeaderProps) {
   const { state } = useCart();
@@ -57,6 +31,26 @@ export default function Header({ showCategories = true }: HeaderProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // Buscar categorias da API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const data = await categoryApi.getCategoriesWithSubcategories();
+        setCategories(data);
+      } catch (error) {
+        console.error("Erro ao carregar categorias:", error);
+        setCategories([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,46 +208,67 @@ export default function Header({ showCategories = true }: HeaderProps) {
         <div className="border-t hidden md:block">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center space-x-1 py-2">
-              {categories.map((category) => (
-                <div
-                  key={category.name}
-                  className="relative group category-dropdown-container"
-                >
-                  <button className="flex items-center h-12 px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground rounded-md">
-                    <span className="mr-2">{category.icon}</span>
-                    {category.name}
-                    <ChevronDown className="ml-1 h-4 w-4 chevron-rotate" />
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  <div className="category-dropdown-menu">
-                    <div className="p-6">
-                      <div className="space-y-2">
-                        <h3 className="font-medium text-sm text-muted-foreground mb-3">
-                          {category.name}
-                        </h3>
-                        {category.subcategories.map((sub) => (
-                          <Link
-                            key={sub}
-                            to={`/category/${category.name.toLowerCase()}?sub=${sub.toLowerCase()}`}
-                            className="dropdown-menu-item block text-sm font-medium leading-none"
-                          >
-                            {sub}
-                          </Link>
-                        ))}
-                      </div>
-                      <div className="border-t mt-3 pt-3">
-                        <Link
-                          to={`/category/${category.name.toLowerCase()}`}
-                          className="dropdown-menu-item block text-sm font-medium text-primary"
-                        >
-                          Ver todos em {category.name}
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
+              {loadingCategories ? (
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground px-4 py-2">
+                  <Package className="h-4 w-4 animate-spin" />
+                  <span>Carregando categorias...</span>
                 </div>
-              ))}
+              ) : categories.length === 0 ? (
+                <div className="text-sm text-muted-foreground px-4 py-2">
+                  Nenhuma categoria disponível
+                </div>
+              ) : (
+                categories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="relative group category-dropdown-container"
+                  >
+                    <Link
+                      to={`/category/${category.nome.toLowerCase().replace(/\s+/g, '-')}`}
+                      className="flex items-center h-12 px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground rounded-md"
+                    >
+                      <CategoryIcon 
+                        iconName={category.icone} 
+                        className="mr-2 h-4 w-4" 
+                      />
+                      {category.nome}
+                      {category.subcategorias && category.subcategorias.length > 0 && (
+                        <ChevronDown className="ml-1 h-4 w-4 chevron-rotate" />
+                      )}
+                    </Link>
+
+                    {/* Dropdown Menu - Apenas se tiver subcategorias */}
+                    {category.subcategorias && category.subcategorias.length > 0 && (
+                      <div className="category-dropdown-menu">
+                        <div className="p-6">
+                          <div className="space-y-2">
+                            <h3 className="font-medium text-sm text-muted-foreground mb-3">
+                              {category.nome}
+                            </h3>
+                            {category.subcategorias.map((sub) => (
+                              <Link
+                                key={sub.id}
+                                to={`/category/${sub.nome.toLowerCase().replace(/\s+/g, '-')}`}
+                                className="dropdown-menu-item block text-sm font-medium leading-none"
+                              >
+                                {sub.nome}
+                              </Link>
+                            ))}
+                          </div>
+                          <div className="border-t mt-3 pt-3">
+                            <Link
+                              to={`/category/${category.nome.toLowerCase().replace(/\s+/g, '-')}`}
+                              className="dropdown-menu-item block text-sm font-medium text-primary"
+                            >
+                              Ver todos em {category.nome}
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
 
               {/* Quick Links */}
               <Link
@@ -283,13 +298,13 @@ export default function Header({ showCategories = true }: HeaderProps) {
             <div className="grid grid-cols-2 gap-4">
               {categories.map((category) => (
                 <Link
-                  key={category.name}
-                  to={`/category/${category.name.toLowerCase()}`}
+                  key={category.id}
+                  to={`/category/${category.nome.toLowerCase().replace(/\s+/g, '-')}`}
                   className="flex items-center p-3 rounded-lg hover:bg-gray-50"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <span className="text-2xl mr-3">{category.icon}</span>
-                  <span className="text-sm font-medium">{category.name}</span>
+                  <CategoryIcon iconName={category.icone} className="mr-3 h-5 w-5" />
+                  <span className="text-sm font-medium">{category.nome}</span>
                 </Link>
               ))}
             </div>

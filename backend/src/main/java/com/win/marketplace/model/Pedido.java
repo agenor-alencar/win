@@ -39,6 +39,25 @@ public class Pedido {
     @Column(length = 20, nullable = false)
     private StatusPedido status = StatusPedido.PENDENTE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_pagamento", length = 50, nullable = false)
+    private StatusPagamento statusPagamento = StatusPagamento.PENDENTE;
+
+    @Column(name = "forma_pagamento", length = 50)
+    private String formaPagamento;
+
+    @Column(name = "valor_produtos", precision = 10, scale = 2, nullable = false)
+    private BigDecimal valorProdutos = BigDecimal.ZERO;
+
+    @Column(name = "valor_frete", precision = 10, scale = 2, nullable = false)
+    private BigDecimal valorFrete = BigDecimal.ZERO;
+
+    @Column(name = "valor_desconto", precision = 10, scale = 2, nullable = false)
+    private BigDecimal valorDesconto = BigDecimal.ZERO;
+
+    @Column(name = "valor_total", precision = 10, scale = 2, nullable = false)
+    private BigDecimal valorTotal = BigDecimal.ZERO;
+
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal subtotal;
 
@@ -94,4 +113,45 @@ public class Pedido {
     public enum StatusPedido {
         PENDENTE, CONFIRMADO, PREPARANDO, PRONTO, EM_TRANSITO, ENTREGUE, CANCELADO
     }
+
+    public enum StatusPagamento {
+        PENDENTE, PROCESSANDO, APROVADO, RECUSADO, CANCELADO, REEMBOLSADO, EXPIRADO
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Endereco {
+        private String cep;
+        private String logradouro;
+        private String numero;
+        private String complemento;
+        private String bairro;
+        private String cidade;
+        private String uf;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Pagamento {
+        private String metodoPagamento;
+        private BigDecimal valor;
+        private Integer parcelas;
+        private String informacoesCartao;
+        private String transacaoId;
+        private String status;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NotaFiscal {
+        private String numero;
+        private String chaveAcesso;
+        private String urlDownload;
+        private OffsetDateTime dataEmissao;
+    }
 }
+
+

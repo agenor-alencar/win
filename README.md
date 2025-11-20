@@ -2,6 +2,8 @@
 
 Sistema de marketplace desenvolvido com Spring Boot, React e PostgreSQL.
 
+> 📚 **[Documentação Completa](docs/README.md)** | 🔑 **[Criar Admin](docs/getting-started/first-admin.md)** | ⚙️ **[Configurar Email](docs/configuration/email-sendgrid.md)**
+
 ## 🏗️ Arquitetura
 
 O projeto é composto por **3 serviços independentes**:
@@ -104,7 +106,7 @@ docker-compose up -d postgres backend
 
 ```
 win-grupo1/
-├── backend/                    # Spring Boot Application
+├── backend/                    # Spring Boot Application (Sistema API)
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/win/marketplace/
@@ -113,7 +115,8 @@ win-grupo1/
 │   │   │   │   ├── repository/      # Spring Data Repos
 │   │   │   │   ├── service/         # Business Logic
 │   │   │   │   ├── dto/             # Data Transfer Objects
-│   │   │   │   └── mapper/          # MapStruct Mappers
+│   │   │   │   ├── mapper/          # MapStruct Mappers
+│   │   │   │   └── util/            # Utilities (PasswordHashGenerator)
 │   │   │   └── resources/
 │   │   │       ├── application.yml
 │   │   │       ├── application-docker.yml
@@ -122,7 +125,7 @@ win-grupo1/
 │   ├── pom.xml
 │   └── Dockerfile
 │
-├── win-frontend/               # React Application
+├── win-frontend/               # React Application (Sistema Frontend)
 │   ├── src/
 │   │   ├── components/         # React Components
 │   │   ├── contexts/           # Context API
@@ -133,17 +136,43 @@ win-grupo1/
 │   ├── package.json
 │   └── Dockerfile
 │
-├── database/
-│   └── init.sql                # Initial DB setup
+├── database/                   # Banco de Dados (Scripts SQL)
+│   ├── init.sql                # Initial DB setup
+│   └── seeds/                  # Dados iniciais
+│       └── seed-categorias.sql
 │
-├── docker-compose.yml          # Services orchestration
-├── .env                        # Environment variables
+├── docs/                       # Documentação do Projeto
+│   ├── README.md               # Índice da documentação
+│   ├── SECURITY.md             # Guia de segurança
+│   ├── OPTIMIZATION.md         # Otimizações implementadas
+│   ├── CLEANUP.md              # Limpeza de arquivos
+│   ├── getting-started/        # Primeiros passos
+│   ├── admin/                  # Administração
+│   ├── configuration/          # Configurações
+│   ├── deployment/             # Deploy e execução
+│   ├── development/            # Desenvolvimento
+│   └── architecture/           # Arquitetura e specs
 │
-└── 📚 Documentação/
-    ├── ESTRUTURA_PROJETO.md    # Arquitetura detalhada
-    ├── EXECUTAR_SERVICOS.md    # Guia Docker completo
-    ├── EXECUTAR_LOCAL.md       # Desenvolvimento local
-    └── scripts-docker.md       # Comandos rápidos
+├── integracoes/                # 🆕 Módulos de Integração Externa
+│   └── README.md               # Guia de integrações (SendGrid, etc)
+│
+├── api-docs/                   # 🆕 API para Consumo Externo
+│   ├── README.md               # Índice da documentação API
+│   ├── INTEGRATION.md          # 🔑 Credenciais + Testes + Endpoints
+│   └── ENDPOINTS.md            # 📋 Referência completa de endpoints
+│
+├── scripts/                    # Scripts auxiliares
+│   ├── create-admin.ps1        # Criar admin (PowerShell)
+│   ├── create-admin.sh         # Criar admin (Bash)
+│   └── seed-categorias.ps1     # Popular categorias
+│
+├── uploads/                    # Arquivos enviados (produtos)
+│   └── .gitkeep
+│
+├── docker-compose.yml          # Orquestração dos serviços
+├── .env                        # Variáveis de ambiente (não versionado)
+├── .env.example                # Template de variáveis
+└── .gitignore                  # Arquivos ignorados pelo git
 ```
 
 ---
@@ -246,8 +275,35 @@ MAIL_PASSWORD=senha-app-16-caracteres
 ```
 
 📖 **Guias Completos:**
-- **SendGrid (10 min):** `_DOCS/SENDGRID_QUICKSTART.md`
-- **SendGrid Detalhado:** `_DOCS/SENDGRID_SETUP.md`
+- **SendGrid (10 min):** [docs/configuration/email-sendgrid.md](docs/configuration/email-sendgrid.md)
+- **SendGrid Detalhado:** [docs/configuration/email-sendgrid-detailed.md](docs/configuration/email-sendgrid-detailed.md)
+
+#### 🔑 **Criar Conta Admin (Primeira Configuração)**
+
+Para acessar o painel administrativo, você precisa criar uma conta admin.
+
+**📖 Guia Completo:** [docs/getting-started/first-admin.md](docs/getting-started/first-admin.md)
+
+**Método Rápido (PowerShell/Windows):**
+```powershell
+# 1. Gerar hash da senha
+Invoke-RestMethod -Uri "http://localhost:8080/api/v1/dev/hash-password" `
+  -Method Post -ContentType "application/json" `
+  -Body '{"senha":"Admin@2025","email":"admin@winmarketplace.com","nome":"Administrador"}' `
+  | Select-Object -ExpandProperty hash
+
+# 2. Copiar o hash e inserir no banco
+docker exec -it win-marketplace-db psql -U postgres -d win_marketplace -c "
+INSERT INTO usuarios (id, email, senha, nome, role, ativo, criado_em, atualizado_em)
+VALUES (gen_random_uuid(), 'admin@winmarketplace.com', 'COLE_O_HASH_AQUI', 'Administrador', 'ADMIN', true, NOW(), NOW());
+"
+```
+
+**Ou use o script automatizado:**
+```powershell
+# Windows: .\scripts\create-admin.ps1
+# Linux/Mac: ./scripts/create-admin.sh
+```
 - **Gmail:** `_DOCS/EMAIL_SETUP.md`
 
 > ✅ **12.000 emails grátis/mês** com SendGrid  
@@ -323,17 +379,44 @@ docker volume prune
 
 ## 📚 Documentação Completa
 
-### Configuração e Deploy
-- **[SENDGRID_QUICKSTART.md](./_DOCS/SENDGRID_QUICKSTART.md)** - Setup SendGrid em 10 minutos ⚡
-- **[SENDGRID_SETUP.md](./_DOCS/SENDGRID_SETUP.md)** - Guia completo SendGrid 📧
-- **[EMAIL_SETUP.md](./_DOCS/EMAIL_SETUP.md)** - Configuração Gmail (alternativa)
-- **[PASSWORD_RESET_IMPLEMENTATION.md](./_DOCS/PASSWORD_RESET_IMPLEMENTATION.md)** - Sistema de reset de senha
+### 🚀 Para Desenvolvedores
 
-### Arquitetura e Execução
-- **[ESTRUTURA_PROJETO.md](./ESTRUTURA_PROJETO.md)** - Arquitetura e componentes
-- **[EXECUTAR_SERVICOS.md](./EXECUTAR_SERVICOS.md)** - Guia completo Docker
-- **[EXECUTAR_LOCAL.md](./EXECUTAR_LOCAL.md)** - Desenvolvimento local
-- **[scripts-docker.md](./scripts-docker.md)** - Referência rápida
+#### Integração e API
+- **[📘 api-docs/INTEGRATION.md](./api-docs/INTEGRATION.md)** - 🔑 **Credenciais + Endpoints + Testes** (INÍCIO AQUI!)
+- **[📋 api-docs/ENDPOINTS.md](./api-docs/ENDPOINTS.md)** - Referência completa de todos os endpoints
+- **[📚 api-docs/README.md](./api-docs/README.md)** - Índice da documentação API
+
+#### Primeiros Passos
+- **[🎯 docs/getting-started/first-admin.md](./docs/getting-started/first-admin.md)** - Criar primeiro admin (5 min)
+- **[⚡ docs/getting-started/quick-reference.md](./docs/getting-started/quick-reference.md)** - Comandos rápidos
+
+### ⚙️ Configuração
+
+#### Email e Segurança
+- **[📧 docs/configuration/email-sendgrid.md](./docs/configuration/email-sendgrid.md)** - Setup SendGrid (10 min) ⚡
+- **[📧 docs/configuration/email-sendgrid-detailed.md](./docs/configuration/email-sendgrid-detailed.md)** - Guia completo SendGrid
+- **[📧 docs/configuration/email-gmail.md](./docs/configuration/email-gmail.md)** - Configuração Gmail (dev)
+- **[🔐 docs/SECURITY.md](./docs/SECURITY.md)** - Guia de segurança e boas práticas
+
+#### Administração
+- **[🔑 docs/admin/password-hash.md](./docs/admin/password-hash.md)** - Gerador de hash de senha
+- **[💡 docs/admin/hash-examples.md](./docs/admin/hash-examples.md)** - 10 exemplos práticos
+
+### 🐳 Deploy e Execução
+- **[🐳 docs/deployment/docker.md](./docs/deployment/docker.md)** - Executar com Docker
+- **[🐳 docs/deployment/docker-commands.md](./docs/deployment/docker-commands.md)** - Comandos Docker
+- **[💻 docs/deployment/local-development.md](./docs/deployment/local-development.md)** - Desenvolvimento local
+
+### 🏗️ Arquitetura
+- **[📐 docs/architecture/project-structure.md](./docs/architecture/project-structure.md)** - Estrutura do projeto
+- **[📋 docs/architecture/specifications.md](./docs/architecture/specifications.md)** - Especificações e requisitos
+
+### ⚡ Otimização
+- **[✨ docs/OPTIMIZATION.md](./docs/OPTIMIZATION.md)** - Resumo de otimizações
+- **[🧹 docs/CLEANUP.md](./docs/CLEANUP.md)** - Limpeza de arquivos
+
+### 🔌 Integrações
+- **[🔌 integracoes/README.md](./integracoes/README.md)** - Guia de integrações externas (SendGrid, etc)
 
 ---
 
@@ -359,11 +442,21 @@ Este projeto está sob a licença MIT.
 
 ---
 
-## 📞 Suporte
+## � Documentação
+
+- **[📖 Documentação Completa](docs/README.md)** - Índice de toda documentação
+- **[🚀 Criar Admin](docs/getting-started/first-admin.md)** - Primeiro acesso
+- **[⚙️ Configurar Email](docs/configuration/email-sendgrid.md)** - SendGrid setup
+- **[🐳 Docker](docs/deployment/docker.md)** - Guia Docker completo
+- **[🏗️ Arquitetura](docs/architecture/project-structure.md)** - Estrutura do código
+
+---
+
+## �📞 Suporte
 
 Para problemas ou dúvidas:
+- **[📚 Consulte a documentação](docs/README.md)**
 - Abra uma [issue](https://github.com/ArthurJsph/win-grupo1/issues)
-- Consulte a documentação completa
 - Verifique os logs: `docker-compose logs -f`
 
 ---

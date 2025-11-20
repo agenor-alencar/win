@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../components/admin/AdminLayout";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
@@ -11,16 +11,103 @@ import {
   ArrowPathIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { api } from "@/lib/Api";
+import { useNotification } from "@/contexts/NotificationContext";
+
+interface Lojista {
+  id: string;
+  usuarioId: string;
+  usuarioNome: string;
+  usuarioEmail: string;
+  cnpj: string;
+  nomeFantasia: string;
+  razaoSocial: string;
+  descricao: string;
+  telefone: string;
+  email: string;
+  ativo: boolean;
+  criadoEm: string;
+}
 
 const AdminStores: React.FC = () => {
+  const { showNotification } = useNotification();
   const [selectedStore, setSelectedStore] = useState<any>(null);
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showCreateStoreModal, setShowCreateStoreModal] = useState(false);
+  const [stores, setStores] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    ativas: 0,
+    pendentes: 0,
+    suspensas: 0,
+  });
+
+  useEffect(() => {
+    loadStores();
+  }, []);
+
+  const loadStores = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/v1/lojistas");
+      const lojistasData: Lojista[] = response.data;
+
+      // Transformar dados para o formato da tabela
+      const formattedStores = lojistasData.map((loja) => ({
+        id: loja.id,
+        name: loja.nomeFantasia,
+        cnpj: loja.cnpj,
+        owner: loja.usuarioNome,
+        category: "Geral",
+        rating: "4.5",
+        status: loja.ativo ? "Ativo" : "Suspenso",
+        products: 0, // TODO: Implementar contagem de produtos
+        createdAt: new Date(loja.criadoEm).toLocaleDateString("pt-BR"),
+        phone: loja.telefone || "-",
+        email: loja.email || loja.usuarioEmail,
+        address: "-",
+        description: loja.descricao || "-",
+        ativo: loja.ativo,
+      }));
+
+      setStores(formattedStores);
+
+      // Calcular estatísticas
+      const ativas = formattedStores.filter((s) => s.status === "Ativo").length;
+      const suspensas = formattedStores.filter((s) => s.status === "Suspenso").length;
+      const pendentes = 0; // TODO: Implementar status pendente
+
+      setStats({ ativas, pendentes, suspensas });
+    } catch (error: any) {
+      console.error("Erro ao carregar lojas:", error);
+      showNotification("Erro ao carregar lojas", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleStoreStatus = async (store: any) => {
+    try {
+      const endpoint = store.ativo
+        ? `/api/v1/lojistas/${store.id}/desativar`
+        : `/api/v1/lojistas/${store.id}/ativar`;
+
+      await api.patch(endpoint);
+      showNotification(
+        `Loja ${store.ativo ? "suspensa" : "ativada"} com sucesso`,
+        "success"
+      );
+      loadStores();
+    } catch (error: any) {
+      console.error("Erro ao alterar status da loja:", error);
+      showNotification("Erro ao alterar status da loja", "error");
+    }
+  };
 
   const handleCreateStore = (storeData: any) => {
     console.log("Creating store:", storeData);
-    // Here you would typically send the data to your backend
+    // TODO: Implementar criação de loja
     setShowCreateStoreModal(false);
   };
 
@@ -63,7 +150,7 @@ const AdminStores: React.FC = () => {
     { key: "createdAt", label: "Cadastro", sortable: true },
   ];
 
-  const stores = [
+  const storesMock = [
     {
       id: "2001",
       name: "TechStore Pro",
@@ -172,10 +259,8 @@ const AdminStores: React.FC = () => {
       color: "primary",
     },
     {
-      label: "Suspender",
-      onClick: (store) => {
-        console.log("Suspend store:", store.id);
-      },
+      label: "Ativar/Suspender",
+      onClick: handleToggleStoreStatus,
       color: "danger",
     },
   ];
@@ -204,9 +289,13 @@ const AdminStores: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <ArrowPathIcon className="w-4 h-4" />
-              <span>Atualizar</span>
+            <button 
+              onClick={loadStores}
+              disabled={loading}
+              className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>{loading ? 'Atualizando...' : 'Atualizar'}</span>
             </button>
             <button
               onClick={() => setShowCreateStoreModal(true)}
@@ -227,7 +316,7 @@ const AdminStores: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Ativas</p>
-                <p className="text-xl font-semibold text-[#111827]">1,205</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.ativas}</p>
               </div>
             </div>
           </div>
@@ -238,7 +327,7 @@ const AdminStores: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Pendentes</p>
-                <p className="text-xl font-semibold text-[#111827]">47</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.pendentes}</p>
               </div>
             </div>
           </div>
@@ -249,7 +338,7 @@ const AdminStores: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Suspensas</p>
-                <p className="text-xl font-semibold text-[#111827]">12</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.suspensas}</p>
               </div>
             </div>
           </div>
@@ -260,7 +349,7 @@ const AdminStores: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Total</p>
-                <p className="text-xl font-semibold text-[#111827]">1,264</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.ativas + stats.pendentes + stats.suspensas}</p>
               </div>
             </div>
           </div>

@@ -221,27 +221,97 @@ export default function MerchantProducts() {
     image: null,
   });
 
-  const handleAddProduct = (e: React.FormEvent) => {
+  const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    success("Produto adicionado!", "Produto criado com sucesso");
-    setShowAddProduct(false);
-    setNewProduct({
-      name: "",
-      description: "",
-      price: "",
-      stock: "",
-      category: "",
-      sku: "",
-      image: null,
-    });
+    
+    if (!lojista) {
+      notifyError("Erro", "Lojista não identificado");
+      return;
+    }
+
+    try {
+      const productData = {
+        nome: newProduct.name,
+        descricao: newProduct.description,
+        preco: parseFloat(newProduct.price),
+        quantidadeEstoque: parseInt(newProduct.stock),
+        categoriaId: newProduct.category,
+        lojistaId: lojista.id,
+        ativo: true,
+        sku: newProduct.sku || undefined,
+      };
+
+      await api.post("/api/v1/produtos", productData);
+      
+      success("Produto adicionado!", "Produto criado com sucesso");
+      setShowAddProduct(false);
+      setNewProduct({
+        name: "",
+        description: "",
+        price: "",
+        stock: "",
+        category: "",
+        sku: "",
+        image: null,
+      });
+      
+      await fetchProducts(); // Recarregar lista
+    } catch (err: any) {
+      console.error("Erro ao criar produto:", err);
+      notifyError(
+        "Erro ao criar produto",
+        err.response?.data?.message || "Não foi possível criar o produto"
+      );
+    }
   };
 
-  const toggleProductStatus = (productId: number) => {
-    success("Status atualizado!", "Produto foi ativado/desativado");
+  // Função para editar produto
+  const handleEditProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingProduct) return;
+
+    try {
+      const productData = {
+        nome: editingProduct.nome,
+        descricao: editingProduct.descricao,
+        preco: editingProduct.preco,
+        quantidadeEstoque: editingProduct.estoque,
+        categoriaId: editingProduct.categoria?.id,
+        lojistaId: editingProduct.lojista.id,
+        ativo: editingProduct.ativo,
+      };
+
+      await api.put(`/api/v1/produtos/${editingProduct.id}`, productData);
+      
+      success("Produto atualizado!", "Alterações salvas com sucesso");
+      setEditingProduct(null);
+      await fetchProducts();
+    } catch (err: any) {
+      console.error("Erro ao atualizar produto:", err);
+      notifyError(
+        "Erro ao atualizar",
+        err.response?.data?.message || "Não foi possível atualizar o produto"
+      );
+    }
   };
 
-  const deleteProduct = (productId: number) => {
-    success("Produto removido!", "Produto foi excluído da loja");
+  // Função para atualizar estoque
+  const handleUpdateStock = async (productId: string, newQuantity: number) => {
+    try {
+      await api.patch(`/api/v1/produtos/${productId}/estoque`, {
+        quantidadeEstoque: newQuantity,
+      });
+      
+      success("Estoque atualizado!", "Quantidade alterada com sucesso");
+      await fetchProducts();
+    } catch (err: any) {
+      console.error("Erro ao atualizar estoque:", err);
+      notifyError(
+        "Erro ao atualizar estoque",
+        err.response?.data?.message || "Não foi possível atualizar o estoque"
+      );
+    }
   };
 
   const filteredProducts = products.filter((product) => {
@@ -249,7 +319,7 @@ export default function MerchantProducts() {
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
-      filterCategory === "all" || product.categoria.id === filterCategory;
+      filterCategory === "all" || product.categoria?.id === filterCategory;
     const matchesStatus =
       filterStatus === "all" ||
       (filterStatus === "active" && product.ativo) ||
@@ -501,7 +571,7 @@ export default function MerchantProducts() {
                         {product.nome}
                       </h3>
                       <p style={{ fontSize: "12px", color: "#666666" }}>
-                        ID: {product.id} • {product.categoria.nome}
+                        ID: {product.id} • {product.categoria?.nome || "Sem categoria"}
                       </p>
                     </div>
 

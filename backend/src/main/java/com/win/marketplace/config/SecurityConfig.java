@@ -16,7 +16,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Configuração de segurança do Spring Security com JWT
@@ -47,12 +49,27 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000", 
-            "http://127.0.0.1:3000",
-            "http://localhost:3001",
-            "http://127.0.0.1:3001"
-        ));
+        
+        // Permite localhost para desenvolvimento e IP/domínio da VPS para produção
+        String allowedOriginsEnv = System.getenv("ALLOWED_ORIGINS");
+        List<String> allowedOrigins = new ArrayList<>();
+        
+        // Origens padrão para desenvolvimento local
+        allowedOrigins.add("http://localhost:3000");
+        allowedOrigins.add("http://127.0.0.1:3000");
+        allowedOrigins.add("http://localhost:3001");
+        allowedOrigins.add("http://127.0.0.1:3001");
+        
+        // Adiciona origens personalizadas da variável de ambiente ALLOWED_ORIGINS
+        // Configure no .env: ALLOWED_ORIGINS=http://seu-ip,https://seu-dominio.com
+        if (allowedOriginsEnv != null && !allowedOriginsEnv.trim().isEmpty()) {
+            String[] origins = allowedOriginsEnv.split(",");
+            for (String origin : origins) {
+                allowedOrigins.add(origin.trim());
+            }
+        }
+        
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -77,11 +94,13 @@ public class SecurityConfig {
                 // Endpoints públicos (não requerem autenticação)
                 .requestMatchers("/api/v1/auth/login", "/api/v1/auth/login/**", "/api/v1/auth/register").permitAll()
                 .requestMatchers("/api/v1/password-reset/**").permitAll() // Reset de senha público
+                .requestMatchers("/api/v1/dev/**").permitAll() // Dev Tools (gerador de hash)
                 .requestMatchers("/api/v1/produtos/**").permitAll() // Permitir listagem pública de produtos
                 .requestMatchers("/api/v1/categoria/**").permitAll() // Permitir listagem pública de categorias
                 .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger público
                 .requestMatchers("/error").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 
                 // Endpoints administrativos (apenas ADMIN)
                 .requestMatchers("/api/v1/auth/promote-to-admin").hasAuthority("ADMIN")

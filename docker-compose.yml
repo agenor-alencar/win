@@ -4,10 +4,10 @@ services:
     image: postgres:16-alpine
     container_name: win-marketplace-db
     environment:
-      POSTGRES_DB: win_marketplace
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
-      TZ: America/Sao_Paulo
+      POSTGRES_DB: ${POSTGRES_DB:-win_marketplace}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      TZ: ${TZ:-America/Sao_Paulo}
     ports:
       - "5432:5432"
     volumes:
@@ -29,12 +29,15 @@ services:
       dockerfile: Dockerfile
     container_name: win-marketplace-backend
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/win_marketplace
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres123
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      TZ: America/Sao_Paulo
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-win_marketplace}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${HIBERNATE_DDL_AUTO:-update}
+      TZ: ${TZ:-America/Sao_Paulo}
+      
+      # Configuração CORS (adicione seus IPs/domínios separados por vírgula)
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
       
       # ========================================
       # Configurações de Email
@@ -55,6 +58,16 @@ services:
       MAIL_PASSWORD: ${SENDGRID_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-}
       
+      # Dev Tools (gerador de hash de senha)
+      DEV_TOOLS_ENABLED: ${DEV_TOOLS_ENABLED:-true}
+      
+      # ========================================
+      # Mercado Pago Configuration
+      # ========================================
+      # Obtenha seu Access Token em: https://www.mercadopago.com.br/developers/panel/app
+      # Crie uma aplicação > Credenciais > Access Token (Produção ou Teste)
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-}
+      
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     ports:
       - "8080:8080"
@@ -63,7 +76,6 @@ services:
     networks:
       - win-network
     restart: unless-stopped
-    # Removido depends_on para permitir inicialização independente
 
   # Frontend React/Vite
   frontend:
@@ -74,6 +86,8 @@ services:
     environment:
       VITE_API_URL: http://localhost:8080
       NODE_ENV: development
+      # Mercado Pago Public Key (para o SDK React)
+      VITE_MERCADOPAGO_PUBLIC_KEY: ${VITE_MERCADOPAGO_PUBLIC_KEY:-}
     ports:
       - "3000:3000"
     volumes:
@@ -82,7 +96,6 @@ services:
     networks:
       - win-network
     restart: unless-stopped
-    # Sem depends_on - roda independentemente
 
 volumes:
   postgres_data:

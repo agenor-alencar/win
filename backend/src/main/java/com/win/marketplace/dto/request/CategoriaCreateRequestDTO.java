@@ -8,5 +8,8 @@ public record CategoriaCreateRequestDTO(
     String nome,
 
     @Size(max = 5000, message = "Descrição deve ter no máximo 5000 caracteres")
-    String descricao
+    String descricao,
+
+    @Size(max = 50, message = "Nome do ícone deve ter no máximo 50 caracteres")
+    String icone
 ) {}

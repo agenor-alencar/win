@@ -28,6 +28,9 @@ public class Categoria {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
+    @Column(length = 50)
+    private String icone;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_pai_id")
     private Categoria categoriaPai;

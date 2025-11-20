@@ -111,4 +111,18 @@ public class AvaliacaoProdutoController {
         avaliacaoService.deletar(id, usuarioId);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Lista avaliações dos produtos de um lojista
+     */
+    @GetMapping("/lojista/{lojistaId}")
+    @Operation(summary = "Listar avaliações do lojista", description = "Lista todas as avaliações dos produtos de um lojista")
+    public ResponseEntity<Page<AvaliacaoProdutoResponseDTO>> listarPorLojista(
+            @Parameter(description = "ID do lojista") @PathVariable UUID lojistaId,
+            @PageableDefault(size = 20, sort = "criadoEm") Pageable pageable) {
+        
+        log.info("GET /api/v1/avaliacoes-produtos/lojista/{}", lojistaId);
+        Page<AvaliacaoProdutoResponseDTO> avaliacoes = avaliacaoService.listarPorLojista(lojistaId, pageable);
+        return ResponseEntity.ok(avaliacoes);
+    }
 }

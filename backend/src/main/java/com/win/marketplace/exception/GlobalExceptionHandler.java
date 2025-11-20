@@ -1,5 +1,7 @@
 package com.win.marketplace.exception;
 
+import com.mercadopago.exceptions.MPApiException;
+import com.mercadopago.exceptions.MPException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -19,6 +21,52 @@ import java.util.List;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * Trata exceções da API do Mercado Pago (400, 401, etc.)
+     */
+    @ExceptionHandler(MPApiException.class)
+    public ResponseEntity<ErrorResponse> handleMercadoPagoApiException(
+            MPApiException ex,
+            HttpServletRequest request) {
+        
+        log.error("Erro da API Mercado Pago - Status: {}, Message: {}, ApiResponse: {}", 
+                ex.getStatusCode(), ex.getMessage(), ex.getApiResponse(), ex);
+        
+        String detailedMessage = String.format("Erro Mercado Pago (Status %d): %s", 
+                ex.getStatusCode(), ex.getMessage());
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Mercado Pago API Error")
+                .message(detailedMessage)
+                .path(request.getRequestURI())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Trata exceções do SDK do Mercado Pago
+     */
+    @ExceptionHandler(MPException.class)
+    public ResponseEntity<ErrorResponse> handleMercadoPagoSdkException(
+            MPException ex,
+            HttpServletRequest request) {
+        
+        log.error("Erro no SDK Mercado Pago: {}", ex.getMessage(), ex);
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Mercado Pago SDK Error")
+                .message("Erro ao processar pagamento: " + ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
 
     /**
      * Trata exceções de recurso não encontrado (404)

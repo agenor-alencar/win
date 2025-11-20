@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,4 +51,17 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     
     @Query("SELECT COUNT(DISTINCT p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId")
     long countByLojistaId(@Param("lojistaId") UUID lojistaId);
+    
+    // Queries para relatórios financeiros
+    @Query("SELECT p.total, p.status FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.criadoEm >= :dataInicio AND p.criadoEm <= :dataFim")
+    List<Object[]> findPedidosFinanceirosPorLojista(@Param("lojistaId") UUID lojistaId, @Param("dataInicio") OffsetDateTime dataInicio, @Param("dataFim") OffsetDateTime dataFim);
+    
+    @Query("SELECT CAST(p.criadoEm AS date) as dia, SUM(p.total), COUNT(p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.criadoEm >= :dataInicio AND p.criadoEm <= :dataFim GROUP BY CAST(p.criadoEm AS date) ORDER BY dia")
+    List<Object[]> findReceitaPorDia(@Param("lojistaId") UUID lojistaId, @Param("dataInicio") OffsetDateTime dataInicio, @Param("dataFim") OffsetDateTime dataFim);
+    
+    @Query("SELECT YEAR(p.criadoEm), MONTH(p.criadoEm), SUM(p.total), COUNT(p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.criadoEm >= :dataInicio AND p.criadoEm <= :dataFim GROUP BY YEAR(p.criadoEm), MONTH(p.criadoEm) ORDER BY YEAR(p.criadoEm), MONTH(p.criadoEm)")
+    List<Object[]> findReceitaPorMes(@Param("lojistaId") UUID lojistaId, @Param("dataInicio") OffsetDateTime dataInicio, @Param("dataFim") OffsetDateTime dataFim);
+    
+    @Query("SELECT i.produto.id, i.produto.nome, SUM(i.quantidade), SUM(i.precoUnitario * i.quantidade), AVG(i.precoUnitario) FROM ItemPedido i WHERE i.lojista.id = :lojistaId AND i.pedido.criadoEm >= :dataInicio AND i.pedido.criadoEm <= :dataFim GROUP BY i.produto.id, i.produto.nome ORDER BY SUM(i.precoUnitario * i.quantidade) DESC")
+    List<Object[]> findTopProdutosPorLojista(@Param("lojistaId") UUID lojistaId, @Param("dataInicio") OffsetDateTime dataInicio, @Param("dataFim") OffsetDateTime dataFim);
 }

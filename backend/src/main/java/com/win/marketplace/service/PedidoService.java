@@ -1,16 +1,19 @@
 package com.win.marketplace.service;
 
+import com.win.marketplace.dto.request.ItemPedidoRequestDTO;
 import com.win.marketplace.dto.request.PedidoCreateRequestDTO;
 import com.win.marketplace.dto.response.PedidoResponseDTO;
 import com.win.marketplace.dto.mapper.PedidoMapper;
 import com.win.marketplace.model.*;
 import com.win.marketplace.repository.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,24 +25,56 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final UsuarioRepository usuarioRepository;
     private final MotoristaRepository motoristaRepository;
+    private final ProdutoRepository produtoRepository;
     private final PedidoMapper pedidoMapper;
+    private final ObjectMapper objectMapper;
 
     public PedidoResponseDTO criarPedido(PedidoCreateRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(requestDTO.usuarioId())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        Pedido pedido = pedidoMapper.toEntity(requestDTO);
+        Pedido pedido = new Pedido();
         pedido.setUsuario(usuario);
         pedido.setNumeroPedido(gerarNumeroPedido());
         pedido.setStatus(Pedido.StatusPedido.PENDENTE);
         
-        // Inicializar valores padrão se não foram definidos
-        if (pedido.getDesconto() == null) {
-            pedido.setDesconto(BigDecimal.ZERO);
+        // Mapear endereço de entrega
+        try {
+            Pedido.Endereco endereco = objectMapper.convertValue(requestDTO.enderecoEntrega(), Pedido.Endereco.class);
+            pedido.setEnderecoEntrega(endereco);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao mapear endereço de entrega: " + e.getMessage());
         }
-        if (pedido.getFrete() == null) {
-            pedido.setFrete(BigDecimal.ZERO);
+        
+        // Mapear pagamento se presente
+        if (requestDTO.pagamento() != null) {
+            try {
+                Pedido.Pagamento pagamento = objectMapper.convertValue(requestDTO.pagamento(), Pedido.Pagamento.class);
+                pedido.setPagamento(pagamento);
+            } catch (Exception e) {
+                throw new RuntimeException("Erro ao mapear pagamento: " + e.getMessage());
+            }
         }
+        
+        // Inicializar valores
+        pedido.setDesconto(requestDTO.desconto() != null ? requestDTO.desconto() : BigDecimal.ZERO);
+        pedido.setFrete(requestDTO.frete() != null ? requestDTO.frete() : BigDecimal.ZERO);
+        
+        // Mapear itens
+        List<ItemPedido> itens = new ArrayList<>();
+        for (ItemPedidoRequestDTO itemDTO : requestDTO.itens()) {
+            Produto produto = produtoRepository.findById(itemDTO.produtoId())
+                    .orElseThrow(() -> new RuntimeException("Produto não encontrado: " + itemDTO.produtoId()));
+            
+            ItemPedido item = new ItemPedido();
+            item.setPedido(pedido);
+            item.setProduto(produto);
+            item.setQuantidade(itemDTO.quantidade());
+            item.setPrecoUnitario(itemDTO.precoUnitario());
+            
+            itens.add(item);
+        }
+        pedido.setItens(itens);
         
         // Calcular totais
         calcularTotais(pedido);
