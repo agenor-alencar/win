@@ -37,7 +37,7 @@ services:
       TZ: ${TZ:-America/Sao_Paulo}
       
       # Configuração CORS (adicione seus IPs/domínios separados por vírgula)
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://137.184.87.106:3000,http://137.184.87.106}
       
       # ========================================
       # Configurações de Email
