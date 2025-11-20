@@ -74,6 +74,11 @@ app:
     url: ${FRONTEND_URL:http://localhost:3000}
   dev-tools:
     enabled: ${DEV_TOOLS_ENABLED:false}  # true apenas em dev/staging, NUNCA em produção
+  upload:
+    dir: ${user.dir}/uploads/produtos
+  gtin-api:
+    url: ${GTIN_API_URL:https://api.cosmos.bluesoft.com.br/gtins}
+    token: ${GTIN_API_TOKEN:}  # Token de autenticação da API GTIN (opcional)
 
 # Mercado Pago Configuration
 mercadopago:

@@ -28,9 +28,11 @@ import {
   Eye,
   Trash2,
   CheckCircle,
+  Loader2,
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
 import { MerchantLayout } from "@/components/MerchantLayout";
+import { api } from "@/lib/api";
 
 interface ProductImage {
   id: string;
@@ -83,6 +85,10 @@ export default function MerchantProductForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const { success, error: notifyError } = useNotification();
+
+  // Estados para busca GTIN/EAN
+  const [gtin, setGtin] = useState('');
+  const [loadingGtin, setLoadingGtin] = useState(false);
 
   const [productData, setProductData] = useState<ProductData>({
     title: "",
@@ -229,6 +235,57 @@ export default function MerchantProductForm() {
           : "Produto disponível na sua loja",
       );
     }, 2000);
+  };
+
+  const handleGtinLookup = async () => {
+    if (!gtin || gtin.trim().length === 0) {
+      notifyError(
+        "GTIN/EAN Inválido",
+        "Por favor, insira um código GTIN/EAN válido."
+      );
+      return;
+    }
+
+    setLoadingGtin(true);
+
+    try {
+      const response = await api.get(`/v1/produtos/gtin/${gtin.trim()}`);
+      
+      if (response.status === 200 && response.data) {
+        const data = response.data;
+        
+        // Atualizar campos do formulário com os dados retornados
+        setProductData({
+          ...productData,
+          weight: data.pesoKg || productData.weight,
+          dimensions: {
+            length: data.comprimentoCm || productData.dimensions.length,
+            width: data.larguraCm || productData.dimensions.width,
+            height: data.alturaCm || productData.dimensions.height,
+          },
+        });
+
+        success(
+          "Medidas Importadas!",
+          "Os dados logísticos foram preenchidos automaticamente."
+        );
+      }
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        notifyError(
+          "GTIN/EAN Não Encontrado",
+          "Não foram encontradas informações para este código."
+        );
+      } else {
+        notifyError(
+          "Erro na Busca",
+          "Ocorreu um erro ao buscar as informações do GTIN/EAN. Tente novamente."
+        );
+      }
+      console.error("Erro ao buscar GTIN:", err);
+    } finally {
+      setLoadingGtin(false);
+    }
   };
 
   const steps = [
@@ -825,6 +882,48 @@ export default function MerchantProductForm() {
 
                     {productData.requiresShipping && (
                       <>
+                        {/* Seção GTIN/EAN */}
+                        <div className="space-y-2 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <Label htmlFor="gtin" className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                            🔍 Buscar Medidas por GTIN/EAN (Código de Barras)
+                          </Label>
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                            Insira o código EAN/GTIN do produto para importar automaticamente peso e dimensões
+                          </p>
+                          <div className="flex gap-2">
+                            <Input
+                              id="gtin"
+                              value={gtin}
+                              onChange={(e) => setGtin(e.target.value)}
+                              placeholder="Ex: 7891234567890"
+                              className="flex-1"
+                              maxLength={14}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleGtinLookup();
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleGtinLookup}
+                              disabled={loadingGtin || !gtin}
+                              className="min-w-[160px]"
+                              variant="default"
+                            >
+                              {loadingGtin ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Buscando...
+                                </>
+                              ) : (
+                                'Buscar Medidas'
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="weight">Peso (kg)</Label>

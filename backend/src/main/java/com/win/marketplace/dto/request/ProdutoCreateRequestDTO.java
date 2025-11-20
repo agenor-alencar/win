@@ -25,6 +25,9 @@ public record ProdutoCreateRequestDTO(
     @Min(value = 0, message = "Estoque não pode ser negativo")
     Integer estoque,
     
+    @Pattern(regexp = "^\\d{8,14}$", message = "GTIN/EAN deve conter entre 8 e 14 dígitos numéricos")
+    String gtinEan,
+    
     @DecimalMin(value = "0.001", message = "Peso deve ser maior que zero")
     @Digits(integer = 5, fraction = 3, message = "Peso inválido (máx: 99999.999 kg)")
     BigDecimal pesoKg,

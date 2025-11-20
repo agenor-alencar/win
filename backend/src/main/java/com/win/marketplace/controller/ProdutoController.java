@@ -2,8 +2,10 @@ package com.win.marketplace.controller;
 
 import com.win.marketplace.dto.request.ProdutoCreateRequestDTO;
 import com.win.marketplace.dto.request.ProdutoUpdateRequestDTO;
+import com.win.marketplace.dto.response.GtinDataResponseDTO;
 import com.win.marketplace.dto.response.ProdutoResponseDTO;
 import com.win.marketplace.dto.response.ProdutoSummaryResponseDTO;
+import com.win.marketplace.service.GtinApiService;
 import com.win.marketplace.service.ProdutoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,6 +22,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -37,6 +40,7 @@ import java.util.UUID;
 public class ProdutoController {
 
     private final ProdutoService produtoService;
+    private final GtinApiService gtinApiService;
 
     /**
      * Cria um novo produto para um lojista - LOJISTA ou ADMIN
@@ -258,5 +262,29 @@ public class ProdutoController {
         log.warn("DELETE /api/v1/produtos/{}/permanente - ATENÇÃO: Deleção permanente!", id);
         produtoService.deletarProdutoPermanentemente(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Consulta dados logísticos de um produto através do código GTIN/EAN
+     * Disponível apenas para lojistas autenticados
+     */
+    @GetMapping("/gtin/{gtinEan}")
+    @PreAuthorize("hasAuthority('LOJISTA')")
+    @Operation(summary = "Consultar GTIN/EAN", description = "Consulta dados logísticos (peso e dimensões) através do código GTIN/EAN")
+    public ResponseEntity<GtinDataResponseDTO> consultarGtin(
+            @Parameter(description = "Código GTIN/EAN do produto (8-14 dígitos)") 
+            @PathVariable String gtinEan) {
+        
+        log.info("GET /api/v1/produtos/gtin/{} - Consultando dados do produto", gtinEan);
+        
+        Optional<GtinDataResponseDTO> dados = gtinApiService.consultarDadosLogisticos(gtinEan);
+        
+        if (dados.isPresent()) {
+            log.info("Dados encontrados para GTIN/EAN: {}", gtinEan);
+            return ResponseEntity.ok(dados.get());
+        }
+        
+        log.warn("Dados não encontrados para GTIN/EAN: {}", gtinEan);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 }

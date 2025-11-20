@@ -49,6 +49,9 @@ public class Produto {
     @Column(name = "estoque", nullable = false)
     private Integer estoque = 0;
 
+    @Column(name = "gtin_ean", unique = true, length = 14)
+    private String gtinEan;
+
     @Column(name = "peso_kg", precision = 8, scale = 3)
     private BigDecimal pesoKg;
 
