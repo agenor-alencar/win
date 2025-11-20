@@ -24,6 +24,14 @@ public record RegisterRequestDTO(
     @Pattern(regexp = "\\(\\d{2}\\)\\s\\d{4,5}-\\d{4}", message = "Telefone deve estar no formato (00) 0000-0000 ou (00) 00000-0000")
     String telefone,
 
-    @Past(message = "Data de nascimento deve estar no passado")
     java.time.LocalDate dataNascimento
-) {}
+) {
+    // Validação customizada no construtor canônico
+    public RegisterRequestDTO {
+        // Validar data de nascimento apenas se fornecida
+        if (dataNascimento != null && !dataNascimento.isBefore(java.time.LocalDate.now())) {
+            throw new IllegalArgumentException("Data de nascimento deve estar no passado");
+        }
+    }
+}
+

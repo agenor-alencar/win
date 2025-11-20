@@ -192,14 +192,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     updateState({ isLoading: true, error: null });
     try {
       // Preparar dados para o backend
-      const registrationData = {
+      const registrationData: any = {
         nome: `${userData.nome} ${userData.sobrenome}`.trim(), // Concatenar nome e sobrenome
         email: userData.email,
-        cpf: userData.cpf,
+        cpf: userData.cpf, // Manter formatação do CPF (000.000.000-00)
         senha: userData.senha,
-        telefone: userData.telefone || undefined,
-        dataNascimento: userData.dataNascimento || undefined
       };
+
+      // Adicionar telefone apenas se fornecido (com formatação) e não vazio
+      if (userData.telefone && userData.telefone.trim() && userData.telefone !== '(  )  -    ') {
+        registrationData.telefone = userData.telefone;
+      }
+
+      // Adicionar dataNascimento apenas se fornecido (formato LocalDate esperado pelo backend)
+      // Input date retorna string vazia "" quando não preenchido, então verificamos isso
+      if (userData.dataNascimento && userData.dataNascimento.trim() !== '') {
+        registrationData.dataNascimento = userData.dataNascimento; // Já está no formato YYYY-MM-DD do input date
+      }
 
       console.log("📤 Enviando dados de registro:", registrationData);
       const response = await api.post("/api/v1/auth/register", registrationData);
@@ -209,7 +218,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error: any) {
       console.error("❌ Registration failed:", error);
       console.error("❌ Response data:", error.response?.data);
-      const errorMessage = error.response?.data?.message || "Erro ao registrar usuário. Verifique sua conexão.";
+      
+      // Melhor tratamento de erros do backend
+      let errorMessage = "Erro ao registrar usuário. Verifique sua conexão.";
+      
+      if (error.response?.data) {
+        // Se o backend retornar uma mensagem estruturada
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.data.errors) {
+          // Validação de campos
+          const errors = error.response.data.errors;
+          if (Array.isArray(errors)) {
+            errorMessage = errors.map((e: any) => e.message || e).join(', ');
+          }
+        }
+      }
+      
       updateState({ isLoading: false, error: errorMessage });
       return false;
     } finally {
