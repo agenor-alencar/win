@@ -276,6 +276,16 @@ export default function ProductFormPage() {
       return;
     }
 
+    // Validar imagens obrigatórias no modo de criação
+    if (!isEditing && selectedFiles.length === 0 && (!imagensExistentes || imagensExistentes.length === 0)) {
+      toast({
+        title: "Imagens obrigatórias",
+        description: "Você deve adicionar pelo menos uma imagem do produto.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -489,21 +499,15 @@ export default function ProductFormPage() {
                 </div>
               </div>
 
-              {/* Informação sobre imagens no modo criação */}
-              {!isEditing && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800">
-                    💡 <strong>Dica:</strong> Você pode adicionar imagens agora ou depois de criar o produto.
-                  </p>
-                </div>
-              )}
-
               {/* Upload de Imagens - Disponível em ambos os modos */}
               <div className="space-y-4 border-t pt-6">
                   <div>
-                    <Label>Imagens do Produto</Label>
+                    <Label className="flex items-center gap-2">
+                      Imagens do Produto
+                      {!isEditing && <span className="text-red-500 text-sm">*</span>}
+                    </Label>
                     <p className="text-sm text-gray-500 mt-1">
-                      Adicione imagens para destacar seu produto
+                      {isEditing ? "Adicione ou remova imagens do produto" : "Adicione pelo menos uma imagem do produto (obrigatório)"}
                     </p>
                     <div className="mt-2">
                       <label
