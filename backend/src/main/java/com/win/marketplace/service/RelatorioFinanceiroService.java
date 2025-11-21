@@ -102,6 +102,17 @@ public class RelatorioFinanceiroService {
         
         // Pagamentos por método
         List<PagamentoPorMetodoDTO> pagamentosPorMetodo = buscarPagamentosPorMetodo(lojistaId, dataInicio, dataFim);
+        
+        // Calcular saldo disponível (receita líquida de pedidos entregues há mais de 7 dias)
+        OffsetDateTime saldoDisponivelDataLimite = OffsetDateTime.now().minusDays(7);
+        BigDecimal saldoDisponivel = calcularReceitaLiquidaPorPeriodo(lojistaId, dataInicio, saldoDisponivelDataLimite);
+        
+        // Calcular saldo pendente (receita líquida de pedidos entregues há menos de 7 dias)
+        BigDecimal saldoPendente = calcularReceitaLiquidaPorPeriodo(lojistaId, saldoDisponivelDataLimite, OffsetDateTime.now());
+        
+        // Total recebido no mês atual (receita líquida do mês)
+        OffsetDateTime inicioMesAtual = OffsetDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        BigDecimal totalRecebidoMesAtual = calcularReceitaLiquidaPorPeriodo(lojistaId, inicioMesAtual, OffsetDateTime.now());
 
         return new RelatorioFinanceiroLojistaDTO(
             receitaTotal,
@@ -115,6 +126,9 @@ public class RelatorioFinanceiroService {
             comissaoPlataforma,
             taxasTransacao,
             receitaLiquida,
+            saldoDisponivel,
+            saldoPendente,
+            totalRecebidoMesAtual,
             totalDevolucoes,
             valorDevolucoes,
             dataInicio,
@@ -131,6 +145,14 @@ public class RelatorioFinanceiroService {
         return result.stream()
             .map(row -> (BigDecimal) row[0])
             .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    
+    private BigDecimal calcularReceitaLiquidaPorPeriodo(UUID lojistaId, OffsetDateTime inicio, OffsetDateTime fim) {
+        BigDecimal receitaBruta = calcularReceitaPorPeriodo(lojistaId, inicio, fim);
+        // Aplicar descontos de comissão (10%) e taxas (3%)
+        BigDecimal comissao = receitaBruta.multiply(new BigDecimal("0.10"));
+        BigDecimal taxas = receitaBruta.multiply(new BigDecimal("0.03"));
+        return receitaBruta.subtract(comissao).subtract(taxas);
     }
 
     private List<ReceitaPorPeriodoDTO> calcularReceitaPorDia(UUID lojistaId, OffsetDateTime inicio, OffsetDateTime fim) {

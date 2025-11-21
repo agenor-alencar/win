@@ -101,6 +101,19 @@ interface Transaction {
   status: string;
 }
 
+interface FinancialReport {
+  saldoDisponivel: number;
+  saldoPendente: number;
+  totalRecebidoMesAtual: number;
+  receitaTotal: number;
+  ticketMedio: number;
+  totalPedidos: number;
+  receitaLiquida: number;
+  comissaoPlataforma: number;
+  receitaPorDia: Array<{ data: string; receita: number; quantidadePedidos: number }>;
+  topProdutos: Array<{ nomeProduto: string; receitaTotal: number }>;
+}
+
 export default function MerchantFinancial() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -117,6 +130,10 @@ export default function MerchantFinancial() {
   const [totalOrders, setTotalOrders] = useState(0);
   const [averageTicket, setAverageTicket] = useState(0);
   const [totalFees, setTotalFees] = useState(0);
+  const [saldoDisponivel, setSaldoDisponivel] = useState(0);
+  const [saldoPendente, setSaldoPendente] = useState(0);
+  const [totalRecebidoMesAtual, setTotalRecebidoMesAtual] = useState(0);
+  const [percentualCrescimento, setPercentualCrescimento] = useState(0);
 
   useEffect(() => {
     fetchFinancialData();
@@ -163,7 +180,16 @@ export default function MerchantFinancial() {
       setTotalRevenue(reportData.receitaTotal || 0);
       setTotalOrders(reportData.totalPedidos || 0);
       setAverageTicket(reportData.ticketMedio || 0);
-      setTotalFees(reportData.comissaoWin || 0);
+      setTotalFees(reportData.comissaoPlataforma || 0);
+      setSaldoDisponivel(reportData.saldoDisponivel || 0);
+      setSaldoPendente(reportData.saldoPendente || 0);
+      setTotalRecebidoMesAtual(reportData.totalRecebidoMesAtual || 0);
+      
+      // Calcular percentual de crescimento
+      if (reportData.receitaMesAnterior && reportData.receitaMesAnterior > 0) {
+        const crescimento = ((reportData.receitaMesAtual - reportData.receitaMesAnterior) / reportData.receitaMesAnterior) * 100;
+        setPercentualCrescimento(crescimento);
+      }
 
       // 4. Gerar dados de gráficos a partir do relatório
       if (reportData.receitaPorDia && reportData.receitaPorDia.length > 0) {
@@ -624,7 +650,7 @@ export default function MerchantFinancial() {
                         Saldo Disponível
                       </p>
                       <p className="text-2xl font-bold text-green-600">
-                        R$ 2.847,52
+                        R$ {saldoDisponivel.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                     <Wallet className="h-8 w-8 text-green-600" />
@@ -644,7 +670,7 @@ export default function MerchantFinancial() {
                         Pendente de Recebimento
                       </p>
                       <p className="text-2xl font-bold text-yellow-600">
-                        R$ 1.456,20
+                        R$ {saldoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                     <Clock className="h-8 w-8 text-yellow-600" />
@@ -663,14 +689,20 @@ export default function MerchantFinancial() {
                         Total Recebido Este Mês
                       </p>
                       <p className="text-2xl font-bold text-blue-600">
-                        R$ 18.420,30
+                        R$ {totalRecebidoMesAtual.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                     <CreditCard className="h-8 w-8 text-blue-600" />
                   </div>
                   <div className="flex items-center mt-4">
-                    <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">+15.2%</span>
+                    {percentualCrescimento >= 0 ? (
+                      <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
+                    ) : (
+                      <ArrowDownRight className="h-4 w-4 text-red-500 mr-1" />
+                    )}
+                    <span className={`text-sm ${percentualCrescimento >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {percentualCrescimento >= 0 ? '+' : ''}{percentualCrescimento.toFixed(1)}%
+                    </span>
                     <span className="text-sm text-gray-500 ml-2">
                       vs mês anterior
                     </span>

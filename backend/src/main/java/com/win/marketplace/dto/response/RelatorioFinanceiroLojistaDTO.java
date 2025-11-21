@@ -23,6 +23,11 @@ public record RelatorioFinanceiroLojistaDTO(
     BigDecimal taxasTransacao,
     BigDecimal receitaLiquida,
     
+    // Saldo e Recebimentos
+    BigDecimal saldoDisponivel,
+    BigDecimal saldoPendente,
+    BigDecimal totalRecebidoMesAtual,
+    
     // Devoluções
     Integer totalDevolucoes,
     BigDecimal valorDevolucoes,

@@ -34,7 +34,7 @@ public class RelatorioFinanceiroController {
      * Gera relatório financeiro completo para um lojista
      */
     @GetMapping("/lojista/{lojistaId}")
-    @PreAuthorize("hasAnyRole('LOJISTA', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('LOJISTA', 'ADMIN')")
     @Operation(summary = "Relatório financeiro do lojista", description = "Gera relatório financeiro completo para um lojista em um período")
     public ResponseEntity<RelatorioFinanceiroLojistaDTO> gerarRelatorioLojista(
             @Parameter(description = "ID do lojista") @PathVariable UUID lojistaId,
@@ -52,7 +52,7 @@ public class RelatorioFinanceiroController {
      * Gera relatório financeiro dos últimos 30 dias
      */
     @GetMapping("/lojista/{lojistaId}/ultimos-30-dias")
-    @PreAuthorize("hasAnyRole('LOJISTA', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('LOJISTA', 'ADMIN')")
     @Operation(summary = "Relatório dos últimos 30 dias", description = "Gera relatório financeiro dos últimos 30 dias")
     public ResponseEntity<RelatorioFinanceiroLojistaDTO> gerarRelatorioUltimos30Dias(
             @Parameter(description = "ID do lojista") @PathVariable UUID lojistaId) {
@@ -68,7 +68,7 @@ public class RelatorioFinanceiroController {
      * Gera relatório financeiro do mês atual
      */
     @GetMapping("/lojista/{lojistaId}/mes-atual")
-    @PreAuthorize("hasAnyRole('LOJISTA', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('LOJISTA', 'ADMIN')")
     @Operation(summary = "Relatório do mês atual", description = "Gera relatório financeiro do mês atual")
     public ResponseEntity<RelatorioFinanceiroLojistaDTO> gerarRelatorioMesAtual(
             @Parameter(description = "ID do lojista") @PathVariable UUID lojistaId) {
