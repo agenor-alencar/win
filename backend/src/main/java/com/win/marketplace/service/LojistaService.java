@@ -2,15 +2,23 @@ package com.win.marketplace.service;
 
 import com.win.marketplace.dto.request.LojistaCreateRequestDTO;
 import com.win.marketplace.dto.response.LojistaResponseDTO;
+import com.win.marketplace.dto.response.LojistaEstatisticasDTO;
 import com.win.marketplace.dto.mapper.LojistaMapper;
 import com.win.marketplace.model.Lojista;
+import com.win.marketplace.model.Pedido;
 import com.win.marketplace.model.Usuario;
 import com.win.marketplace.repository.LojistaRepository;
 import com.win.marketplace.repository.UsuarioRepository;
+import com.win.marketplace.repository.ProdutoRepository;
+import com.win.marketplace.repository.PedidoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,6 +30,8 @@ public class LojistaService {
     private final LojistaRepository lojistaRepository;
     private final UsuarioRepository usuarioRepository;
     private final LojistaMapper lojistaMapper;
+    private final ProdutoRepository produtoRepository;
+    private final PedidoRepository pedidoRepository;
 
     public LojistaResponseDTO criarLojista(LojistaCreateRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(requestDTO.usuarioId())
@@ -129,5 +139,55 @@ public class LojistaService {
         lojista.setAtivo(false);
         Lojista savedLojista = lojistaRepository.save(lojista);
         return lojistaMapper.toResponseDTO(savedLojista);
+    }
+    
+    /**
+     * Busca estatísticas do lojista para o dashboard
+     */
+    @Transactional(readOnly = true)
+    public LojistaEstatisticasDTO buscarEstatisticas(UUID lojistaId) {
+        // Verificar se lojista existe
+        Lojista lojista = lojistaRepository.findById(lojistaId)
+                .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
+        
+        // Calcular datas
+        LocalDateTime inicioHoje = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+        LocalDateTime fimHoje = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+        LocalDateTime inicioOntem = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.MIN);
+        LocalDateTime fimOntem = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.MAX);
+        
+        // Buscar vendas de hoje
+        Long vendasHoje = pedidoRepository.countByLojistaIdAndCriadoEmBetween(lojistaId, inicioHoje, fimHoje);
+        
+        // Buscar vendas de ontem
+        Long vendasOntem = pedidoRepository.countByLojistaIdAndCriadoEmBetween(lojistaId, inicioOntem, fimOntem);
+        
+        // Buscar receita de hoje
+        BigDecimal receitaHoje = pedidoRepository.sumTotalByLojistaIdAndCriadoEmBetween(lojistaId, inicioHoje, fimHoje);
+        
+        // Buscar receita de ontem
+        BigDecimal receitaOntem = pedidoRepository.sumTotalByLojistaIdAndCriadoEmBetween(lojistaId, inicioOntem, fimOntem);
+        
+        // Buscar pedidos pendentes (PENDENTE + PREPARANDO)
+        Long pedidosPendentes = pedidoRepository.countByLojistaIdAndStatusIn(
+            lojistaId, 
+            List.of(Pedido.StatusPedido.PENDENTE, Pedido.StatusPedido.PREPARANDO)
+        );
+        
+        // Buscar produtos ativos
+        Long produtosAtivos = produtoRepository.countByLojistaIdAndAtivo(lojistaId, true);
+        
+        // Buscar produtos inativos
+        Long produtosInativos = produtoRepository.countByLojistaIdAndAtivo(lojistaId, false);
+        
+        return LojistaEstatisticasDTO.criar(
+            vendasHoje,
+            vendasOntem,
+            receitaHoje,
+            receitaOntem,
+            pedidosPendentes,
+            produtosAtivos,
+            produtosInativos
+        );
     }
 }

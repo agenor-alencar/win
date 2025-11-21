@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,8 +31,23 @@ import {
   ArrowUpRight,
   CheckCircle,
   XCircle,
+  Loader2,
 } from "lucide-react";
 import { MerchantLayout } from "@/components/MerchantLayout";
+import api from "@/shared/api";
+import { useToast } from "@/hooks/use-toast";
+
+interface EstatisticasLojista {
+  vendasHoje: number;
+  vendasOntem: number;
+  receitaHoje: number;
+  receitaOntem: number;
+  pedidosPendentes: number;
+  produtosAtivos: number;
+  produtosInativos: number;
+  percentualVariacaoVendas: number;
+  percentualVariacaoReceita: number;
+}
 
 // Mock data
 const salesData = [
@@ -150,6 +165,33 @@ const getStatusBadge = (status: string) => {
 
 export default function MerchantDashboardNew() {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
+  const [estatisticas, setEstatisticas] = useState<EstatisticasLojista | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchEstatisticas = async () => {
+      try {
+        setLoadingStats(true);
+        const lojistaResponse = await api.get('/lojistas/me');
+        const lojistaId = lojistaResponse.data.id;
+        
+        const statsResponse = await api.get(`/lojistas/${lojistaId}/estatisticas`);
+        setEstatisticas(statsResponse.data);
+      } catch (error) {
+        console.error("Erro ao carregar estatísticas:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar estatísticas",
+          description: "Não foi possível carregar as estatísticas da loja.",
+        });
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchEstatisticas();
+  }, [toast]);
 
   return (
     <MerchantLayout>
@@ -191,12 +233,33 @@ export default function MerchantDashboardNew() {
                   <p className="text-sm font-medium text-gray-600">
                     Vendas Hoje
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">32</p>
-                  <div className="flex items-center mt-2">
-                    <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">+12%</span>
-                    <span className="text-sm text-gray-500 ml-2">vs ontem</span>
-                  </div>
+                  {loadingStats ? (
+                    <div className="flex items-center mt-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {estatisticas?.vendasHoje ?? 0}
+                      </p>
+                      <div className="flex items-center mt-2">
+                        <ArrowUpRight className={`h-4 w-4 mr-1 ${
+                          (estatisticas?.percentualVariacaoVendas ?? 0) >= 0 
+                            ? 'text-green-500' 
+                            : 'text-red-500'
+                        }`} />
+                        <span className={`text-sm ${
+                          (estatisticas?.percentualVariacaoVendas ?? 0) >= 0 
+                            ? 'text-green-600' 
+                            : 'text-red-600'
+                        }`}>
+                          {(estatisticas?.percentualVariacaoVendas ?? 0) >= 0 ? '+' : ''}
+                          {estatisticas?.percentualVariacaoVendas?.toFixed(1) ?? '0.0'}%
+                        </span>
+                        <span className="text-sm text-gray-500 ml-2">vs ontem</span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <ShoppingBag className="h-6 w-6 text-blue-600" />
@@ -212,12 +275,36 @@ export default function MerchantDashboardNew() {
                   <p className="text-sm font-medium text-gray-600">
                     Receita Hoje
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">R$ 3.250</p>
-                  <div className="flex items-center mt-2">
-                    <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">+8.2%</span>
-                    <span className="text-sm text-gray-500 ml-2">vs ontem</span>
-                  </div>
+                  {loadingStats ? (
+                    <div className="flex items-center mt-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-gray-900">
+                        R$ {(estatisticas?.receitaHoje ?? 0).toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
+                      </p>
+                      <div className="flex items-center mt-2">
+                        <ArrowUpRight className={`h-4 w-4 mr-1 ${
+                          (estatisticas?.percentualVariacaoReceita ?? 0) >= 0 
+                            ? 'text-green-500' 
+                            : 'text-red-500'
+                        }`} />
+                        <span className={`text-sm ${
+                          (estatisticas?.percentualVariacaoReceita ?? 0) >= 0 
+                            ? 'text-green-600' 
+                            : 'text-red-600'
+                        }`}>
+                          {(estatisticas?.percentualVariacaoReceita ?? 0) >= 0 ? '+' : ''}
+                          {estatisticas?.percentualVariacaoReceita?.toFixed(1) ?? '0.0'}%
+                        </span>
+                        <span className="text-sm text-gray-500 ml-2">vs ontem</span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <DollarSign className="h-6 w-6 text-green-600" />
@@ -233,14 +320,22 @@ export default function MerchantDashboardNew() {
                   <p className="text-sm font-medium text-gray-600">
                     Produtos Ativos
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">248</p>
-                  <div className="flex items-center mt-2">
-                    <Plus className="h-4 w-4 text-blue-500 mr-1" />
-                    <span className="text-sm text-blue-600">3 novos</span>
-                    <span className="text-sm text-gray-500 ml-2">
-                      esta semana
-                    </span>
-                  </div>
+                  {loadingStats ? (
+                    <div className="flex items-center mt-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {estatisticas?.produtosAtivos ?? 0}
+                      </p>
+                      <div className="flex items-center mt-2">
+                        <span className="text-sm text-gray-600">
+                          {estatisticas?.produtosInativos ?? 0} inativos
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                   <Package className="h-6 w-6 text-purple-600" />
@@ -254,15 +349,32 @@ export default function MerchantDashboardNew() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">
-                    Avaliação Média
+                    Pedidos Pendentes
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">4.8</p>
-                  <div className="flex items-center mt-2">
-                    <Star className="h-4 w-4 text-yellow-500 mr-1 fill-current" />
-                    <span className="text-sm text-yellow-600">
-                      156 avaliações
-                    </span>
-                  </div>
+                  {loadingStats ? (
+                    <div className="flex items-center mt-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {estatisticas?.pedidosPendentes ?? 0}
+                      </p>
+                      <div className="flex items-center mt-2">
+                        <Clock className="h-4 w-4 text-orange-500 mr-1" />
+                        <span className="text-sm text-orange-600">
+                          Aguardando ação
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
                 </div>
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                   <Star className="h-6 w-6 text-yellow-600" />

@@ -63,4 +63,9 @@ public interface ProdutoRepository extends JpaRepository<Produto, UUID> {
            "WHERE p.ativo = true AND p.quantidadeAvaliacoes > 0 " +
            "ORDER BY p.avaliacao DESC, p.quantidadeAvaliacoes DESC")
     List<Produto> findProdutosMaisAvaliados(Pageable pageable);
+    
+    /**
+     * Conta produtos ativos/inativos por lojista
+     */
+    Long countByLojistaIdAndAtivo(UUID lojistaId, Boolean ativo);
 }

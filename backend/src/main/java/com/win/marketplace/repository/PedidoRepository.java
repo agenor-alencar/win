@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -64,4 +66,14 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     
     @Query("SELECT i.produto.id, i.produto.nome, SUM(i.quantidade), SUM(i.precoUnitario * i.quantidade), AVG(i.precoUnitario) FROM ItemPedido i WHERE i.lojista.id = :lojistaId AND i.pedido.criadoEm >= :dataInicio AND i.pedido.criadoEm <= :dataFim GROUP BY i.produto.id, i.produto.nome ORDER BY SUM(i.precoUnitario * i.quantidade) DESC")
     List<Object[]> findTopProdutosPorLojista(@Param("lojistaId") UUID lojistaId, @Param("dataInicio") OffsetDateTime dataInicio, @Param("dataFim") OffsetDateTime dataFim);
+    
+    // Queries para estatísticas do dashboard
+    @Query("SELECT COUNT(DISTINCT p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.criadoEm BETWEEN :start AND :end")
+    Long countByLojistaIdAndCriadoEmBetween(@Param("lojistaId") UUID lojistaId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    
+    @Query("SELECT COALESCE(SUM(p.total), 0) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.criadoEm BETWEEN :start AND :end")
+    BigDecimal sumTotalByLojistaIdAndCriadoEmBetween(@Param("lojistaId") UUID lojistaId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    
+    @Query("SELECT COUNT(DISTINCT p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.status IN :statuses")
+    Long countByLojistaIdAndStatusIn(@Param("lojistaId") UUID lojistaId, @Param("statuses") List<Pedido.StatusPedido> statuses);
 }
