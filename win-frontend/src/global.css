@@ -201,4 +201,18 @@
       margin-top: 0;
     }
   }
+
+  /* Prevent page zoom, allow image zoom */
+  html {
+    touch-action: pan-x pan-y;
+  }
+  
+  /* Allow pinch zoom on product images */
+  img[src*="produtos"],
+  img[src*="product"],
+  .product-image,
+  [class*="product"] img {
+    touch-action: pinch-zoom;
+    cursor: zoom-in;
+  }
 }
