@@ -141,7 +141,7 @@ public class ProdutoController {
      * Ativa um produto - LOJISTA ou ADMIN
      */
     @PatchMapping("/{id}/ativar")
-    @PreAuthorize("hasAnyRole('LOJISTA', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('LOJISTA', 'ADMIN')")
     @Operation(summary = "Ativar produto", description = "Ativa um produto que estava inativo")
     public ResponseEntity<ProdutoResponseDTO> ativarProduto(
             @Parameter(description = "ID do produto") @PathVariable UUID id) {
@@ -155,7 +155,7 @@ public class ProdutoController {
      * Desativa um produto - LOJISTA ou ADMIN
      */
     @PatchMapping("/{id}/desativar")
-    @PreAuthorize("hasAnyRole('LOJISTA', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('LOJISTA', 'ADMIN')")
     @Operation(summary = "Desativar produto", description = "Desativa um produto (não aparecerá nas listagens públicas)")
     public ResponseEntity<ProdutoResponseDTO> desativarProduto(
             @Parameter(description = "ID do produto") @PathVariable UUID id) {
