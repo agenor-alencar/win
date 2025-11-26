@@ -271,7 +271,6 @@ const Checkout: React.FC = () => {
       }
       
       showError("Erro no pagamento", errorMessage);
-      );
     } finally {
       setLoading(false);
     }
