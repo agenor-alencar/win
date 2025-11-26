@@ -1,23 +1,27 @@
 import axios from 'axios';
 
 // Detecta automaticamente a URL base:
-// - Em desenvolvimento: usa localhost:8080
-// - Em produção (VPS): usa o mesmo host do frontend
+// - Em desenvolvimento: usa localhost:8080 (direto no backend)
+// - Em produção (VPS): usa o mesmo host do frontend (Nginx faz proxy)
 const getBaseURL = () => {
   // Se houver variável de ambiente VITE_API_BASE_URL, usa ela
   if (import.meta.env.VITE_API_BASE_URL) {
+    console.log("🔧 Usando VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL);
     return import.meta.env.VITE_API_BASE_URL;
   }
   
-  // Se estiver rodando em localhost, usa localhost:8080
+  // Se estiver rodando em localhost, usa localhost:8080 (desenvolvimento local)
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log("🔧 Ambiente local detectado, usando localhost:8080");
     return 'http://localhost:8080';
   }
   
-  // Caso contrário (VPS/produção), usa o mesmo protocolo e host, porta 8080
+  // Caso contrário (VPS/produção com Nginx), usa o mesmo protocolo e host (sem porta)
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
-  return `${protocol}//${hostname}:8080`;
+  const baseUrl = `${protocol}//${hostname}`;
+  console.log("🔧 VPS detectado, usando:", baseUrl);
+  return baseUrl;
 };
 
 export const api = axios.create({

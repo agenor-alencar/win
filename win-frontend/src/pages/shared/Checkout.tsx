@@ -137,7 +137,7 @@ const Checkout: React.FC = () => {
     setLoading(true);
 
     try {
-      // Preparar dados do pedido
+      // Preparar dados do pedido (SEM informações de pagamento - serão adicionadas depois)
       const pedidoData = {
         usuarioId: user.id,
         enderecoEntrega: {
@@ -157,33 +157,42 @@ const Checkout: React.FC = () => {
           precoUnitario: item.price,
           variacaoId: null,
         })),
-        pagamento: {
-          metodoPagamento: paymentMethod.toUpperCase(),
-          valor: total,
-          parcelas: paymentMethod === "credit_card" ? 1 : null,
-          informacoesCartao: paymentMethod === "credit_card" 
-            ? `${cardData.name} - **** **** **** ${cardData.number.slice(-4)}`
-            : null,
-        },
       };
 
+      console.log("📦 Criando pedido com dados:", pedidoData);
+
       // Criar pedido no backend
-      const pedidoResponse = await api.post("/v1/pedidos", pedidoData);
+      const pedidoResponse = await api.post("/api/v1/pedidos", pedidoData);
       const pedido = pedidoResponse.data;
+      
+      console.log("✅ Pedido criado:", pedido);
 
       // Processar pagamento via Mercado Pago
       if (paymentMethod === "pix") {
+        console.log("💳 Iniciando pagamento PIX para pedido:", pedido.id);
+        console.log("📄 CPF:", pixData.cpf.replace(/\D/g, ""));
+        console.log("📧 Email:", pixData.email);
+        
         // Criar preferência de pagamento PIX
         const pixResponse = await api.post(
-          `/v1/pagamentos/mercadopago/pix/${pedido.id}`,
+          `/api/v1/pagamentos/mercadopago/pix/${pedido.id}`,
           {
             cpf: pixData.cpf.replace(/\D/g, ""),
             email: pixData.email,
           }
         );
 
+        console.log("✅ Resposta do backend PIX:", pixResponse.data);
+
         // Backend retorna a preferência de pagamento
         const { pix } = pixResponse.data;
+        
+        if (!pix || !pix.preferenceId) {
+          console.error("❌ Resposta do backend não contém preferenceId:", pixResponse.data);
+          throw new Error("Preferência de pagamento não foi criada corretamente");
+        }
+        
+        console.log("🎫 Preference ID recebido:", pix.preferenceId);
         
         // Armazenar o preferenceId para renderizar o botão do Mercado Pago
         setPreferenceId(pix.preferenceId);
@@ -192,11 +201,12 @@ const Checkout: React.FC = () => {
         // Limpar carrinho
         clearCart();
         
+        console.log("✅ Pedido finalizado, aguardando pagamento");
         success("Pedido criado! Clique no botão abaixo para pagar.");
 
       } else if (paymentMethod === "credit_card") {
         // Criar checkout de cartão
-        const cartaoResponse = await api.post("/v1/pagamentos/mercadopago/cartao", null, {
+        const cartaoResponse = await api.post("/api/v1/pagamentos/mercadopago/cartao", null, {
           params: {
             pedidoId: pedido.id
           }
@@ -227,7 +237,7 @@ const Checkout: React.FC = () => {
           informacoesCartao: null,
         };
 
-        await api.post("/v1/pagamentos/processar", pagamentoData);
+        await api.post("/api/v1/pagamentos/processar", pagamentoData);
 
         success(
           "Pedido criado!",
@@ -244,10 +254,23 @@ const Checkout: React.FC = () => {
       }
 
     } catch (err: any) {
-      console.error("Erro ao processar pagamento:", err);
-      showError(
-        "Erro no pagamento",
-        err.response?.data?.message || "Não foi possível processar seu pagamento. Tente novamente."
+      console.error("❌ ERRO COMPLETO:", err);
+      console.error("❌ Resposta do servidor:", err.response);
+      console.error("❌ Dados do erro:", err.response?.data);
+      console.error("❌ Status:", err.response?.status);
+      console.error("❌ URL da requisição:", err.config?.url);
+      
+      let errorMessage = "Não foi possível processar seu pagamento. Tente novamente.";
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      showError("Erro no pagamento", errorMessage);
       );
     } finally {
       setLoading(false);
