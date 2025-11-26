@@ -32,8 +32,14 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("win-token");
 
+    console.log("🔐 Token no localStorage:", token ? "✅ Presente" : "❌ Ausente");
+    console.log("🌐 Requisição para:", config.url);
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("✅ Token adicionado ao header");
+    } else {
+      console.warn("⚠️ Sem token - requisição não autenticada");
     }
 
     return config;

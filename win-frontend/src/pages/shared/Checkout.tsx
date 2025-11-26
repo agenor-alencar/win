@@ -144,22 +144,21 @@ const Checkout: React.FC = () => {
           cep: address.cep,
           logradouro: address.logradouro,
           numero: address.numero,
-          complemento: address.complemento,
+          complemento: address.complemento || "",
           bairro: address.bairro,
           cidade: address.cidade,
           uf: address.uf,
         },
-        desconto: 0,
-        frete: shipping,
+        desconto: 0.00,
+        frete: parseFloat(shipping.toFixed(2)),
         itens: cartState.items.map((item) => ({
           produtoId: item.id,
           quantidade: item.quantity,
-          precoUnitario: item.price,
-          variacaoId: null,
+          precoUnitario: parseFloat(item.price.toFixed(2)),
         })),
       };
 
-      console.log("📦 Criando pedido com dados:", pedidoData);
+      console.log("📦 Criando pedido com dados:", JSON.stringify(pedidoData, null, 2));
 
       // Criar pedido no backend
       const pedidoResponse = await api.post("/api/v1/pedidos", pedidoData);
