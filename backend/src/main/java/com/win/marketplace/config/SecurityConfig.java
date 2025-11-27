@@ -2,6 +2,7 @@ package com.win.marketplace.config;
 
 import com.win.marketplace.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value; // Importar Value
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -16,16 +17,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Configuração de segurança do Spring Security com JWT
- * Define o PasswordEncoder, CORS, filtro JWT e proteção de endpoints
- * 
- * @EnableMethodSecurity permite uso de anotações @PreAuthorize nos métodos
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
@@ -34,45 +28,26 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    /**
-     * Bean do PasswordEncoder para criptografia de senhas
-     * Usa BCrypt com strength padrão (10)
-     */
+    // 🚨 CORREÇÃO AQUI: Injeta a string de origens diretamente do ambiente/propriedades
+    @Value("${ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}")
+    private String allowedOriginsString; // Mude o nome para evitar conflito com a lista
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Configuração de CORS para permitir requisições do frontend
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Permite localhost para desenvolvimento e IP/domínio da VPS para produção
-        String allowedOriginsEnv = System.getenv("ALLOWED_ORIGINS");
-        List<String> allowedOrigins = new ArrayList<>();
+        // Divide a string em uma lista de origens
+        List<String> allowedOriginsList = Arrays.asList(allowedOriginsString.split(","));
         
-        // Origens padrão para desenvolvimento local
-        allowedOrigins.add("http://localhost:3000");
-        allowedOrigins.add("http://127.0.0.1:3000");
-        allowedOrigins.add("http://localhost:3001");
-        allowedOrigins.add("http://127.0.0.1:3001");
-        
-        // Adiciona origens personalizadas da variável de ambiente ALLOWED_ORIGINS
-        // Configure no .env: ALLOWED_ORIGINS=http://seu-ip,https://seu-dominio.com
-        if (allowedOriginsEnv != null && !allowedOriginsEnv.trim().isEmpty()) {
-            String[] origins = allowedOriginsEnv.split(",");
-            for (String origin : origins) {
-                allowedOrigins.add(origin.trim());
-            }
-        }
-        
-        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedOrigins(allowedOriginsList); // Define as origens permitidas
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowedHeaders(Arrays.asList("*")); // Headers podem ser *
+        configuration.setAllowCredentials(true); // Se true, setAllowedOrigins não pode ser "*"
         configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -80,10 +55,6 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Configuração de segurança com JWT
-     * Define quais endpoints são públicos e quais requerem autenticação
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -92,19 +63,33 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Endpoints públicos (não requerem autenticação)
+                // Incluindo a duplicação do /api/v1/ do Nginx
+                .requestMatchers("/api/api/v1/auth/login", "/api/api/v1/auth/login/**", "/api/api/v1/auth/register").permitAll()
                 .requestMatchers("/api/v1/auth/login", "/api/v1/auth/login/**", "/api/v1/auth/register").permitAll()
-                .requestMatchers("/api/v1/password-reset/**").permitAll() // Reset de senha público
-                .requestMatchers("/api/v1/dev/**").permitAll() // Dev Tools (gerador de hash)
-                .requestMatchers("/api/v1/produtos/**").permitAll() // Permitir listagem pública de produtos
-                .requestMatchers("/api/v1/categoria/**").permitAll() // Permitir listagem pública de categorias
-                .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger público
+
+                .requestMatchers("/api/api/v1/password-reset/**").permitAll()
+                .requestMatchers("/api/v1/password-reset/**").permitAll()
+
+                .requestMatchers("/api/api/v1/dev/**").permitAll()
+                .requestMatchers("/api/v1/dev/**").permitAll()
+
+                .requestMatchers("/api/api/v1/produtos/**").permitAll()
+                .requestMatchers("/api/v1/produtos/**").permitAll()
+
+                .requestMatchers("/api/api/v1/categoria/**").permitAll()
+                .requestMatchers("/api/v1/categoria/**").permitAll()
+
+                .requestMatchers("/api/api/v1/external/**").permitAll()
+                .requestMatchers("/api/v1/external/**").permitAll()
+
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/error").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                
+                .requestMatchers("/actuator/**").permitAll() // Actuator é útil, melhor deixar público por enquanto
+
                 // Endpoints administrativos (apenas ADMIN)
                 .requestMatchers("/api/v1/auth/promote-to-admin").hasAuthority("ADMIN")
-                
+                .requestMatchers("/api/api/v1/auth/promote-to-admin").hasAuthority("ADMIN") // Cobertura para duplicação
+
                 // Todos os outros endpoints requerem autenticação
                 .anyRequest().authenticated()
             )
