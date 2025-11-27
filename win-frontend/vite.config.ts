@@ -1,3 +1,4 @@
+// win-frontend/vite.config.ts
 import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -18,6 +19,15 @@ export default defineConfig(({ mode }) => ({
         rewrite: (path) => `/api${path}`, // Adiciona /api antes de encaminhar para o backend
       },
     },
+   
+    allowedHosts: [
+      'winmarketplace.com.br', 
+      'www.winmarketplace.com.br', 
+      '137.184.87.106', 
+      'localhost', 
+      '127.0.0.1' 
+    ],
+   
   },
   build: {
     outDir: "dist/spa",
