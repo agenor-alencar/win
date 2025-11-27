@@ -38,7 +38,7 @@ services:
       
       # Configuração CORS (adicione seus IPs/domínios separados por vírgula)
       # Inclui localhost, IP do VPS com e sem porta, e variações comuns
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://137.184.87.106:3000,http://137.184.87.106,http://137.184.87.106:80}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://137.184.87.106:3000,http://137.184.87.106,http://137.184.87.106:80,https://winmarketplace.com.br,http://winmarketplace.com.br}
       
       # ========================================
       # Configurações de Email
