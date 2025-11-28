@@ -185,7 +185,7 @@ public class EntregaService {
         return String.format("%s, %s - %s, %s/%s - CEP: %s",
                 endereco.getLogradouro(), endereco.getNumero(),
                 endereco.getBairro(), endereco.getCidade(),
-                endereco.getEstado(), endereco.getCep());
+                endereco.getUf(), endereco.getCep());
     }
 
     private String formatarEnderecoLojista(com.win.marketplace.model.Lojista lojista) {
