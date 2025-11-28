@@ -19,7 +19,6 @@ public interface MotoristaMapper {
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
     @Mapping(target = "pedidos", ignore = true)
-    @Mapping(target = "avaliacoes", ignore = true)
     Motorista toEntity(MotoristaCreateRequestDTO requestDTO);
 
     @Mapping(source = "usuario.id", target = "usuarioId")
@@ -34,6 +33,5 @@ public interface MotoristaMapper {
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataAtualizacao", ignore = true)
     @Mapping(target = "pedidos", ignore = true)
-    @Mapping(target = "avaliacoes", ignore = true)
     void updateEntityFromDTO(MotoristaCreateRequestDTO requestDTO, @MappingTarget Motorista motorista);
 }
