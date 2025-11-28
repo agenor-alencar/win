@@ -85,8 +85,8 @@ services:
       dockerfile: Dockerfile
     container_name: win-marketplace-frontend
     environment:
-      VITE_API_URL: http://localhost:8080
-      NODE_ENV: development
+      VITE_API_URL: ${VITE_API_URL:-http://137.184.87.106:8080}
+      NODE_ENV: ${NODE_ENV:-production}
       # Mercado Pago Public Key (para o SDK React)
       VITE_MERCADOPAGO_PUBLIC_KEY: ${VITE_MERCADOPAGO_PUBLIC_KEY:-}
     ports:
