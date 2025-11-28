@@ -32,8 +32,15 @@ public class Pedido {
     private Usuario usuario;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lojista_id", nullable = false)
+    private Lojista lojista;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "motorista_id")
     private Motorista motorista;
+
+    @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Entrega entrega;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
