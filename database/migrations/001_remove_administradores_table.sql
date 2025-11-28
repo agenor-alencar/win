@@ -87,21 +87,15 @@ JOIN perfis p ON p.id = up.perfil_id
 WHERE p.nome = 'ADMIN';
 
 -- ============================================================================
--- COMMIT ou ROLLBACK
+-- FINALIZAR TRANSAÇÃO
 -- ============================================================================
 
--- Se tudo estiver OK, descomente a linha abaixo:
--- COMMIT;
-
--- Para testar sem aplicar as mudanças, use:
-ROLLBACK;
+-- Aplicar as mudanças permanentemente
+COMMIT;
 
 -- ============================================================================
 -- INSTRUÇÕES DE USO
 -- ============================================================================
--- 1. Fazer backup do banco antes de executar
--- 2. Executar este script em modo teste (com ROLLBACK)
--- 3. Verificar os resultados
--- 4. Se tudo OK, trocar ROLLBACK por COMMIT
--- 5. Executar novamente
+-- Este script está configurado para COMMIT automático.
+-- Se quiser apenas testar, troque COMMIT por ROLLBACK acima.
 -- ============================================================================
