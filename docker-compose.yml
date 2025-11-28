@@ -83,12 +83,13 @@ services:
     build:
       context: ./win-frontend
       dockerfile: Dockerfile
+      args:
+        # Build args para injetar no bundle do Vite
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://137.184.87.106:8080}
+        VITE_MERCADOPAGO_PUBLIC_KEY: ${VITE_MERCADOPAGO_PUBLIC_KEY:-}
     container_name: win-marketplace-frontend
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://137.184.87.106:8080}
       NODE_ENV: ${NODE_ENV:-production}
-      # Mercado Pago Public Key (para o SDK React)
-      VITE_MERCADOPAGO_PUBLIC_KEY: ${VITE_MERCADOPAGO_PUBLIC_KEY:-}
     ports:
       - "3000:3000"
     networks:
