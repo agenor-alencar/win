@@ -60,7 +60,4 @@ public class Motorista {
 
     @OneToMany(mappedBy = "motorista", cascade = CascadeType.ALL)
     private List<Pedido> pedidos;
-
-    @OneToMany(mappedBy = "motorista", cascade = CascadeType.ALL)
-    private List<Avaliacao> avaliacoes;
 }
