@@ -60,6 +60,13 @@ public class SecurityConfig {
         allowedOrigins.add("http://localhost:3001");
         allowedOrigins.add("http://127.0.0.1:3001");
         
+        // Origens VPS (IP e domínio, todas as portas comuns)
+        allowedOrigins.add("http://137.184.87.106");
+        allowedOrigins.add("http://137.184.87.106:80");
+        allowedOrigins.add("http://137.184.87.106:3000");
+        allowedOrigins.add("http://winmarketplace.com.br");
+        allowedOrigins.add("https://winmarketplace.com.br");
+        
         // Adiciona origens personalizadas da variável de ambiente ALLOWED_ORIGINS
         // Configure no .env: ALLOWED_ORIGINS=http://seu-ip,https://seu-dominio.com
         if (allowedOriginsEnv != null && !allowedOriginsEnv.trim().isEmpty()) {
