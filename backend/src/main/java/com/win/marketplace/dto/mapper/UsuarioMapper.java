@@ -30,7 +30,6 @@ public interface UsuarioMapper {
     @Mapping(target = "usuarioPerfis", ignore = true)
     @Mapping(target = "lojista", ignore = true)
     @Mapping(target = "motorista", ignore = true)
-    @Mapping(target = "administrador", ignore = true)
     Usuario toEntity(RegisterRequestDTO requestDTO);
 
     /**
@@ -49,7 +48,6 @@ public interface UsuarioMapper {
     @Mapping(target = "usuarioPerfis", ignore = true)
     @Mapping(target = "lojista", ignore = true)
     @Mapping(target = "motorista", ignore = true)
-    @Mapping(target = "administrador", ignore = true)
     Usuario toEntity(UsuarioCreateRequestDTO requestDTO);
 
     /**
@@ -73,7 +71,6 @@ public interface UsuarioMapper {
     @Mapping(target = "usuarioPerfis", ignore = true)
     @Mapping(target = "lojista", ignore = true)
     @Mapping(target = "motorista", ignore = true)
-    @Mapping(target = "administrador", ignore = true)
     void updateEntityFromDTO(RegisterRequestDTO requestDTO, @MappingTarget Usuario usuario);
 
     /**

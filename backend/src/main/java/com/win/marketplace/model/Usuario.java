@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Data
-@EqualsAndHashCode(exclude = {"lojista", "motorista", "administrador", "enderecos", "pedidos", "avaliacoes", "notificacoes", "usuarioPerfis"})
+@EqualsAndHashCode(exclude = {"lojista", "motorista", "enderecos", "pedidos", "avaliacoes", "notificacoes", "usuarioPerfis"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -70,9 +70,6 @@ public class Usuario {
 
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     private Motorista motorista;
-
-    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Administrador administrador;
 
     @PrePersist
     protected void onCreate() {
