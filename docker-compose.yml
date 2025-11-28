@@ -91,9 +91,6 @@ services:
       VITE_MERCADOPAGO_PUBLIC_KEY: ${VITE_MERCADOPAGO_PUBLIC_KEY:-}
     ports:
       - "3000:3000"
-    volumes:
-      - ./win-frontend:/app
-      - /app/node_modules
     networks:
       - win-network
     restart: unless-stopped
