@@ -181,7 +181,7 @@ public class EntregaService {
 
     // Métodos auxiliares
 
-    private String formatarEnderecoCompleto(com.win.marketplace.model.Endereco endereco) {
+    private String formatarEnderecoCompleto(com.win.marketplace.model.Pedido.Endereco endereco) {
         return String.format("%s, %s - %s, %s/%s - CEP: %s",
                 endereco.getLogradouro(), endereco.getNumero(),
                 endereco.getBairro(), endereco.getCidade(),
@@ -190,9 +190,9 @@ public class EntregaService {
 
     private String formatarEnderecoLojista(com.win.marketplace.model.Lojista lojista) {
         return String.format("%s, %s - %s, %s/%s - CEP: %s",
-                lojista.getEndereco(), lojista.getNumero(),
+                lojista.getLogradouro(), lojista.getNumero(),
                 lojista.getBairro(), lojista.getCidade(),
-                lojista.getEstado(), lojista.getCep());
+                lojista.getUf(), lojista.getCep());
     }
 
     private EntregaResponseDTO mapearParaDTO(Entrega entrega) {
