@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { maskCPF, maskPhone, validatePassword } from "@/lib/formatters";
+import { Eye, EyeOff } from "lucide-react";
 
 // Schema de validação para o formulário de REGISTRO
 const registerFormSchema = z.object({
@@ -38,18 +39,25 @@ const registerFormSchema = z.object({
     .refine((val) => validatePassword(val), {
       message: "Senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número.",
     }),
+  confirmarSenha: z.string(),
   telefone: z.string()
     .optional()
     .refine((val) => !val || /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(val), {
       message: "Telefone deve estar no formato (00) 00000-0000",
     }),
   dataNascimento: z.string().optional(),
+}).refine((data) => data.senha === data.confirmarSenha, {
+  message: "As senhas não coincidem",
+  path: ["confirmarSenha"],
 });
 
 // Componente interno para o formulário de REGISTRO
 function RegisterFormComponent() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -58,15 +66,19 @@ function RegisterFormComponent() {
       email: "",
       cpf: "",
       senha: "",
+      confirmarSenha: "",
       telefone: "",
       dataNascimento: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
+    // Remove o campo confirmarSenha antes de enviar
+    const { confirmarSenha, ...registerData } = values;
+    
     // Envia os dados como estão (com formatação visual)
     // O AuthContext vai remover a formatação antes de enviar ao backend
-    const success = await register(values as RegisterData);
+    const success = await register(registerData as RegisterData);
     if (success) {
       toast({
         title: "Sucesso!",
@@ -152,16 +164,61 @@ function RegisterFormComponent() {
             <FormItem>
               <FormLabel>Senha</FormLabel>
               <FormControl>
-                <Input 
-                  type="password" 
-                  placeholder="********" 
-                  {...field} 
-                />
+                <div className="relative">
+                  <Input 
+                    type={showPassword ? "text" : "password"}
+                    placeholder="********" 
+                    {...field} 
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
               <p className="text-xs text-muted-foreground mt-1">
                 Mínimo 8 caracteres com pelo menos 1 minúscula, 1 MAIÚSCULA e 1 número
               </p>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="confirmarSenha"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirmar Senha</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Input 
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="********" 
+                    {...field} 
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -211,6 +268,7 @@ function RegisterFormComponent() {
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   // role select removed; role will be inferred from authenticated user profile
   const [error, setError] = useState("");
 
@@ -300,15 +358,30 @@ export default function Login() {
 
                   <div className="space-y-2">
                     <Label htmlFor="password">Senha</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Sua senha"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showLoginPassword ? "text" : "password"}
+                        placeholder="Sua senha"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        disabled={isLoading}
+                      >
+                        {showLoginPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   
                   {/* Removido o seletor de 'role' para o login de cliente */}
