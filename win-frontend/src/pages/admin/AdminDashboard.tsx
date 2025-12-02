@@ -163,40 +163,6 @@ const AdminDashboard: React.FC = () => {
     ? (dashboardData.monthRevenue / dashboardData.totalOrders)
     : 0;
 
-  // Calcular métricas rápidas baseadas em dados reais
-  const ticketMedio = dashboardData.totalOrders > 0
-    ? (dashboardData.monthRevenue / dashboardData.totalOrders)
-    : 0;
-
-  // Mock data for charts
-  const salesData = [
-    { name: "Jan", vendas: 65, receita: 28000 },
-    { name: "Fev", vendas: 59, receita: 32000 },
-    { name: "Mar", vendas: 80, receita: 45000 },
-    { name: "Abr", vendas: 81, receita: 52000 },
-    { name: "Mai", vendas: 56, receita: 38000 },
-    { name: "Jun", vendas: 55, receita: 42000 },
-    { name: "Jul", vendas: 89, receita: 89342 },
-  ];
-
-  const revenueData = [
-    { name: "Jan", receita: 28000 },
-    { name: "Fev", receita: 32000 },
-    { name: "Mar", receita: 45000 },
-    { name: "Abr", receita: 52000 },
-    { name: "Mai", receita: 38000 },
-    { name: "Jun", receita: 42000 },
-    { name: "Jul", receita: 89342 },
-  ];
-
-  const categoryData = [
-    { name: "Eletrônicos", value: 35, color: "#3DBEAB" },
-    { name: "Roupas", value: 25, color: "#2D9CDB" },
-    { name: "Casa", value: 20, color: "#8B5CF6" },
-    { name: "Esportes", value: 12, color: "#F59E0B" },
-    { name: "Outros", value: 8, color: "#EF4444" },
-  ];
-
   // Recent orders columns
   const orderColumns: Column[] = [
     { key: "id", label: "ID", sortable: true },
