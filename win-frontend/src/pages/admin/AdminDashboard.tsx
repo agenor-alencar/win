@@ -15,8 +15,8 @@ import {
   BanknotesIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
-import { api } from "@/lib/Api";
 import { useNotification } from "@/contexts/NotificationContext";
+import { dashboardApi, type RecentOrder, type RecentStore } from "@/lib/DashboardApi";
 
 const AdminDashboard: React.FC = () => {
   const { showNotification } = useNotification();
@@ -25,10 +25,14 @@ const AdminDashboard: React.FC = () => {
     totalUsers: 0,
     totalStores: 0,
     totalOrders: 0,
+    todayOrders: 0,
     monthRevenue: 0,
   });
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [recentStores, setRecentStores] = useState([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [recentStores, setRecentStores] = useState<any[]>([]);
+  const [salesData, setSalesData] = useState<any[]>([]);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
 
   useEffect(() => {
     loadDashboardData();
@@ -38,40 +42,68 @@ const AdminDashboard: React.FC = () => {
     try {
       setLoading(true);
       
-      // Buscar usuários
-      const usersResponse = await api.get("/v1/usuario/list/all");
-      const totalUsers = usersResponse.data.length;
-
-      // Buscar lojistas
-      const storesResponse = await api.get("/v1/lojistas");
-      const totalStores = storesResponse.data.length;
-      
-      // Pegar as 4 lojas mais recentes
-      const recentStoresData = storesResponse.data
-        .slice(-4)
-        .reverse()
-        .map((store: any) => ({
-          name: store.nomeFantasia,
-          category: "Geral", // Categoria padrão por enquanto
-          owner: store.usuarioNome,
-          rating: "4.5",
-          status: store.ativo ? "Ativo" : "Inativo",
-        }));
-      setRecentStores(recentStoresData);
-
-      // Por enquanto, usar valores simulados para pedidos e receita
-      // TODO: Implementar quando endpoints de relatórios estiverem prontos
-      const totalOrders = 0;
-      const monthRevenue = 0;
-
+      // Buscar estatísticas gerais
+      const stats = await dashboardApi.getStats();
       setDashboardData({
-        totalUsers,
-        totalStores,
-        totalOrders,
-        monthRevenue,
+        totalUsers: stats.totalUsuarios,
+        totalStores: stats.totalLojas,
+        totalOrders: stats.totalPedidos,
+        todayOrders: stats.pedidosHoje,
+        monthRevenue: stats.receitaMes,
       });
 
-      setRecentOrders([]); // Por enquanto vazio
+      // Buscar pedidos recentes
+      const orders = await dashboardApi.getRecentOrders();
+      const ordersFormatted = orders.map((order: RecentOrder) => ({
+        id: order.numeroPedido,
+        customer: order.clienteNome,
+        store: order.lojistaNome,
+        value: order.valorTotal.toFixed(2),
+        status: order.status,
+      }));
+      setRecentOrders(ordersFormatted);
+
+      // Buscar lojas recentes
+      const stores = await dashboardApi.getRecentStores();
+      const storesFormatted = stores.map((store: RecentStore) => ({
+        name: store.nomeFantasia,
+        category: "Marketplace", // Categoria padrão
+        owner: store.usuarioNome,
+        rating: "Novo",
+        status: store.ativo ? "Ativo" : "Inativo",
+      }));
+      setRecentStores(storesFormatted);
+
+      // Buscar dados para gráficos
+      const chartData = await dashboardApi.getChartData();
+      
+      // Formatar dados de vendas
+      const salesFormatted = chartData.vendas.map((venda, index) => ({
+        name: venda.mes,
+        vendas: venda.quantidade,
+        receita: chartData.receitas[index]?.valor || 0,
+      }));
+      setSalesData(salesFormatted);
+
+      // Formatar dados de receita
+      const revenueFormatted = chartData.receitas.map((receita) => ({
+        name: receita.mes,
+        receita: receita.valor,
+      }));
+      setRevenueData(revenueFormatted);
+
+      // Formatar dados de categorias (top 5)
+      const colors = ["#3DBEAB", "#2D9CDB", "#8B5CF6", "#F59E0B", "#EF4444"];
+      const categoriesFormatted = chartData.categorias
+        .sort((a, b) => b.quantidade - a.quantidade)
+        .slice(0, 5)
+        .map((cat, index) => ({
+          name: cat.nome,
+          value: cat.quantidade,
+          color: colors[index % colors.length],
+        }));
+      setCategoryData(categoriesFormatted);
+
     } catch (error: any) {
       console.error("Erro ao carregar dashboard:", error);
       showNotification(
@@ -103,7 +135,7 @@ const AdminDashboard: React.FC = () => {
     },
     {
       title: "Pedidos Hoje",
-      value: dashboardData.totalOrders.toString(),
+      value: dashboardData.todayOrders.toString(),
       change: { value: 0, type: "increase" as const, period: "vs ontem" },
       icon: ShoppingCartIcon,
       color: "purple" as const,
@@ -111,7 +143,10 @@ const AdminDashboard: React.FC = () => {
     },
     {
       title: "Receita Mês",
-      value: `R$ ${dashboardData.monthRevenue.toLocaleString("pt-BR")}`,
+      value: `R$ ${dashboardData.monthRevenue.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
       change: {
         value: 0,
         type: "increase" as const,
@@ -122,6 +157,16 @@ const AdminDashboard: React.FC = () => {
       link: "/admin/finances",
     },
   ];
+
+  // Calcular métricas rápidas baseadas em dados reais
+  const ticketMedio = dashboardData.totalOrders > 0
+    ? (dashboardData.monthRevenue / dashboardData.totalOrders)
+    : 0;
+
+  // Calcular métricas rápidas baseadas em dados reais
+  const ticketMedio = dashboardData.totalOrders > 0
+    ? (dashboardData.monthRevenue / dashboardData.totalOrders)
+    : 0;
 
   // Mock data for charts
   const salesData = [
@@ -252,13 +297,13 @@ const AdminDashboard: React.FC = () => {
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SalesChart data={salesData} />
-          <RevenueChart data={revenueData} />
+          <SalesChart data={salesData.length > 0 ? salesData : [{ name: "Sem dados", vendas: 0, receita: 0 }]} />
+          <RevenueChart data={revenueData.length > 0 ? revenueData : [{ name: "Sem dados", receita: 0 }]} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <CategoryChart data={categoryData} />
+            <CategoryChart data={categoryData.length > 0 ? categoryData : [{ name: "Sem dados", value: 0, color: "#3DBEAB" }]} />
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-semibold text-[#111827] mb-4">
@@ -267,19 +312,28 @@ const AdminDashboard: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Taxa de conversão</span>
-                <span className="font-medium text-[#111827]">3.2%</span>
+                <span className="font-medium text-[#111827]">
+                  {dashboardData.totalUsers > 0 
+                    ? ((dashboardData.totalOrders / dashboardData.totalUsers) * 100).toFixed(1)
+                    : "0.0"}%
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Ticket médio</span>
-                <span className="font-medium text-[#111827]">R$ 256,80</span>
+                <span className="font-medium text-[#111827]">
+                  R$ {ticketMedio.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Devoluções</span>
-                <span className="font-medium text-[#111827]">2.1%</span>
+                <span className="text-gray-600">Total de pedidos</span>
+                <span className="font-medium text-[#111827]">{dashboardData.totalOrders}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Avaliação média</span>
-                <span className="font-medium text-[#111827]">4.7 ★</span>
+                <span className="text-gray-600">Lojas ativas</span>
+                <span className="font-medium text-[#111827]">{dashboardData.totalStores}</span>
               </div>
             </div>
           </div>
@@ -291,20 +345,43 @@ const AdminDashboard: React.FC = () => {
             <h3 className="text-lg font-semibold text-[#111827] mb-4">
               Lojas Recentes
             </h3>
-            <DataTable
-              columns={storeColumns}
-              data={recentStores}
-              searchable={false}
-              itemsPerPage={5}
-            />
+            {loading ? (
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-64 flex items-center justify-center">
+                <ArrowPathIcon className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            ) : recentStores.length > 0 ? (
+              <DataTable
+                columns={storeColumns}
+                data={recentStores}
+                searchable={false}
+                itemsPerPage={5}
+              />
+            ) : (
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-64 flex items-center justify-center">
+                <p className="text-gray-500">Nenhuma loja cadastrada ainda</p>
+              </div>
+            )}
           </div>
           <div>
             <h3 className="text-lg font-semibold text-[#111827] mb-4">
-              Estatísticas Rápidas
+              Pedidos Recentes
             </h3>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-full flex items-center justify-center">
-              <p className="text-gray-500">Últimos pedidos em desenvolvimento</p>
-            </div>
+            {loading ? (
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-64 flex items-center justify-center">
+                <ArrowPathIcon className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            ) : recentOrders.length > 0 ? (
+              <DataTable
+                columns={orderColumns}
+                data={recentOrders}
+                searchable={false}
+                itemsPerPage={5}
+              />
+            ) : (
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-64 flex items-center justify-center">
+                <p className="text-gray-500">Nenhum pedido realizado ainda</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
