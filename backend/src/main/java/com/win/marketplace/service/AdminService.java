@@ -174,18 +174,20 @@ public class AdminService {
         log.info("Buscando estatísticas de usuários por tipo");
         
         try {
-            // Contar diretamente usando queries ao invés de carregar tudo em memória
+            // Usar contagens diretas do repository ao invés de carregar todos os usuários
             long totalUsuarios = usuarioRepository.count();
+            long totalLojas = lojistaRepository.count();
             
-            // Por enquanto, vamos retornar contadores básicos
-            // Em produção, criar queries específicas no repository
-            long clientes = totalUsuarios; // Temporário - todos são clientes por padrão
-            long lojistas = lojistaRepository.count();
-            long motoristas = 0; // Não temos motoristas (Uber terceirizado)
-            
+            // Contar bloqueados diretamente
             long bloqueados = usuarioRepository.findAll().stream()
-                    .filter(u -> !Boolean.TRUE.equals(u.getAtivo()))
+                    .filter(u -> Boolean.FALSE.equals(u.getAtivo()))
                     .count();
+            
+            // Por enquanto, estatísticas simplificadas
+            // TODO: Criar queries específicas no repository para melhor performance
+            long clientes = totalUsuarios - totalLojas; // Aproximação
+            long lojistas = totalLojas;
+            long motoristas = 0; // Não usamos motoristas (Uber terceirizado)
             
             AdminUsuarioStatsDTO stats = AdminUsuarioStatsDTO.criar(
                     clientes,

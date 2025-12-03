@@ -45,7 +45,7 @@ class UserApiService extends AdminApi {
    */
   async getAllUsers(): Promise<User[]> {
     try {
-      const response = await api.get<User[]>(`${this.baseUrl}/admin/usuarios/list`);
+      const response = await api.get<User[]>(`${this.baseUrl}/usuario/list/all`);
       return response.data;
     } catch (error) {
       this.handleError(error, "Erro ao buscar usuários");
