@@ -43,7 +43,7 @@ public class AdminController {
      * Requer perfil ADMIN
      */
     @GetMapping("/dashboard/stats")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminDashboardStatsDTO> buscarEstatisticasDashboard() {
         log.info("Requisição recebida para buscar estatísticas do dashboard");
         AdminDashboardStatsDTO stats = adminService.buscarEstatisticasDashboard();
@@ -55,7 +55,7 @@ public class AdminController {
      * Requer perfil ADMIN
      */
     @GetMapping("/dashboard/chart-data")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminChartDataDTO> buscarDadosGraficos() {
         log.info("Requisição recebida para buscar dados de gráficos");
         AdminChartDataDTO chartData = adminChartService.buscarDadosGraficos();
@@ -67,7 +67,7 @@ public class AdminController {
      * Requer perfil ADMIN
      */
     @GetMapping("/usuarios/stats")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminUsuarioStatsDTO> buscarEstatisticasUsuarios() {
         log.info("Requisição recebida para buscar estatísticas de usuários");
         AdminUsuarioStatsDTO stats = adminService.buscarEstatisticasUsuarios();
@@ -79,7 +79,7 @@ public class AdminController {
      * Requer perfil ADMIN
      */
     @GetMapping("/usuarios/list")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<AdminUsuarioListDTO>> listarTodosUsuarios() {
         log.info("Requisição recebida para listar todos os usuários");
         List<AdminUsuarioListDTO> usuarios = adminService.listarTodosUsuarios();
@@ -90,7 +90,7 @@ public class AdminController {
      * Busca estatísticas de entregas
      */
     @GetMapping("/entregas/stats")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminEntregaStatsDTO> buscarEstatisticasEntregas() {
         log.info("Requisição recebida para buscar estatísticas de entregas");
         AdminEntregaStatsDTO stats = adminEntregaService.buscarEstatisticasEntregas();
@@ -101,7 +101,7 @@ public class AdminController {
      * Lista todas as entregas
      */
     @GetMapping("/entregas/list")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<AdminEntregaListDTO>> listarTodasEntregas() {
         log.info("Requisição recebida para listar todas as entregas");
         List<AdminEntregaListDTO> entregas = adminEntregaService.listarTodasEntregas();
@@ -112,7 +112,7 @@ public class AdminController {
      * Lista entregas por status
      */
     @GetMapping("/entregas/list/status/{status}")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<AdminEntregaListDTO>> listarEntregasPorStatus(
             @PathVariable StatusEntrega status) {
         log.info("Requisição recebida para listar entregas com status: {}", status);
@@ -123,7 +123,7 @@ public class AdminController {
      * Lista entregas com problemas
      */
     @GetMapping("/entregas/list/problemas")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<AdminEntregaListDTO>> listarEntregasComProblemas() {
         log.info("Requisição recebida para listar entregas com problemas");
         List<AdminEntregaListDTO> entregas = adminEntregaService.listarEntregasComProblemas();
@@ -136,7 +136,7 @@ public class AdminController {
      * Atualiza status de um pedido
      */
     @PutMapping("/pedidos/{id}/status")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> atualizarStatusPedido(
             @PathVariable UUID id,
             @Valid @RequestBody AdminUpdateStatusDTO dto) {
@@ -149,7 +149,7 @@ public class AdminController {
      * Cancela um pedido (ação forçada)
      */
     @PutMapping("/pedidos/{id}/cancel")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> cancelarPedido(
             @PathVariable UUID id,
             @Valid @RequestBody AdminCancelPedidoDTO dto) {
@@ -162,7 +162,7 @@ public class AdminController {
      * Ativa ou desativa uma loja
      */
     @PutMapping("/lojistas/{id}/toggle-status")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> toggleStatusLojista(
             @PathVariable UUID id,
             @RequestParam boolean ativar) {
@@ -175,7 +175,7 @@ public class AdminController {
      * Ativa ou desativa um produto
      */
     @PutMapping("/produtos/{id}/toggle-status")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> toggleStatusProduto(
             @PathVariable UUID id,
             @RequestParam boolean ativar) {
@@ -188,7 +188,7 @@ public class AdminController {
      * Reseta senha de um usuário
      */
     @PutMapping("/usuarios/{id}/reset-password")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SenhaTemporariaDTO> resetarSenhaUsuario(@PathVariable UUID id) {
         log.info("Admin resetando senha do usuário {}", id);
         String senhaTemporaria = adminActionService.resetarSenhaUsuario(id);
@@ -199,7 +199,7 @@ public class AdminController {
      * Ativa ou bloqueia um usuário
      */
     @PutMapping("/usuarios/{id}/toggle-status")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> toggleStatusUsuario(
             @PathVariable UUID id,
             @RequestParam boolean ativar) {
