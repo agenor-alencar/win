@@ -6,6 +6,7 @@ import com.win.marketplace.dto.response.AdminChartDataDTO;
 import com.win.marketplace.dto.response.AdminDashboardStatsDTO;
 import com.win.marketplace.dto.response.AdminEntregaListDTO;
 import com.win.marketplace.dto.response.AdminEntregaStatsDTO;
+import com.win.marketplace.dto.response.AdminUsuarioListDTO;
 import com.win.marketplace.dto.response.AdminUsuarioStatsDTO;
 import com.win.marketplace.dto.response.SenhaTemporariaDTO;
 import com.win.marketplace.model.enums.StatusEntrega;
@@ -71,6 +72,18 @@ public class AdminController {
         log.info("Requisição recebida para buscar estatísticas de usuários");
         AdminUsuarioStatsDTO stats = adminService.buscarEstatisticasUsuarios();
         return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Lista todos os usuários (formatados para admin)
+     * Requer perfil ADMIN
+     */
+    @GetMapping("/usuarios/list")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<List<AdminUsuarioListDTO>> listarTodosUsuarios() {
+        log.info("Requisição recebida para listar todos os usuários");
+        List<AdminUsuarioListDTO> usuarios = adminService.listarTodosUsuarios();
+        return ResponseEntity.ok(usuarios);
     }
 
     /**
