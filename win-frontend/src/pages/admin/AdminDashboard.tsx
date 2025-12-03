@@ -28,6 +28,7 @@ const AdminDashboard: React.FC = () => {
     todayOrders: 0,
     monthRevenue: 0,
   });
+  const [fullStats, setFullStats] = useState<any>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [recentStores, setRecentStores] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
@@ -42,14 +43,15 @@ const AdminDashboard: React.FC = () => {
     try {
       setLoading(true);
       
-      // Buscar estatísticas gerais
+      // Buscar estatísticas consolidadas do novo endpoint
       const stats = await dashboardApi.getStats();
+      setFullStats(stats); // Armazenar estatísticas completas
       setDashboardData({
         totalUsers: stats.totalUsuarios,
         totalStores: stats.totalLojas,
         totalOrders: stats.totalPedidos,
         todayOrders: stats.pedidosHoje,
-        monthRevenue: stats.receitaMes,
+        monthRevenue: stats.receitaMesAtual,
       });
 
       // Buscar pedidos recentes
@@ -115,12 +117,16 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // KPIs com dados reais
+  // KPIs com dados reais e variações percentuais
   const kpiData = [
     {
       title: "Total Usuários",
       value: dashboardData.totalUsers.toString(),
-      change: { value: 12, type: "increase" as const, period: "este mês" },
+      change: { 
+        value: fullStats?.variacaoPedidosHoje || 0, 
+        type: (fullStats?.variacaoPedidosHoje || 0) >= 0 ? "increase" as const : "decrease" as const, 
+        period: "vs ontem" 
+      },
       icon: UsersIcon,
       color: "green" as const,
       link: "/admin/users",
@@ -128,7 +134,11 @@ const AdminDashboard: React.FC = () => {
     {
       title: "Total Lojas",
       value: dashboardData.totalStores.toString(),
-      change: { value: 8, type: "increase" as const, period: "este mês" },
+      change: { 
+        value: fullStats?.totalLojasAtivas || 0, 
+        type: "increase" as const, 
+        period: `${fullStats?.totalLojasAtivas || 0} ativas` 
+      },
       icon: BuildingStorefrontIcon,
       color: "blue" as const,
       link: "/admin/stores",
@@ -136,7 +146,11 @@ const AdminDashboard: React.FC = () => {
     {
       title: "Pedidos Hoje",
       value: dashboardData.todayOrders.toString(),
-      change: { value: 0, type: "increase" as const, period: "vs ontem" },
+      change: { 
+        value: Math.abs(fullStats?.variacaoPedidosHoje || 0), 
+        type: (fullStats?.variacaoPedidosHoje || 0) >= 0 ? "increase" as const : "decrease" as const, 
+        period: "vs ontem" 
+      },
       icon: ShoppingCartIcon,
       color: "purple" as const,
       link: "/admin/orders",
@@ -148,8 +162,8 @@ const AdminDashboard: React.FC = () => {
         maximumFractionDigits: 2,
       })}`,
       change: {
-        value: 0,
-        type: "increase" as const,
+        value: Math.abs(fullStats?.variacaoReceitaMes || 0),
+        type: (fullStats?.variacaoReceitaMes || 0) >= 0 ? "increase" as const : "decrease" as const,
         period: "vs mês anterior",
       },
       icon: BanknotesIcon,
@@ -159,9 +173,8 @@ const AdminDashboard: React.FC = () => {
   ];
 
   // Calcular métricas rápidas baseadas em dados reais
-  const ticketMedio = dashboardData.totalOrders > 0
-    ? (dashboardData.monthRevenue / dashboardData.totalOrders)
-    : 0;
+  const ticketMedio = fullStats?.ticketMedio || 0;
+  const taxaConversao = fullStats?.taxaConversao || 0;
 
   // Recent orders columns
   const orderColumns: Column[] = [
@@ -279,9 +292,7 @@ const AdminDashboard: React.FC = () => {
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Taxa de conversão</span>
                 <span className="font-medium text-[#111827]">
-                  {dashboardData.totalUsers > 0 
-                    ? ((dashboardData.totalOrders / dashboardData.totalUsers) * 100).toFixed(1)
-                    : "0.0"}%
+                  {taxaConversao.toFixed(1)}%
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -299,7 +310,15 @@ const AdminDashboard: React.FC = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Lojas ativas</span>
-                <span className="font-medium text-[#111827]">{dashboardData.totalStores}</span>
+                <span className="font-medium text-[#111827]">
+                  {fullStats?.totalLojasAtivas || 0} de {dashboardData.totalStores}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Produtos ativos</span>
+                <span className="font-medium text-[#111827]">
+                  {fullStats?.totalProdutosAtivos || 0} de {fullStats?.totalProdutos || 0}
+                </span>
               </div>
             </div>
           </div>
