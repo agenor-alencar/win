@@ -11,31 +11,16 @@ import {
   ArrowPathIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
-import { api } from "@/lib/Api";
+import { storeApi, type StoreFormatted } from "@/lib/admin";
 import { useNotification } from "@/contexts/NotificationContext";
 
-interface Lojista {
-  id: string;
-  usuarioId: string;
-  usuarioNome: string;
-  usuarioEmail: string;
-  cnpj: string;
-  nomeFantasia: string;
-  razaoSocial: string;
-  descricao: string;
-  telefone: string;
-  email: string;
-  ativo: boolean;
-  criadoEm: string;
-}
-
 const AdminStores: React.FC = () => {
-  const { showNotification } = useNotification();
-  const [selectedStore, setSelectedStore] = useState<any>(null);
+  const { success, error } = useNotification();
+  const [selectedStore, setSelectedStore] = useState<StoreFormatted | null>(null);
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showCreateStoreModal, setShowCreateStoreModal] = useState(false);
-  const [stores, setStores] = useState<any[]>([]);
+  const [stores, setStores] = useState<StoreFormatted[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     ativas: 0,
@@ -50,58 +35,31 @@ const AdminStores: React.FC = () => {
   const loadStores = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/v1/lojistas");
-      const lojistasData: Lojista[] = response.data;
-
-      // Transformar dados para o formato da tabela
-      const formattedStores = lojistasData.map((loja) => ({
-        id: loja.id,
-        name: loja.nomeFantasia,
-        cnpj: loja.cnpj,
-        owner: loja.usuarioNome,
-        category: "Geral",
-        rating: "4.5",
-        status: loja.ativo ? "Ativo" : "Suspenso",
-        products: 0, // TODO: Implementar contagem de produtos
-        createdAt: new Date(loja.criadoEm).toLocaleDateString("pt-BR"),
-        phone: loja.telefone || "-",
-        email: loja.email || loja.usuarioEmail,
-        address: "-",
-        description: loja.descricao || "-",
-        ativo: loja.ativo,
-      }));
+      const [formattedStores, storeStats] = await Promise.all([
+        storeApi.getFormattedStores(),
+        storeApi.getStats(),
+      ]);
 
       setStores(formattedStores);
-
-      // Calcular estatísticas
-      const ativas = formattedStores.filter((s) => s.status === "Ativo").length;
-      const suspensas = formattedStores.filter((s) => s.status === "Suspenso").length;
-      const pendentes = 0; // TODO: Implementar status pendente
-
-      setStats({ ativas, pendentes, suspensas });
+      setStats(storeStats);
     } catch (error: any) {
       console.error("Erro ao carregar lojas:", error);
-      showNotification("Erro ao carregar lojas", "error");
+      error(error.message || "Erro ao carregar lojas");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleStoreStatus = async (store: any) => {
+  const handleToggleStoreStatus = async (store: StoreFormatted) => {
     try {
-      const endpoint = store.ativo
-        ? `/v1/lojistas/${store.id}/desativar`
-        : `/v1/lojistas/${store.id}/ativar`;
-
-      await api.patch(endpoint);
-      showNotification(
-        `Loja ${store.ativo ? "suspensa" : "ativada"} com sucesso`,
-        "success"
+      await storeApi.toggleStoreStatus(store.id, store.ativo);
+      success(
+        `Loja ${store.ativo ? "suspensa" : "ativada"} com sucesso`
       );
       loadStores();
     } catch (error: any) {
       console.error("Erro ao alterar status da loja:", error);
-      showNotification("Erro ao alterar status da loja", "error");
+      error(error.message || "Erro ao alterar status da loja");
     }
   };
 
@@ -417,9 +375,7 @@ const AdminStores: React.FC = () => {
                         className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${
                           selectedStore.status === "Ativo"
                             ? "bg-green-100 text-green-800"
-                            : selectedStore.status === "Pendente"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
+                            : "bg-red-100 text-red-800"
                         }`}
                       >
                         {selectedStore.status}
@@ -454,29 +410,17 @@ const AdminStores: React.FC = () => {
                 </div>
               </div>
 
-              {/* Performance */}
+              {/* Performance - Simplified */}
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Performance
+                  Estatísticas
                 </h4>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 p-3 rounded-lg text-center">
                     <p className="text-lg font-semibold text-[#111827]">
                       {selectedStore.products}
                     </p>
                     <p className="text-xs text-gray-600">Produtos</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg text-center">
-                    <p className="text-lg font-semibold text-[#111827]">
-                      {selectedStore.sales.month}
-                    </p>
-                    <p className="text-xs text-gray-600">Vendas/Mês</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg text-center">
-                    <p className="text-lg font-semibold text-[#111827]">
-                      R$ {selectedStore.revenue.month.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-gray-600">Receita/Mês</p>
                   </div>
                   <div className="bg-gray-50 p-3 rounded-lg text-center">
                     <p className="text-lg font-semibold text-[#111827]">
@@ -486,32 +430,11 @@ const AdminStores: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Documents */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Documentos
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedStore.documents.map((doc: string, index: number) => (
-                    <span
-                      key={index}
-                      className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        doc.includes("Pendente")
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-green-100 text-green-800"
-                      }`}
-                    >
-                      {doc}
-                    </span>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
         </AdminModal>
 
-        {/* Schedule Modal */}
+        {/* Schedule Modal - Simplified */}
         <AdminModal
           isOpen={showScheduleModal}
           onClose={() => {
@@ -528,52 +451,14 @@ const AdminStores: React.FC = () => {
               >
                 Fechar
               </button>
-              <button className="px-4 py-2 bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] text-white rounded-lg hover:shadow-lg transition-shadow">
-                Salvar Alterações
-              </button>
             </div>
           }
         >
           {selectedStore && (
             <div className="space-y-4">
-              {Object.entries(selectedStore.schedule).map(([day, schedule]) => (
-                <div
-                  key={day}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                >
-                  <span className="font-medium text-[#111827]">
-                    {dayNames[day as keyof typeof dayNames]}
-                  </span>
-                  <div className="flex items-center space-x-3">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={!(schedule as any).closed}
-                        className="rounded border-gray-300 text-[#3DBEAB] focus:ring-[#3DBEAB]"
-                        onChange={() => {}}
-                      />
-                      <span className="text-sm text-gray-600">Aberto</span>
-                    </label>
-                    {!(schedule as any).closed && (
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="time"
-                          value={(schedule as any).open}
-                          className="px-2 py-1 border border-gray-200 rounded text-sm"
-                          onChange={() => {}}
-                        />
-                        <span className="text-gray-400">às</span>
-                        <input
-                          type="time"
-                          value={(schedule as any).close}
-                          className="px-2 py-1 border border-gray-200 rounded text-sm"
-                          onChange={() => {}}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+              <p className="text-sm text-gray-600">
+                Funcionalidade de edição de horários será implementada em breve.
+              </p>
             </div>
           )}
         </AdminModal>

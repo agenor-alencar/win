@@ -12,29 +12,17 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
-import { api } from "@/lib/Api";
+import { productApi, type ProductFormatted } from "@/lib/admin";
 import { useNotification } from "@/contexts/NotificationContext";
 
-interface Produto {
-  id: string;
-  nome: string;
-  descricao: string;
-  preco: number;
-  estoque: number;
-  ativo: boolean;
-  lojistaNome: string;
-  categoriaNome: string;
-  criadoEm: string;
-}
-
 const AdminProducts: React.FC = () => {
-  const { showNotification } = useNotification();
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const { success, error } = useNotification();
+  const [selectedProduct, setSelectedProduct] = useState<ProductFormatted | null>(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCreateProductModal, setShowCreateProductModal] = useState(false);
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductFormatted[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
@@ -50,51 +38,46 @@ const AdminProducts: React.FC = () => {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/v1/produtos");
-      const produtosData: Produto[] = response.data;
-
-      const formattedProducts = produtosData.map((produto) => ({
-        id: produto.id,
-        image: "/products/placeholder.jpg",
-        title: produto.nome,
-        category: produto.categoriaNome || "Sem categoria",
-        store: produto.lojistaNome || "Sem loja",
-        price: produto.preco.toFixed(2),
-        stock: produto.estoque,
-        status: !produto.ativo ? "Inativo" : produto.estoque === 0 ? "Sem estoque" : "Ativo",
-        createdAt: new Date(produto.criadoEm).toLocaleDateString("pt-BR"),
-        description: produto.descricao,
-        ativo: produto.ativo,
-      }));
+      const [formattedProducts, productStats] = await Promise.all([
+        productApi.getFormattedProducts(),
+        productApi.getStats(),
+      ]);
 
       setProducts(formattedProducts);
-
-      const total = formattedProducts.length;
-      const ativos = formattedProducts.filter((p) => p.status === "Ativo").length;
-      const inativos = formattedProducts.filter((p) => p.status === "Inativo").length;
-      const semEstoque = formattedProducts.filter((p) => p.stock === 0).length;
-
-      setStats({ total, ativos, inativos, semEstoque });
+      setStats(productStats);
     } catch (error: any) {
       console.error("Erro ao carregar produtos:", error);
-      showNotification("Erro ao carregar produtos", "error");
+      error(error.message || "Erro ao carregar produtos");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteProduct = async (product: any) => {
+  const handleDeleteProduct = async (product: ProductFormatted) => {
     if (!confirm(`Tem certeza que deseja excluir o produto "${product.title}"?`)) {
       return;
     }
 
     try {
-      await api.delete(`/v1/produtos/${product.id}`);
-      showNotification("Produto excluído com sucesso", "success");
+      await productApi.deleteProduct(product.id);
+      success("Produto excluído com sucesso");
       loadProducts();
     } catch (error: any) {
       console.error("Erro ao excluir produto:", error);
-      showNotification("Erro ao excluir produto", "error");
+      error(error.message || "Erro ao excluir produto");
+    }
+  };
+
+  const handleToggleProductStatus = async (product: ProductFormatted) => {
+    try {
+      await productApi.toggleProductStatus(product.id, product.ativo);
+      success(
+        `Produto ${product.ativo ? "desativado" : "ativado"} com sucesso`
+      );
+      loadProducts();
+    } catch (error: any) {
+      console.error("Erro ao alterar status do produto:", error);
+      error(error.message || "Erro ao alterar status do produto");
     }
   };
 
@@ -255,11 +238,11 @@ const AdminProducts: React.FC = () => {
     "Eletrônicos",
     "Roupas",
     "Casa & Jardim",
-    "Esportes",
-    "Beleza",
+    "Alimentos",
+    "Livros",
   ];
 
-  const actions: Action[] = [
+  const actions = [
     {
       label: "Ver Detalhes",
       onClick: (product) => {
@@ -270,9 +253,7 @@ const AdminProducts: React.FC = () => {
     },
     {
       label: "Ativar/Desativar",
-      onClick: (product) => {
-        console.log("Toggle product status:", product.id);
-      },
+      onClick: (product) => handleToggleProductStatus(product),
       color: "secondary",
     },
     {
@@ -375,10 +356,11 @@ const AdminProducts: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center space-x-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="filter-category" className="block text-sm font-medium text-gray-700 mb-1">
                 Categoria
               </label>
               <select
+                id="filter-category"
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
@@ -392,10 +374,11 @@ const AdminProducts: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="filter-status" className="block text-sm font-medium text-gray-700 mb-1">
                 Status
               </label>
               <select
+                id="filter-status"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"

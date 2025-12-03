@@ -1,7 +1,9 @@
 package com.win.marketplace.service;
 
 import com.win.marketplace.dto.response.AdminDashboardStatsDTO;
+import com.win.marketplace.dto.response.AdminUsuarioStatsDTO;
 import com.win.marketplace.model.Pedido;
+import com.win.marketplace.model.Usuario;
 import com.win.marketplace.repository.LojistaRepository;
 import com.win.marketplace.repository.PedidoRepository;
 import com.win.marketplace.repository.ProdutoRepository;
@@ -160,6 +162,54 @@ public class AdminService {
                 BigDecimal.ZERO,
                 0L, 0L
             );
+        }
+    }
+
+    /**
+     * Busca estatísticas de usuários por tipo (perfil)
+     */
+    @Transactional(readOnly = true)
+    public AdminUsuarioStatsDTO buscarEstatisticasUsuarios() {
+        log.info("Buscando estatísticas de usuários por tipo");
+        
+        try {
+            List<Usuario> todosUsuarios = usuarioRepository.findAll();
+            
+            // Contar por tipo de perfil
+            long clientes = todosUsuarios.stream()
+                    .filter(u -> u.getUsuarioPerfis().stream().noneMatch(up -> 
+                            up.getPerfil().getNome().equals("ADMIN") || 
+                            up.getPerfil().getNome().equals("LOJISTA") || 
+                            up.getPerfil().getNome().equals("MOTORISTA")))
+                    .count();
+            
+            long lojistas = todosUsuarios.stream()
+                    .filter(u -> u.getUsuarioPerfis().stream().anyMatch(up -> up.getPerfil().getNome().equals("LOJISTA")))
+                    .count();
+            
+            long motoristas = todosUsuarios.stream()
+                    .filter(u -> u.getUsuarioPerfis().stream().anyMatch(up -> up.getPerfil().getNome().equals("MOTORISTA")))
+                    .count();
+            
+            long bloqueados = todosUsuarios.stream()
+                    .filter(u -> !Boolean.TRUE.equals(u.getAtivo()))
+                    .count();
+            
+            AdminUsuarioStatsDTO stats = AdminUsuarioStatsDTO.criar(
+                    clientes,
+                    lojistas,
+                    motoristas,
+                    bloqueados
+            );
+            
+            log.info("Estatísticas de usuários carregadas: {} clientes, {} lojistas, {} motoristas, {} bloqueados",
+                    clientes, lojistas, motoristas, bloqueados);
+            
+            return stats;
+            
+        } catch (Exception e) {
+            log.error("Erro ao buscar estatísticas de usuários", e);
+            return AdminUsuarioStatsDTO.criar(0L, 0L, 0L, 0L);
         }
     }
 }

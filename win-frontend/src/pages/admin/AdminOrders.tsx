@@ -11,25 +11,16 @@ import {
   ExclamationTriangleIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
-import { api } from "@/lib/Api";
+import { orderApi, type OrderFormatted } from "@/lib/admin";
 import { useNotification } from "@/contexts/NotificationContext";
 
-interface Pedido {
-  id: string;
-  clienteNome: string;
-  lojistaNome: string;
-  total: number;
-  status: string;
-  criadoEm: string;
-}
-
 const AdminOrders: React.FC = () => {
-  const { showNotification } = useNotification();
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const { success, error } = useNotification();
+  const [selectedOrder, setSelectedOrder] = useState<OrderFormatted | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("today");
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<OrderFormatted[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
@@ -46,42 +37,16 @@ const AdminOrders: React.FC = () => {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/v1/pedidos/listar");
-      const pedidosData: Pedido[] = response.data;
-
-      const formattedOrders = pedidosData.map((pedido) => ({
-        id: pedido.id,
-        date: new Date(pedido.criadoEm).toLocaleString("pt-BR"),
-        customer: pedido.clienteNome,
-        store: pedido.lojistaNome,
-        total: pedido.total.toFixed(2),
-        status: getStatusLabel(pedido.status),
-        paymentMethod: "-",
-        deliveryTime: "-",
-        originalStatus: pedido.status,
-      }));
+      const [formattedOrders, orderStats] = await Promise.all([
+        orderApi.getFormattedOrders(),
+        orderApi.getStats(),
+      ]);
 
       setOrders(formattedOrders);
-
-      // Calcular estatísticas
-      const total = formattedOrders.length;
-      const pendentes = formattedOrders.filter((o) => 
-        ["PENDENTE", "AGUARDANDO_PAGAMENTO"].includes(o.originalStatus)
-      ).length;
-      const emAndamento = formattedOrders.filter((o) => 
-        ["CONFIRMADO", "EM_PREPARACAO", "EM_TRANSITO"].includes(o.originalStatus)
-      ).length;
-      const entregues = formattedOrders.filter((o) => 
-        o.originalStatus === "ENTREGUE"
-      ).length;
-      const cancelados = formattedOrders.filter((o) => 
-        o.originalStatus === "CANCELADO"
-      ).length;
-
-      setStats({ total, pendentes, emAndamento, entregues, cancelados });
+      setStats(orderStats);
     } catch (error: any) {
       console.error("Erro ao carregar pedidos:", error);
-      showNotification("Erro ao carregar pedidos", "error");
+      error(error.message || "Erro ao carregar pedidos");
     } finally {
       setLoading(false);
     }
@@ -102,12 +67,27 @@ const AdminOrders: React.FC = () => {
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      await api.put(`/v1/pedidos/${orderId}/status`, { status: newStatus });
-      showNotification("Status do pedido atualizado com sucesso", "success");
+      await orderApi.updateOrderStatus(orderId, newStatus);
+      success("Status do pedido atualizado com sucesso");
       loadOrders();
+      setSelectedOrder(null);
+      setShowOrderModal(false);
     } catch (error: any) {
       console.error("Erro ao atualizar status:", error);
-      showNotification("Erro ao atualizar status do pedido", "error");
+      error(error.message || "Erro ao atualizar status do pedido");
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string, motivo: string) => {
+    try {
+      await orderApi.cancelOrder(orderId, motivo);
+      success("Pedido cancelado com sucesso");
+      loadOrders();
+      setSelectedOrder(null);
+      setShowOrderModal(false);
+    } catch (error: any) {
+      console.error("Erro ao cancelar pedido:", error);
+      error(error.message || "Erro ao cancelar pedido");
     }
   };
 
@@ -346,14 +326,22 @@ const AdminOrders: React.FC = () => {
     {
       label: "Cancelar",
       onClick: (order) => {
-        console.log("Cancel order:", order.id);
+        const motivo = prompt("Motivo do cancelamento:");
+        if (motivo) {
+          handleCancelOrder(order.id, motivo);
+        }
       },
       color: "danger",
     },
     {
       label: "Forçar Status",
       onClick: (order) => {
-        console.log("Force status for order:", order.id);
+        const novoStatus = prompt(
+          "Digite o novo status (PENDENTE, CONFIRMADO, EM_PREPARACAO, EM_TRANSITO, ENTREGUE):"
+        );
+        if (novoStatus) {
+          handleUpdateOrderStatus(order.id, novoStatus);
+        }
       },
       color: "secondary",
     },
@@ -453,10 +441,11 @@ const AdminOrders: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center space-x-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="filter-status" className="block text-sm font-medium text-gray-700 mb-1">
                 Status
               </label>
               <select
+                id="filter-status"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
@@ -470,10 +459,11 @@ const AdminOrders: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="filter-period" className="block text-sm font-medium text-gray-700 mb-1">
                 Período
               </label>
               <select
+                id="filter-period"
                 value={filterPeriod}
                 onChange={(e) => setFilterPeriod(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"

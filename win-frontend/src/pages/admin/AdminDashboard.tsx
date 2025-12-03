@@ -16,7 +16,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { useNotification } from "@/contexts/NotificationContext";
-import { dashboardApi, type RecentOrder, type RecentStore } from "@/lib/DashboardApi";
+import { dashboardApi, type RecentOrder, type RecentStore } from "@/lib/admin";
 
 const AdminDashboard: React.FC = () => {
   const { showNotification } = useNotification();

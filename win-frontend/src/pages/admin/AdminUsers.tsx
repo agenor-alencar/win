@@ -10,26 +10,15 @@ import {
   LockOpenIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
-import { api } from "@/lib/Api";
+import { userApi, type UserFormatted } from "@/lib/admin";
 import { useNotification } from "@/contexts/NotificationContext";
 
-interface Usuario {
-  id: string;
-  nome: string;
-  email: string;
-  telefone: string;
-  cpf: string;
-  ativo: boolean;
-  criadoEm: string;
-  perfis: string[];
-}
-
 const AdminUsers: React.FC = () => {
-  const { showNotification } = useNotification();
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const { success, error } = useNotification();
+  const [selectedUser, setSelectedUser] = useState<UserFormatted | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserFormatted[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     clientes: 0,
@@ -45,64 +34,31 @@ const AdminUsers: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/v1/usuario/list/all");
-      const usuariosData: Usuario[] = response.data;
-
-      // Transformar dados para o formato da tabela
-      const formattedUsers = usuariosData.map((user) => {
-        // Determinar tipo principal do usuário
-        let type = "Cliente";
-        if (user.perfis.includes("ADMIN")) type = "Admin";
-        else if (user.perfis.includes("LOJISTA")) type = "Lojista";
-        else if (user.perfis.includes("MOTORISTA")) type = "Motorista";
-
-        return {
-          id: user.id,
-          name: user.nome,
-          email: user.email,
-          type,
-          status: user.ativo ? "Ativo" : "Bloqueado",
-          createdAt: new Date(user.criadoEm).toLocaleDateString("pt-BR"),
-          lastLogin: "-",
-          phone: user.telefone || "-",
-          cpf: user.cpf || "-",
-          perfis: user.perfis,
-          ativo: user.ativo,
-        };
-      });
+      const [formattedUsers, userStats] = await Promise.all([
+        userApi.getFormattedUsers(),
+        userApi.getStats(),
+      ]);
 
       setUsers(formattedUsers);
-
-      // Calcular estatísticas
-      const clientes = formattedUsers.filter((u) => u.type === "Cliente").length;
-      const lojistas = formattedUsers.filter((u) => u.type === "Lojista").length;
-      const motoristas = formattedUsers.filter((u) => u.type === "Motorista").length;
-      const bloqueados = formattedUsers.filter((u) => u.status === "Bloqueado").length;
-
-      setStats({ clientes, lojistas, motoristas, bloqueados });
-    } catch (error: any) {
-      console.error("Erro ao carregar usuários:", error);
-      showNotification("Erro ao carregar usuários", "error");
+      setStats(userStats);
+    } catch (err: any) {
+      console.error("Erro ao carregar usuários:", err);
+      error(err.message || "Erro ao carregar usuários");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleUserStatus = async (user: any) => {
+  const handleToggleUserStatus = async (user: UserFormatted) => {
     try {
-      const endpoint = user.ativo
-        ? `/v1/usuario/desativar/${user.id}`
-        : `/v1/usuario/ativar/${user.id}`;
-
-      await api.patch(endpoint);
-      showNotification(
-        `Usuário ${user.ativo ? "bloqueado" : "desbloqueado"} com sucesso`,
-        "success"
+      await userApi.toggleUserStatus(user.id, user.ativo);
+      success(
+        `Usuário ${user.ativo ? "bloqueado" : "desbloqueado"} com sucesso`
       );
       loadUsers();
-    } catch (error: any) {
-      console.error("Erro ao alterar status do usuário:", error);
-      showNotification("Erro ao alterar status do usuário", "error");
+    } catch (err: any) {
+      console.error("Erro ao alterar status do usuário:", err);
+      error(err.message || "Erro ao alterar status do usuário");
     }
   };
 
@@ -116,25 +72,7 @@ const AdminUsers: React.FC = () => {
     { key: "id", label: "ID", sortable: true },
     { key: "name", label: "Nome", sortable: true },
     { key: "email", label: "E-mail", sortable: true },
-    {
-      key: "type",
-      label: "Tipo",
-      render: (type) => (
-        <span
-          className={`px-2 py-1 text-xs font-medium rounded-full ${
-            type === "Cliente"
-              ? "bg-blue-100 text-blue-800"
-              : type === "Lojista"
-                ? "bg-green-100 text-green-800"
-                : type === "Motorista"
-                  ? "bg-purple-100 text-purple-800"
-                  : "bg-red-100 text-red-800"
-          }`}
-        >
-          {type}
-        </span>
-      ),
-    },
+    { key: "type", label: "Tipo", sortable: true },
     {
       key: "status",
       label: "Status",
@@ -172,8 +110,17 @@ const AdminUsers: React.FC = () => {
     },
     {
       label: "Resetar Senha",
-      onClick: (user) => {
-        console.log("Reset password for user:", user.id);
+      onClick: async (user) => {
+        if (confirm(`Deseja resetar a senha de ${user.name}?`)) {
+          try {
+            const result = await userApi.resetPassword(user.id);
+            alert(
+              `Senha resetada com sucesso!\n\nSenha temporária: ${result.senhaTemporaria}\n\n${result.mensagem}`
+            );
+          } catch (error: any) {
+            alert(error.message || "Erro ao resetar senha");
+          }
+        }
       },
       color: "secondary",
     },
