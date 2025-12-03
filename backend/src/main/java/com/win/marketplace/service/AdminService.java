@@ -12,10 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.YearMonth;
+import java.time.*;
 import java.util.List;
 
 @Service
@@ -47,8 +44,8 @@ public class AdminService {
             ).getTotalElements();
             
             // === MÉTRICAS DE HOJE ===
-            LocalDateTime inicioHoje = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-            LocalDateTime fimHoje = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+            OffsetDateTime inicioHoje = OffsetDateTime.now().with(LocalTime.MIN);
+            OffsetDateTime fimHoje = OffsetDateTime.now().with(LocalTime.MAX);
             
             List<Pedido> pedidosHoje = pedidoRepository.findAll().stream()
                 .filter(p -> p.getCriadoEm() != null 
@@ -63,8 +60,8 @@ public class AdminService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
             
             // === MÉTRICAS DE ONTEM ===
-            LocalDateTime inicioOntem = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.MIN);
-            LocalDateTime fimOntem = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.MAX);
+            OffsetDateTime inicioOntem = OffsetDateTime.now().minusDays(1).with(LocalTime.MIN);
+            OffsetDateTime fimOntem = OffsetDateTime.now().minusDays(1).with(LocalTime.MAX);
             
             List<Pedido> pedidosOntem = pedidoRepository.findAll().stream()
                 .filter(p -> p.getCriadoEm() != null 
@@ -80,8 +77,12 @@ public class AdminService {
             
             // === MÉTRICAS DO MÊS ATUAL ===
             YearMonth mesAtual = YearMonth.now();
-            LocalDateTime inicioMesAtual = mesAtual.atDay(1).atStartOfDay();
-            LocalDateTime fimMesAtual = mesAtual.atEndOfMonth().atTime(LocalTime.MAX);
+            OffsetDateTime inicioMesAtual = OffsetDateTime.now()
+                .withDayOfMonth(1)
+                .with(LocalTime.MIN);
+            OffsetDateTime fimMesAtual = OffsetDateTime.now()
+                .withDayOfMonth(mesAtual.lengthOfMonth())
+                .with(LocalTime.MAX);
             
             List<Pedido> pedidosMesAtual = pedidoRepository.findAll().stream()
                 .filter(p -> p.getCriadoEm() != null 
@@ -97,8 +98,14 @@ public class AdminService {
             
             // === MÉTRICAS DO MÊS ANTERIOR ===
             YearMonth mesAnterior = mesAtual.minusMonths(1);
-            LocalDateTime inicioMesAnterior = mesAnterior.atDay(1).atStartOfDay();
-            LocalDateTime fimMesAnterior = mesAnterior.atEndOfMonth().atTime(LocalTime.MAX);
+            OffsetDateTime inicioMesAnterior = OffsetDateTime.now()
+                .minusMonths(1)
+                .withDayOfMonth(1)
+                .with(LocalTime.MIN);
+            OffsetDateTime fimMesAnterior = OffsetDateTime.now()
+                .minusMonths(1)
+                .withDayOfMonth(mesAnterior.lengthOfMonth())
+                .with(LocalTime.MAX);
             
             List<Pedido> pedidosMesAnterior = pedidoRepository.findAll().stream()
                 .filter(p -> p.getCriadoEm() != null 
