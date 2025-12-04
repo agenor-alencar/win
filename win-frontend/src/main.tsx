@@ -99,6 +99,7 @@ const App = () => (
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/pagamento/pix" element={<PaymentPix />} />
                   <Route path="/payment/success" element={<PaymentSuccess />} />
+                  <Route path="/pedido/sucesso" element={<PaymentSuccess />} />
                   <Route path="/payment/failure" element={<PaymentFailure />} />
                   <Route path="/payment/pending" element={<PaymentPending />} />
                   <Route path="/orders/:orderId" element={<OrderSuccess />} />

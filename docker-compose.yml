@@ -83,10 +83,8 @@ services:
     build:
       context: ./win-frontend
       dockerfile: Dockerfile
-      args:
-        # Build args para injetar no bundle do Vite
-        # Frontend não precisa de chave pública do Abacate Pay
-        # O checkout é feito via redirecionamento para URL segura
+      # Frontend não precisa de chave pública do Abacate Pay
+      # O checkout é feito via redirecionamento para URL segura
     container_name: win-marketplace-frontend
     environment:
       NODE_ENV: ${NODE_ENV:-production}
