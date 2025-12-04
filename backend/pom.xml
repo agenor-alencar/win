@@ -155,13 +155,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- ✅ MERCADO PAGO (Pagamentos) -->
-        <dependency>
-            <groupId>com.mercadopago</groupId>
-            <artifactId>sdk-java</artifactId>
-            <version>2.5.0</version>
-        </dependency>
-
         <!-- ✅ REDIS SESSION (Opcional - para sessões distribuídas) -->
         <dependency>
             <groupId>org.springframework.session</groupId>

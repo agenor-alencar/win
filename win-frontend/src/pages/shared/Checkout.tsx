@@ -4,7 +4,7 @@ import { useCart } from "../../contexts/CartContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { api } from "@/lib/Api";
-import MercadoPagoWallet from "@/components/MercadoPagoWallet";
+import AbacatePayCheckout from "@/components/AbacatePayCheckout";
 import {
   CreditCard,
   MapPin,
@@ -34,8 +34,10 @@ const Checkout: React.FC = () => {
   const { success, error: showError } = useNotification();
 
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card" | "boleto">("credit_card");
-  const [preferenceId, setPreferenceId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card" | "boleto">("pix");
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [billingId, setBillingId] = useState<string | null>(null);
+  const [billingAmount, setBillingAmount] = useState<number>(0);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
   
   const [address, setAddress] = useState<Address>({
@@ -166,35 +168,37 @@ const Checkout: React.FC = () => {
       
       console.log("✅ Pedido criado:", pedido);
 
-      // Processar pagamento via Mercado Pago
+      // Processar pagamento via Abacate Pay
       if (paymentMethod === "pix") {
-        console.log("💳 Iniciando pagamento PIX para pedido:", pedido.id);
-        console.log("📄 CPF:", pixData.cpf.replace(/\D/g, ""));
+        console.log("🥑 Iniciando pagamento PIX via Abacate Pay para pedido:", pedido.id);
         console.log("📧 Email:", pixData.email);
         
-        // Criar preferência de pagamento PIX
+        // Criar cobrança PIX no Abacate Pay
         const pixResponse = await api.post(
-          `/api/v1/pagamentos/mercadopago/pix/${pedido.id}`,
+          `/api/v1/pagamentos/abacatepay/pix/${pedido.id}`,
           {
             cpf: pixData.cpf.replace(/\D/g, ""),
             email: pixData.email,
           }
         );
 
-        console.log("✅ Resposta do backend PIX:", pixResponse.data);
+        console.log("✅ Resposta do backend Abacate Pay:", pixResponse.data);
 
-        // Backend retorna a preferência de pagamento
-        const { pix } = pixResponse.data;
+        // Backend retorna a cobrança
+        const { billing } = pixResponse.data;
         
-        if (!pix || !pix.preferenceId) {
-          console.error("❌ Resposta do backend não contém preferenceId:", pixResponse.data);
-          throw new Error("Preferência de pagamento não foi criada corretamente");
+        if (!billing || !billing.checkoutUrl) {
+          console.error("❌ Resposta do backend não contém checkoutUrl:", pixResponse.data);
+          throw new Error("Cobrança não foi criada corretamente");
         }
         
-        console.log("🎫 Preference ID recebido:", pix.preferenceId);
+        console.log("🎫 Checkout URL recebido:", billing.checkoutUrl);
+        console.log("🆔 Billing ID:", billing.billingId);
         
-        // Armazenar o preferenceId para renderizar o botão do Mercado Pago
-        setPreferenceId(pix.preferenceId);
+        // Armazenar dados da cobrança para renderizar o componente Abacate Pay
+        setCheckoutUrl(billing.checkoutUrl);
+        setBillingId(billing.billingId);
+        setBillingAmount(billing.amount || Math.round(total * 100)); // Converter para centavos
         setPedidoId(pedido.id);
         
         // Limpar carrinho
@@ -683,10 +687,10 @@ const Checkout: React.FC = () => {
                   )}
                 </button>
 
-                {/* Botão de Pagamento do Mercado Pago */}
-                {preferenceId && paymentMethod === "pix" && (
+                {/* Botão de Pagamento Abacate Pay */}
+                {checkoutUrl && paymentMethod === "pix" && (
                   <div className="mt-4">
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
+                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mb-4">
                       <div className="flex items-start">
                         <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                         <div className="ml-3">
@@ -694,7 +698,7 @@ const Checkout: React.FC = () => {
                             Pedido Criado com Sucesso!
                           </h4>
                           <p className="text-sm text-gray-600">
-                            Clique no botão abaixo para ser redirecionado ao Mercado Pago e finalizar o pagamento.
+                            Clique no botão abaixo para finalizar o pagamento via PIX.
                           </p>
                           {pedidoId && (
                             <p className="text-xs text-gray-500 mt-2">
@@ -704,11 +708,13 @@ const Checkout: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <MercadoPagoWallet 
-                      preferenceId={preferenceId}
+                    <AbacatePayCheckout 
+                      checkoutUrl={checkoutUrl}
+                      billingId={billingId || ""}
+                      amount={billingAmount}
                       onError={(error) => {
-                        console.error("Erro no Wallet:", error);
-                        showError("Erro ao carregar botão de pagamento. Tente novamente.");
+                        console.error("Erro no checkout:", error);
+                        showError("Erro ao carregar pagamento. Tente novamente.");
                       }}
                     />
                   </div>

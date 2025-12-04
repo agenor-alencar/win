@@ -81,8 +81,9 @@ app:
     token: ${GTIN_API_TOKEN:}  # Token de autenticação da API GTIN (opcional)
 
 # Mercado Pago Configuration
-mercadopago:
-  access-token: ${MERCADOPAGO_ACCESS_TOKEN:}  # Access Token do Mercado Pago
+abacatepay:
+  api-key: ${ABACATEPAY_API_KEY:}
+  api-url: ${ABACATEPAY_API_URL:https://api.abacatepay.com}  # Access Token do Mercado Pago
 
 logging:
   level:
