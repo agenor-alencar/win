@@ -13,6 +13,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./config/postgres.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     networks:
       - win-network
     healthcheck:
@@ -21,6 +23,14 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'      # Limitar PostgreSQL a 0.5 vCPU (25% das 2 vCPUs)
+          memory: 1G       # Limitar memória a 1GB
+        reservations:
+          cpus: '0.25'     # Reservar 0.25 vCPU garantida
+          memory: 256M     # Reservar 256MB garantidos
 
   # Aplicação Spring Boot (Backend)
   backend:
@@ -35,6 +45,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
       SPRING_JPA_HIBERNATE_DDL_AUTO: ${HIBERNATE_DDL_AUTO:-update}
       TZ: ${TZ:-America/Sao_Paulo}
+      
+      # Otimizações JVM para produção (VPS 2vCPU/4GB)
+      JAVA_OPTS: "-Xms512m -Xmx1536m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication -XX:+OptimizeStringConcat -Djava.awt.headless=true"
       
       # Configuração CORS (adicione seus IPs/domínios separados por vírgula)
       # Inclui localhost, IP do VPS com e sem porta, e variações comuns
@@ -76,7 +89,18 @@ services:
       - ./uploads:/app/uploads
     networks:
       - win-network
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.25'     # Limitar backend a 1.25 vCPU (62.5% das 2 vCPUs)
+          memory: 2G       # Limitar memória a 2GB
+        reservations:
+          cpus: '0.5'      # Reservar 0.5 vCPU garantida
+          memory: 768M     # Reservar 768MB garantidos
 
   # Frontend React/Vite
   frontend:
