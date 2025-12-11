@@ -79,6 +79,8 @@ app:
   gtin-api:
     url: ${GTIN_API_URL:https://api.cosmos.bluesoft.com.br/gtins}
     token: ${GTIN_API_TOKEN:}  # Token de autenticação da API GTIN (opcional)
+  encryption:
+    secret: ${APP_ENCRYPTION_SECRET:Win@Marketplace#2025!Secret}
 
 # Mercado Pago Configuration
 abacatepay:

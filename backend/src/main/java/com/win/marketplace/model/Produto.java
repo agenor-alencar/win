@@ -52,6 +52,9 @@ public class Produto {
     @Column(name = "gtin_ean", unique = true, length = 14)
     private String gtinEan;
 
+    @Column(name = "erp_sku", length = 100)
+    private String erpSku;
+
     @Column(name = "peso_kg", precision = 8, scale = 3)
     private BigDecimal pesoKg;
 

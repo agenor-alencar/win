@@ -12,11 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Package, Upload, X } from "lucide-react";
+import { ArrowLeft, Loader2, Package, Upload, X, Link2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { api, getImageUrl } from "@/lib/Api";
 import { MerchantLayout } from "@/components/MerchantLayout";
+import { ErpProductSearch } from "@/components/ErpProductSearch";
+import { ErpProduct, erpApi } from "@/lib/api/ErpApi";
 
 interface ProductFormData {
   nome: string;
@@ -55,6 +57,11 @@ export default function ProductFormPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   
+  // Estados ERP
+  const [modoErp, setModoErp] = useState(false);
+  const [erpSku, setErpSku] = useState('');
+  const [hasErpConfig, setHasErpConfig] = useState(false);
+  
   const [formData, setFormData] = useState<ProductFormData>({
     nome: "",
     descricao: "",
@@ -91,6 +98,23 @@ export default function ProductFormPage() {
 
     fetchLojistaId();
   }, [user, toast]);
+
+  // Verificar se lojista tem ERP configurado
+  useEffect(() => {
+    const checkErpConfig = async () => {
+      if (!lojistaId) return;
+      
+      try {
+        const config = await erpApi.buscarConfiguracao(lojistaId);
+        setHasErpConfig(config !== null && config.ativo);
+      } catch (error) {
+        console.error('Erro ao verificar config ERP:', error);
+        setHasErpConfig(false);
+      }
+    };
+
+    checkErpConfig();
+  }, [lojistaId]);
 
   // Carregar categorias
   useEffect(() => {
@@ -140,6 +164,12 @@ export default function ProductFormPage() {
           sku: produto.sku || "",
           categoriaId: produto.categoria?.id || "",
         });
+
+        // Carregar erpSku se existir
+        if (produto.erpSku) {
+          setErpSku(produto.erpSku);
+          setModoErp(true);
+        }
 
         // Carregar imagens do produto
         try {
@@ -236,6 +266,23 @@ export default function ProductFormPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleImportFromErp = (erpProduct: ErpProduct) => {
+    setFormData({
+      ...formData,
+      nome: erpProduct.nome,
+      descricao: erpProduct.descricao || '',
+      preco: erpProduct.preco.toString(),
+      estoque: erpProduct.estoque.toString(),
+      sku: erpProduct.sku,
+    });
+    setErpSku(erpProduct.sku);
+    
+    toast({
+      title: 'Dados importados!',
+      description: 'Os dados do produto foram importados do ERP.',
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -316,6 +363,25 @@ export default function ProductFormPage() {
         const response = await api.post(`/v1/produtos/lojista/${lojistaId}`, payload);
         console.log("Produto criado:", response.data);
         const produtoId = response.data.id;
+        
+        // Se está em modo ERP e tem um SKU ERP, vincular o produto
+        if (modoErp && erpSku) {
+          try {
+            await erpApi.vincularProduto(lojistaId, {
+              produtoId: produtoId,
+              erpSku: erpSku,
+              importarDados: false, // Já importamos manualmente
+            });
+            
+            toast({
+              title: "Produto vinculado ao ERP!",
+              description: "O estoque será sincronizado automaticamente.",
+            });
+          } catch (erpError) {
+            console.error('Erro ao vincular produto ao ERP:', erpError);
+            // Não falhar a operação se a vinculação falhar
+          }
+        }
         
         // Fazer upload de imagens se houver
         if (selectedFiles.length > 0) {
@@ -407,6 +473,63 @@ export default function ProductFormPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Toggle Modo ERP */}
+              {hasErpConfig && !isEditing && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-blue-900">
+                        Origem do Produto
+                      </h3>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Escolha se deseja criar manualmente ou importar do ERP
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setModoErp(false)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          !modoErp
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-blue-900 border border-blue-300'
+                        }`}
+                      >
+                        Manual
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModoErp(true)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          modoErp
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-blue-900 border border-blue-300'
+                        }`}
+                      >
+                        Importar do ERP
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Componente de busca do ERP */}
+                  {modoErp && lojistaId && (
+                    <ErpProductSearch
+                      lojistaId={lojistaId}
+                      onImport={handleImportFromErp}
+                      disabled={isSaving}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Badge ERP Vinculado */}
+              {erpSku && (
+                <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                  <Link2 className="h-4 w-4" />
+                  <span>Produto vinculado ao ERP (SKU: {erpSku})</span>
+                </div>
+              )}
+
               {/* Nome */}
               <div>
                 <Label htmlFor="nome">Nome do Produto *</Label>

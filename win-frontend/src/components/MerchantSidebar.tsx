@@ -14,6 +14,7 @@ import {
   BarChart3,
   Star,
   Store,
+  Link2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +76,12 @@ const secondaryNavigation = [
     icon: Store,
     description: "Voltar para loja",
     highlight: true // Flag para destacar este item
+  },
+  { 
+    name: "Integração ERP", 
+    href: "/merchant/erp", 
+    icon: Link2,
+    description: "Configurar ERP"
   },
   { 
     name: "Perfil", 

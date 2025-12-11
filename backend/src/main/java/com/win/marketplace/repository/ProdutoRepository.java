@@ -68,4 +68,9 @@ public interface ProdutoRepository extends JpaRepository<Produto, UUID> {
      * Conta produtos ativos/inativos por lojista
      */
     Long countByLojistaIdAndAtivo(UUID lojistaId, Boolean ativo);
+    
+    /**
+     * Busca produtos de um lojista que estão vinculados a um ERP (possuem erpSku)
+     */
+    List<Produto> findByLojistaIdAndErpSkuIsNotNull(UUID lojistaId);
 }
