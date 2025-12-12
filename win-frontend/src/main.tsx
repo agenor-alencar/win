@@ -51,6 +51,7 @@ import MerchantReturns from "./pages/merchant/MerchantReturns";
 import MerchantFinancial from "./pages/merchant/MerchantFinancial";
 import MerchantReviews from "./pages/merchant/MerchantReviews";
 import MerchantSettings from "./pages/merchant/MerchantSettings";
+import ErpSettings from "./pages/merchant/ErpSettings";
 import { ErpConfigPage } from "./pages/merchant/ErpConfigPage";
 
 // Páginas do admin
@@ -181,10 +182,18 @@ const App = () => (
                     }
                   />
                   <Route
-                    path="/merchant/erp"
+                    path="/merchant/erp-config"
                     element={
                       <ProtectedRoute requiredRoles={["merchant"]}>
                         <ErpConfigPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/merchant/erp"
+                    element={
+                      <ProtectedRoute requiredRoles={["merchant"]}>
+                        <ErpSettings />
                       </ProtectedRoute>
                     }
                   />

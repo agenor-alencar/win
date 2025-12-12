@@ -61,6 +61,14 @@ public class ProdutoErpService {
             throw new IllegalArgumentException("Produto não pertence ao lojista");
         }
         
+        // ✅ VALIDAÇÃO: Verifica se erpSku já está vinculado a outro produto
+        Optional<Produto> produtoExistente = produtoRepository.findByErpSku(dto.erpSku());
+        if (produtoExistente.isPresent() && !produtoExistente.get().getId().equals(dto.produtoId())) {
+            throw new IllegalArgumentException(
+                "SKU '" + dto.erpSku() + "' já está vinculado a outro produto: " + produtoExistente.get().getNome()
+            );
+        }
+        
         // Busca configuração ERP
         LojistaErpConfig config = erpConfigService.buscarConfiguracaoAtiva(lojistaId);
         if (config == null) {

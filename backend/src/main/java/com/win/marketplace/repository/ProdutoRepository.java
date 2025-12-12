@@ -73,4 +73,10 @@ public interface ProdutoRepository extends JpaRepository<Produto, UUID> {
      * Busca produtos de um lojista que estão vinculados a um ERP (possuem erpSku)
      */
     List<Produto> findByLojistaIdAndErpSkuIsNotNull(UUID lojistaId);
+    
+    /**
+     * ✅ Busca produto por erpSku (para validar duplicação)
+     */
+    @Query("SELECT p FROM Produto p WHERE p.erpSku = :erpSku")
+    Optional<Produto> findByErpSku(@Param("erpSku") String erpSku);
 }

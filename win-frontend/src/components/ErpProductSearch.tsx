@@ -45,13 +45,34 @@ export const ErpProductSearch: React.FC<ErpProductSearchProps> = ({
         });
       }
     } catch (error: any) {
-      const message =
-        error.response?.data?.message || 'Erro ao buscar produto no ERP';
+      console.error('Erro ao buscar produto no ERP:', error);
+      
+      // ✅ Tratamento melhorado de erros
+      let errorMessage = 'Erro ao buscar produto no ERP';
+      let errorDescription = '';
+      
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'Tempo esgotado ao conectar com o ERP';
+        errorDescription = 'Verifique se o ERP está online e tente novamente.';
+      } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+        errorMessage = 'Erro de conexão com o ERP';
+        errorDescription = 'Verifique sua conexão com a internet ou se o ERP está configurado corretamente.';
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        errorMessage = 'Erro de autenticação no ERP';
+        errorDescription = 'Suas credenciais do ERP podem estar inválidas. Acesse Configurações > ERP para atualizar.';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Produto não encontrado no ERP';
+        errorDescription = `O SKU "${erpSku.trim()}" não existe no seu sistema ERP.`;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       toast({
-        title: message,
+        title: errorMessage,
+        description: errorDescription || 'Você pode criar o produto manualmente se preferir.',
         variant: 'destructive',
+        duration: 6000,
       });
-      console.error(error);
     } finally {
       setSearching(false);
     }

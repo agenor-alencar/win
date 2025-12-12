@@ -600,12 +600,13 @@ export default function ProductFormPage() {
                     id="preco"
                     type="number"
                     step="0.01"
-                    min="0"
+                    min="0.01"
                     placeholder="0.00"
                     value={formData.preco}
                     onChange={(e) => handleInputChange("preco", e.target.value)}
                     required
                   />
+                  <p className="text-xs text-gray-500 mt-1">Valor mínimo: R$ 0,01</p>
                 </div>
 
                 <div>
@@ -614,11 +615,17 @@ export default function ProductFormPage() {
                     id="estoque"
                     type="number"
                     min="0"
+                    step="1"
                     placeholder="0"
                     value={formData.estoque}
-                    onChange={(e) => handleInputChange("estoque", e.target.value)}
+                    onChange={(e) => {
+                      // ✅ Validação: não aceita valores negativos
+                      const value = parseInt(e.target.value) || 0;
+                      handleInputChange("estoque", Math.max(0, value).toString());
+                    }}
                     required
                   />
+                  <p className="text-xs text-gray-500 mt-1">Mínimo: 0 unidades</p>
                 </div>
               </div>
 
