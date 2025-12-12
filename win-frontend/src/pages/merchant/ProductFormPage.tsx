@@ -102,13 +102,23 @@ export default function ProductFormPage() {
   // Verificar se lojista tem ERP configurado
   useEffect(() => {
     const checkErpConfig = async () => {
-      if (!lojistaId) return;
+      if (!lojistaId) {
+        console.log('⚠️ ERP Check: lojistaId ainda não disponível');
+        return;
+      }
+      
+      console.log('🔍 Verificando config ERP para lojista:', lojistaId);
       
       try {
         const config = await erpApi.buscarConfiguracao(lojistaId);
-        setHasErpConfig(config !== null && config.ativo);
+        console.log('📦 Config ERP retornada:', config);
+        
+        const hasConfig = config !== null && config.ativo;
+        setHasErpConfig(hasConfig);
+        
+        console.log(hasConfig ? '✅ ERP configurado e ativo' : '⚠️ ERP não configurado ou inativo');
       } catch (error) {
-        console.error('Erro ao verificar config ERP:', error);
+        console.error('❌ Erro ao verificar config ERP:', error);
         setHasErpConfig(false);
       }
     };
@@ -324,7 +334,7 @@ export default function ProductFormPage() {
     }
 
     // Validar imagens obrigatórias no modo de criação
-    if (!isEditing && selectedFiles.length === 0 && (!imagensExistentes || imagensExistentes.length === 0)) {
+    if (!isEditing && selectedFiles.length === 0 && imagens.length === 0) {
       toast({
         title: "Imagens obrigatórias",
         description: "Você deve adicionar pelo menos uma imagem do produto.",

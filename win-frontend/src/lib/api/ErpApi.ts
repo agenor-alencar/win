@@ -49,8 +49,8 @@ export interface VincularProdutoErpRequest {
 }
 
 export class ErpApi {
-  private baseUrl = '/lojista/erp';
-  private produtosBaseUrl = '/lojista/produtos/erp';
+  private baseUrl = '/v1/lojista/erp';
+  private produtosBaseUrl = '/v1/lojista/produtos/erp';
 
   /**
    * Lista tipos de ERP disponíveis
