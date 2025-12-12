@@ -338,10 +338,9 @@ export default function ErpSettings() {
                   </SelectTrigger>
                   <SelectContent>
                     {erpTypes.map((type) => (
-                      <SelectItem key={type.name} value={type.name}>
+                      <SelectItem key={type.value} value={type.value}>
                         <div>
-                          <div className="font-medium">{type.displayName}</div>
-                          <div className="text-xs text-gray-500">{type.description}</div>
+                          <div className="font-medium">{type.label}</div>
                         </div>
                       </SelectItem>
                     ))}
