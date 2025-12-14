@@ -1,0 +1,9 @@
+export { default as UserProfile } from './UserProfile';
+export { default as UserOrders } from './UserOrders';
+export { default as UserFavorites } from './UserFavorites';
+export { default as UserReviews } from './UserReviews';
+export { default as UserReturns } from './UserReturns';
+export { default as UserAddresses } from './UserAddresses';
+export { default as UserPaymentMethods } from './UserPaymentMethods';
+export { default as UserNotifications } from './UserNotifications';
+export { default as UserSettings } from './UserSettings';

@@ -67,6 +67,19 @@ import AdminFinances from "./pages/admin/AdminFinances";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminProfile from "./pages/admin/AdminProfile";
 
+// Páginas do usuário
+import { 
+  UserProfile, 
+  UserOrders, 
+  UserFavorites,
+  UserReviews,
+  UserReturns,
+  UserAddresses,
+  UserPaymentMethods,
+  UserNotifications,
+  UserSettings
+} from "./pages/user";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -105,6 +118,80 @@ const App = () => (
                   <Route path="/payment/failure" element={<PaymentFailure />} />
                   <Route path="/payment/pending" element={<PaymentPending />} />
                   <Route path="/orders/:orderId" element={<OrderSuccess />} />
+
+                  {/* User Routes (Protected) */}
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute requiredRoles={["customer"]}>
+                        <UserProfile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/orders"
+                    element={
+                      <ProtectedRoute requiredRoles={["customer"]}>
+                        <UserOrders />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/favorites"
+                    element={
+                      <ProtectedRoute requiredRoles={["customer"]}>
+                        <UserFavorites />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reviews"
+                    element={
+                      <ProtectedRoute requiredRoles={["customer"]}>
+                        <UserReviews />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/returns"
+                    element={
+                      <ProtectedRoute requiredRoles={["customer"]}>
+                        <UserReturns />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/addresses"
+                    element={
+                      <ProtectedRoute requiredRoles={["customer"]}>
+                        <UserAddresses />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/payment-methods"
+                    element={
+                      <ProtectedRoute requiredRoles={["customer"]}>
+                        <UserPaymentMethods />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/notifications"
+                    element={
+                      <ProtectedRoute requiredRoles={["customer"]}>
+                        <UserNotifications />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute requiredRoles={["customer"]}>
+                        <UserSettings />
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Merchant Routes */}
                   <Route path="/merchant/login" element={<MerchantAuth />} />
