@@ -93,20 +93,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="px-3 pb-4">
-          <button
-            className={`group flex items-center w-full px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors ${
-              collapsed ? "justify-center" : ""
-            }`}
-            title={collapsed ? "Logout" : undefined}
-          >
-            <ArrowRightOnRectangleIcon
-              className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 flex-shrink-0`}
-            />
-            {!collapsed && <span>Logout</span>}
-          </button>
-        </div>
       </div>
     </div>
   );

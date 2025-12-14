@@ -68,13 +68,6 @@ export const AdminHeader: React.FC = () => {
               >
                 Meu Perfil
               </Link>
-              <Link
-                to="/admin/settings"
-                onClick={() => setShowUserMenu(false)}
-                className="block px-4 py-2 text-sm text-[#111827] hover:bg-gray-100 transition-colors"
-              >
-                Configurações
-              </Link>
               <hr className="my-1" />
               <button
                 onClick={handleLogout}
