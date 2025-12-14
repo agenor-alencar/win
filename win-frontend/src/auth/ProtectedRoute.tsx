@@ -31,43 +31,40 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/unauthorized" />;
   }
 
-  // Se não tem role mas tem perfis, extrair o role dos perfis
-  let userRole = user.role;
-  if (!userRole && user.perfis && user.perfis.length > 0) {
-    // Map perfis to role
-    const roleMapping: { [key: string]: string } = {
-      'ADMIN': 'admin',
-      'LOJISTA': 'merchant',
-      'MOTORISTA': 'driver',
-      'USER': 'user'
-    };
-    
-    for (const perfil of user.perfis) {
-      const mappedRole = roleMapping[perfil.toUpperCase()];
-      if (mappedRole) {
-        userRole = mappedRole;
-        break;
-      }
-    }
-  }
+  // Map roles to backend perfis
+  const roleToPerfilMapping: { [key: string]: string } = {
+    'admin': 'ADMIN',
+    'merchant': 'LOJISTA',
+    'driver': 'MOTORISTA',
+    'user': 'USER'
+  };
 
-  if (!userRole) {
-    console.log('❌ No role found, redirecting to /unauthorized');
-    return <Navigate to="/unauthorized" />;
-  }
-
-  // Compare roles case-insensitively
-  const userRoleUpper = String(userRole).toUpperCase();
+  // Check if user has permission:
+  // 1. Check if user.role matches any required role
+  // 2. Check if user.perfis contains the corresponding backend perfil
+  const userRoleUpper = user.role ? String(user.role).toUpperCase() : '';
   const normalizedRequired = requiredRoles.map((r) => String(r).toUpperCase());
+  
+  // Check role match
+  const hasRoleMatch = normalizedRequired.includes(userRoleUpper);
+  
+  // Check perfis match
+  const userPerfis = (user.perfis || []).map(p => String(p).toUpperCase());
+  const requiredPerfis = requiredRoles.map(role => roleToPerfilMapping[role.toLowerCase()]).filter(Boolean);
+  const hasPerfilMatch = requiredPerfis.some(perfil => userPerfis.includes(perfil));
 
-  console.log('🔍 Role comparison:', {
+  console.log('🔍 Authorization check:', {
     userRoleUpper,
     normalizedRequired,
-    match: normalizedRequired.includes(userRoleUpper)
+    hasRoleMatch,
+    userPerfis,
+    requiredPerfis,
+    hasPerfilMatch,
+    authorized: hasRoleMatch || hasPerfilMatch
   });
 
-  if (!normalizedRequired.includes(userRoleUpper)) {
-    console.log('❌ Role not authorized, redirecting to /unauthorized');
+  if (!hasRoleMatch && !hasPerfilMatch) {
+    console.log('❌ Role/Perfil not authorized, redirecting to /unauthorized');
     return <Navigate to="/unauthorized" />;
   }
 
