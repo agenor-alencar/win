@@ -123,7 +123,7 @@ const App = () => (
                   <Route
                     path="/profile"
                     element={
-                      <ProtectedRoute requiredRoles={["customer"]}>
+                      <ProtectedRoute requiredRoles={["user"]}>
                         <UserProfile />
                       </ProtectedRoute>
                     }
@@ -131,7 +131,7 @@ const App = () => (
                   <Route
                     path="/orders"
                     element={
-                      <ProtectedRoute requiredRoles={["customer"]}>
+                      <ProtectedRoute requiredRoles={["user"]}>
                         <UserOrders />
                       </ProtectedRoute>
                     }
@@ -139,7 +139,7 @@ const App = () => (
                   <Route
                     path="/favorites"
                     element={
-                      <ProtectedRoute requiredRoles={["customer"]}>
+                      <ProtectedRoute requiredRoles={["user"]}>
                         <UserFavorites />
                       </ProtectedRoute>
                     }
@@ -147,7 +147,7 @@ const App = () => (
                   <Route
                     path="/reviews"
                     element={
-                      <ProtectedRoute requiredRoles={["customer"]}>
+                      <ProtectedRoute requiredRoles={["user"]}>
                         <UserReviews />
                       </ProtectedRoute>
                     }
@@ -155,7 +155,7 @@ const App = () => (
                   <Route
                     path="/returns"
                     element={
-                      <ProtectedRoute requiredRoles={["customer"]}>
+                      <ProtectedRoute requiredRoles={["user"]}>
                         <UserReturns />
                       </ProtectedRoute>
                     }
@@ -163,7 +163,7 @@ const App = () => (
                   <Route
                     path="/addresses"
                     element={
-                      <ProtectedRoute requiredRoles={["customer"]}>
+                      <ProtectedRoute requiredRoles={["user"]}>
                         <UserAddresses />
                       </ProtectedRoute>
                     }
@@ -171,7 +171,7 @@ const App = () => (
                   <Route
                     path="/payment-methods"
                     element={
-                      <ProtectedRoute requiredRoles={["customer"]}>
+                      <ProtectedRoute requiredRoles={["user"]}>
                         <UserPaymentMethods />
                       </ProtectedRoute>
                     }
@@ -179,7 +179,7 @@ const App = () => (
                   <Route
                     path="/notifications"
                     element={
-                      <ProtectedRoute requiredRoles={["customer"]}>
+                      <ProtectedRoute requiredRoles={["user"]}>
                         <UserNotifications />
                       </ProtectedRoute>
                     }
@@ -187,7 +187,7 @@ const App = () => (
                   <Route
                     path="/settings"
                     element={
-                      <ProtectedRoute requiredRoles={["customer"]}>
+                      <ProtectedRoute requiredRoles={["user"]}>
                         <UserSettings />
                       </ProtectedRoute>
                     }
