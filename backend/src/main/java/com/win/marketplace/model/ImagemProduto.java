@@ -27,6 +27,24 @@ public class ImagemProduto {
     @Column(nullable = false, length = 500)
     private String url;
 
+    @Column(name = "url_thumbnail", length = 500)
+    private String urlThumbnail;
+
+    @Column(name = "url_medium", length = 500)
+    private String urlMedium;
+
+    @Column(name = "tamanho_bytes")
+    private Long tamanhoBytes;
+
+    @Column(name = "tamanho_thumbnail_bytes")
+    private Long tamanhoThumbnailBytes;
+
+    @Column(name = "tamanho_medium_bytes")
+    private Long tamanhoMediumBytes;
+
+    @Column(name = "tipo_conteudo", length = 100)
+    private String tipoConteudo;
+
     @Column(name = "texto_alternativo", length = 200)
     private String textoAlternativo;
 

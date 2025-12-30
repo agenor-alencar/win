@@ -14,5 +14,7 @@ public interface ImagemProdutoRepository extends JpaRepository<ImagemProduto, UU
     
     List<ImagemProduto> findByProdutoIdOrderByOrdemExibicao(UUID produtoId);
     
+    List<ImagemProduto> findByProdutoIdOrderByOrdemExibicaoAsc(UUID produtoId);
+    
     void deleteByProdutoId(UUID produtoId);
 }
