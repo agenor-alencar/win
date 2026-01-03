@@ -98,18 +98,23 @@ public class S3StorageService implements ImageStorageService {
         String originalUrl = getImageUrl(originalKey);
         long originalSize = originalBytes.length;
         
+        // Para thumbnails, sempre usar JPG se o formato original não for suportado (WebP)
+        String outputFormat = getImageFormat(extension);
+        String thumbExtension = "webp".equalsIgnoreCase(extension) ? "jpg" : extension;
+        String thumbContentType = "webp".equalsIgnoreCase(extension) ? "image/jpeg" : contentType;
+        
         // Criar e fazer upload do thumbnail
         ByteArrayOutputStream thumbnailOutput = new ByteArrayOutputStream();
         Thumbnails.of(new ByteArrayInputStream(originalBytes))
             .size(storageProperties.getImage().getThumbnailWidth(), 
                   storageProperties.getImage().getThumbnailHeight())
-            .outputFormat(getImageFormat(extension))
+            .outputFormat(outputFormat)
             .outputQuality(0.85)
             .toOutputStream(thumbnailOutput);
         
         byte[] thumbnailBytes = thumbnailOutput.toByteArray();
-        String thumbnailKey = buildObjectKey(baseName + "-thumb." + extension, folderPath);
-        uploadBytes(thumbnailBytes, thumbnailKey, contentType);
+        String thumbnailKey = buildObjectKey(baseName + "-thumb." + thumbExtension, folderPath);
+        uploadBytes(thumbnailBytes, thumbnailKey, thumbContentType);
         String thumbnailUrl = getImageUrl(thumbnailKey);
         long thumbnailSize = thumbnailBytes.length;
         
@@ -118,13 +123,13 @@ public class S3StorageService implements ImageStorageService {
         Thumbnails.of(new ByteArrayInputStream(originalBytes))
             .size(storageProperties.getImage().getMediumWidth(), 
                   storageProperties.getImage().getMediumHeight())
-            .outputFormat(getImageFormat(extension))
+            .outputFormat(outputFormat)
             .outputQuality(0.90)
             .toOutputStream(mediumOutput);
         
         byte[] mediumBytes = mediumOutput.toByteArray();
-        String mediumKey = buildObjectKey(baseName + "-medium." + extension, folderPath);
-        uploadBytes(mediumBytes, mediumKey, contentType);
+        String mediumKey = buildObjectKey(baseName + "-medium." + thumbExtension, folderPath);
+        uploadBytes(mediumBytes, mediumKey, thumbContentType);
         String mediumUrl = getImageUrl(mediumKey);
         long mediumSize = mediumBytes.length;
         
@@ -299,7 +304,7 @@ public class S3StorageService implements ImageStorageService {
         return switch (extension.toLowerCase()) {
             case "png" -> "png";
             case "gif" -> "gif";
-            case "webp" -> "webp";
+            case "webp" -> "jpg"; // Thumbnailator não suporta WebP output, converter para JPG
             default -> "jpg";
         };
     }
