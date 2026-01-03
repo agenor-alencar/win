@@ -183,7 +183,7 @@ export default function ProductFormPage() {
 
         // Carregar imagens do produto
         try {
-          const imagensResponse = await api.get(`/v1/imagens-produto/produto/${id}`);
+          const imagensResponse = await api.get(`/v1/produtos/${id}/imagens`);
           setImagens(imagensResponse.data);
         } catch (error) {
           console.error("Erro ao carregar imagens:", error);
@@ -222,10 +222,10 @@ export default function ProductFormPage() {
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
         const formData = new FormData();
-        formData.append("arquivo", selectedFiles[i]);
+        formData.append("file", selectedFiles[i]);
         formData.append("ordemExibicao", (imagens.length + i + 1).toString());
 
-        await api.post(`/v1/imagens-produto/produto/${produtoId}`, formData, {
+        await api.post(`/v1/produtos/${produtoId}/imagens`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -240,7 +240,7 @@ export default function ProductFormPage() {
       setSelectedFiles([]);
       
       // Recarregar imagens
-      const imagensResponse = await api.get(`/v1/imagens-produto/produto/${produtoId}`);
+      const imagensResponse = await api.get(`/v1/produtos/${produtoId}/imagens`);
       setImagens(imagensResponse.data);
     } catch (error: any) {
       console.error("Erro ao enviar imagens:", error);
