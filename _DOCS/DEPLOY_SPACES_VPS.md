@@ -94,12 +94,21 @@ nano .env
 # ========================================
 # DIGITALOCEAN SPACES
 # ========================================
+# Tipo de storage (obrigatório: local ou s3)
+STORAGE_TYPE=s3
+
+# Chaves de acesso do DigitalOcean Spaces
 SPACES_ACCESS_KEY=DO00ABCDEFGHIJK1234567
 SPACES_SECRET_KEY=abcdefghijklmnopqrstuvwxyz1234567890ABCD
 SPACES_BUCKET_NAME=win-marketplace-storage
 SPACES_ENDPOINT=https://sfo3.digitaloceanspaces.com
 SPACES_REGION=sfo3
+
+# URL pública do CDN (opcional, para melhor performance)
+# S3_PUBLIC_URL=https://win-marketplace-storage.sfo3.cdn.digitaloceanspaces.com
 ```
+
+**⚠️ IMPORTANTE:** A variável `STORAGE_TYPE=s3` é **obrigatória** para ativar o uso do DigitalOcean Spaces. Sem ela, o sistema usará storage local.
 
 **Salvar:** `Ctrl+O` → `Enter` → `Ctrl+X`
 
@@ -120,13 +129,26 @@ services:
     environment:
       # ... variáveis existentes ...
       
-      # DigitalOcean Spaces
+      # Storage Configuration (obrigatório!)
+      - STORAGE_TYPE=${STORAGE_TYPE:-local}
+      
+      # S3/DigitalOcean Spaces (mapeia para app.storage.s3.*)
+      - AWS_ACCESS_KEY_ID=${SPACES_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${SPACES_SECRET_KEY}
+      - AWS_REGION=${SPACES_REGION:-sfo3}
+      - S3_BUCKET_NAME=${SPACES_BUCKET_NAME:-win-marketplace-storage}
+      - S3_ENDPOINT=${SPACES_ENDPOINT:-https://sfo3.digitaloceanspaces.com}
+      - S3_PUBLIC_URL=${S3_PUBLIC_URL:-}
+      
+      # DigitalOcean Spaces (compatibilidade)
       - SPACES_ACCESS_KEY=${SPACES_ACCESS_KEY}
       - SPACES_SECRET_KEY=${SPACES_SECRET_KEY}
       - SPACES_BUCKET_NAME=${SPACES_BUCKET_NAME}
       - SPACES_ENDPOINT=${SPACES_ENDPOINT}
       - SPACES_REGION=${SPACES_REGION}
 ```
+
+**⚠️ NOTA:** As variáveis `AWS_*` e `S3_*` são mapeadas automaticamente pelo Spring Boot para `app.storage.s3.*` no application.yml.
 
 **Salvar:** `Ctrl+O` → `Enter` → `Ctrl+X`
 
@@ -342,6 +364,63 @@ curl http://localhost:8080/actuator/health
 
 ---
 
+## � Troubleshooting
+
+### Problema: Imagens não aparecem no site
+
+**Sintoma:** Produtos exibem placeholders em vez das imagens reais.
+
+**Causa Raiz:** A variável `STORAGE_TYPE` não está definida ou está com valor `local`, fazendo o sistema usar storage local em vez do DigitalOcean Spaces.
+
+**Solução:**
+
+1. Verificar se a variável está definida no .env:
+```bash
+cat .env | grep STORAGE_TYPE
+# Deve retornar: STORAGE_TYPE=s3
+```
+
+2. Se não estiver definida, adicionar ao .env:
+```bash
+echo "STORAGE_TYPE=s3" >> .env
+```
+
+3. Verificar se as variáveis estão no container:
+```bash
+docker exec win-marketplace-backend env | grep -E "STORAGE_TYPE|AWS_"
+```
+
+4. Rebuild e restart dos containers:
+```bash
+docker compose down
+docker compose build backend --no-cache
+docker compose up -d
+```
+
+5. Verificar logs do backend para confirmar que S3StorageService foi iniciado:
+```bash
+docker compose logs backend | grep -i "storage"
+# Deve exibir: "S3StorageService inicializado - Bucket: win-marketplace-storage"
+```
+
+### Problema: Erro de conexão com Spaces
+
+**Sintoma:** Logs mostram erros ao fazer upload de imagens.
+
+**Soluções:**
+- Verificar se as chaves de acesso estão corretas
+- Verificar se o bucket existe no DigitalOcean
+- Verificar se o endpoint está correto (ex: `https://sfo3.digitaloceanspaces.com`)
+- Verificar se o bucket tem permissões de leitura pública configuradas
+
+### Problema: Imagens antigas (local) não migradas
+
+**Sintoma:** Produtos antigos não exibem imagens após migração para Spaces.
+
+**Solução:** As imagens antigas precisam ser migradas manualmente do storage local para o Spaces. Considere fazer um script de migração ou fazer novo upload das imagens via painel de administração.
+
+---
+
 ## 📞 Suporte
 
 Se encontrar problemas:
@@ -353,4 +432,4 @@ Se encontrar problemas:
 
 ---
 
-**Última atualização:** 29/12/2025
+**Última atualização:** 03/01/2026
