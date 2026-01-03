@@ -179,11 +179,18 @@
             <version>0.4.20</version>
         </dependency>
 
-        <!-- ✅ WebP ImageIO - Suporte para leitura de imagens WebP -->
+        <!-- ✅ TwelveMonkeys WebP ImageIO - Suporte para leitura de imagens WebP (mais estável) -->
         <dependency>
-            <groupId>org.sejda.imageio</groupId>
-            <artifactId>webp-imageio</artifactId>
-            <version>0.1.6</version>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-webp</artifactId>
+            <version>3.11.1</version>
+        </dependency>
+        
+        <!-- TwelveMonkeys Core - Requerido para imageio-webp -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
+            <version>3.11.1</version>
         </dependency>
     </dependencies>
 
