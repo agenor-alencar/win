@@ -32,6 +32,7 @@ public interface ProdutoMapper {
      * Converte Produto (Entity) para ProdutoResponseDTO
      */
     @Mapping(target = "imagensUrls", expression = "java(mapImagensUrls(produto))")
+    @Mapping(target = "imagemPrincipal", expression = "java(getImagemPrincipal(produto))")
     @Mapping(target = "lojista", source = "lojista")
     @Mapping(target = "categoria", source = "categoria")
     ProdutoResponseDTO toResponseDTO(Produto produto);

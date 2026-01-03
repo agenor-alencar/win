@@ -23,6 +23,7 @@ public record ProdutoResponseDTO(
     BigDecimal avaliacao,
     Integer quantidadeAvaliacoes,
     List<String> imagensUrls,
+    String imagemPrincipal, // URL da primeira imagem
     
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     OffsetDateTime criadoEm,
