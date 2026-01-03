@@ -10,7 +10,6 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface ImagemProdutoMapper {
 
-    @Mapping(source = "produto.id", target = "produtoId")
     ImagemProdutoResponseDTO toResponseDTO(ImagemProduto imagemProduto);
 
     List<ImagemProdutoResponseDTO> toResponseDTOList(List<ImagemProduto> imagensProduto);
