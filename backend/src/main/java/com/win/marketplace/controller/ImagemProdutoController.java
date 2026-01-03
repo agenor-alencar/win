@@ -285,18 +285,6 @@ public class ImagemProdutoController {
     }
 
     private ImagemProdutoResponseDTO toDTO(ImagemProduto imagem) {
-        return ImagemProdutoResponseDTO.builder()
-            .id(imagem.getId())
-            .url(imagem.getUrl())
-            .urlThumbnail(imagem.getUrlThumbnail())
-            .urlMedium(imagem.getUrlMedium())
-            .tamanhoBytes(imagem.getTamanhoBytes())
-            .tamanhoThumbnailBytes(imagem.getTamanhoThumbnailBytes())
-            .tamanhoMediumBytes(imagem.getTamanhoMediumBytes())
-            .tipoConteudo(imagem.getTipoConteudo())
-            .textoAlternativo(imagem.getTextoAlternativo())
-            .ordemExibicao(imagem.getOrdemExibicao())
-            .criadoEm(imagem.getCriadoEm())
-            .build();
+        return imagemProdutoMapper.toDTO(imagem);
     }
 }
