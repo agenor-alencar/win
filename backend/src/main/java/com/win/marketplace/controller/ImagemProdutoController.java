@@ -1,5 +1,6 @@
 package com.win.marketplace.controller;
 
+import com.win.marketplace.dto.mapper.ImagemProdutoMapper;
 import com.win.marketplace.dto.response.ImagemProdutoResponseDTO;
 import com.win.marketplace.model.ImagemProduto;
 import com.win.marketplace.model.Produto;
@@ -36,6 +37,7 @@ public class ImagemProdutoController {
     private final ImageStorageService imageStorageService;
     private final ProdutoRepository produtoRepository;
     private final ImagemProdutoRepository imagemProdutoRepository;
+    private final ImagemProdutoMapper imagemProdutoMapper;
 
     private static final List<String> TIPOS_PERMITIDOS = Arrays.asList(
         "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"
