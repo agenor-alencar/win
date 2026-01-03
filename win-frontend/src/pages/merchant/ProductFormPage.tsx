@@ -255,8 +255,17 @@ export default function ProductFormPage() {
   };
 
   const deleteImage = async (imagemId: string) => {
+    if (!productId) {
+      toast({
+        title: "Erro",
+        description: "Produto não identificado",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      await api.delete(`/v1/imagens-produto/${imagemId}`);
+      await api.delete(`/v1/produtos/${productId}/imagens/${imagemId}`);
       setImagens(prev => prev.filter(img => img.id !== imagemId));
       toast({
         title: "Imagem removida",
