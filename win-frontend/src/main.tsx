@@ -66,6 +66,7 @@ import AdminDeliveries from "./pages/admin/AdminDeliveries";
 import AdminFinances from "./pages/admin/AdminFinances";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminProfile from "./pages/admin/AdminProfile";
+import AdminBanners from "./pages/admin/AdminBanners";
 
 // Páginas do usuário
 import { 
@@ -339,6 +340,14 @@ const App = () => (
                     element={
                       <ProtectedRoute requiredRoles={["admin"]}>
                         <AdminProducts />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/banners"
+                    element={
+                      <ProtectedRoute requiredRoles={["admin"]}>
+                        <AdminBanners />
                       </ProtectedRoute>
                     }
                   />

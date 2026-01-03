@@ -17,6 +17,7 @@ import { useCart } from "../../contexts/CartContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useAuth } from "../../contexts/AuthContext";
 import Header from "../../components/Header";
+import MainCarousel from "../../components/MainCarousel";
 import { produtoApi, type ProdutoSummary } from "@/lib/produtoApi";
 
 const categories = [
@@ -109,36 +110,9 @@ export default function Index() {
       {/* Header */}
       <Header />
 
-      {/* Hero Banner */}
-      <section className="bg-gradient-to-r from-primary to-secondary text-white py-12 lg:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-4">
-              Encontre tudo que precisa
-            </h2>
-            <p className="text-lg lg:text-xl mb-8 text-blue-100">
-              Produtos locais com entrega rápida e frete grátis na primeira
-              compra
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="text-lg px-8 py-3"
-              >
-                Comece a Comprar
-              </Button>
-              <Button
-                onClick={handleVendaClick}
-                size="lg"
-                variant="outline"
-                className="text-lg px-8 py-3 bg-white/10 border-white/30 text-white hover:bg-white/20"
-              >
-                Venda no WIN
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Banner Carousel */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <MainCarousel />
       </section>
 
       {/* Categories */}

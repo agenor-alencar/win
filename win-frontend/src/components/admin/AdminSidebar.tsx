@@ -14,6 +14,7 @@ import {
   ArrowRightOnRectangleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PhotoIcon,
 } from "@heroicons/react/24/outline";
 
 interface AdminSidebarProps {
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Motoristas", href: "/admin/drivers", icon: TruckIcon },
   { name: "Categorias", href: "/admin/categories", icon: FolderIcon },
   { name: "Produtos", href: "/admin/products", icon: ShoppingBagIcon },
+  { name: "Banners", href: "/admin/banners", icon: PhotoIcon },
   { name: "Pedidos", href: "/admin/orders", icon: ClipboardDocumentListIcon },
   { name: "Entregas", href: "/admin/deliveries", icon: MapPinIcon },
   { name: "Finanças", href: "/admin/finances", icon: BanknotesIcon },
