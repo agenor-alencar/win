@@ -39,10 +39,20 @@ public class ImagemProdutoController {
     private final ImagemProdutoRepository imagemProdutoRepository;
     private final ImagemProdutoMapper imagemProdutoMapper;
 
+    // Tipos de mídia suportados: imagens e vídeos curtos
     private static final List<String> TIPOS_PERMITIDOS = Arrays.asList(
-        "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"
+        // Imagens
+        "image/jpeg", "image/jpg", "image/png", "image/gif",
+        // Vídeos curtos
+        "video/mp4", "video/webm", "video/quicktime"
     );
-    private static final long TAMANHO_MAXIMO = 10 * 1024 * 1024; // 10MB
+    
+    // Tipos de vídeo para identificação
+    private static final List<String> TIPOS_VIDEO = Arrays.asList(
+        "video/mp4", "video/webm", "video/quicktime"
+    );
+    
+    private static final long TAMANHO_MAXIMO = 50 * 1024 * 1024; // 50MB
 
     /**
      * Upload de imagem de produto com geração automática de thumbnails
@@ -74,8 +84,11 @@ public class ImagemProdutoController {
             String contentType = file.getContentType();
             if (contentType == null || !TIPOS_PERMITIDOS.contains(contentType.toLowerCase())) {
                 return ResponseEntity.badRequest()
-                    .body("Tipo de arquivo não permitido. Permitidos: JPG, PNG, WEBP, GIF");
+                    .body("Tipo de arquivo não permitido. Permitidos: JPG, PNG, GIF, MP4, WebM, MOV");
             }
+            
+            // Verificar se é vídeo
+            boolean isVideo = TIPOS_VIDEO.contains(contentType.toLowerCase());
 
             // Buscar produto
             Produto produto = produtoRepository.findById(produtoId)
@@ -86,33 +99,55 @@ public class ImagemProdutoController {
                 produto.getLojista().getId().toString(),
                 produtoId.toString());
 
-            // Fazer upload com thumbnails
-            log.info("Iniciando upload para S3/Storage - Produto: {}", produtoId);
-            ImageStorageService.ImageUploadResult uploadResult =
-                imageStorageService.uploadImageWithThumbnail(
+            // Criar registro no banco
+            ImagemProduto imagem = new ImagemProduto();
+            imagem.setProduto(produto);
+            imagem.setTipoConteudo(contentType);
+            imagem.setTextoAlternativo(textoAlternativo);
+            imagem.setOrdemExibicao(ordemExibicao);
+            
+            if (isVideo) {
+                // Vídeos: upload simples sem thumbnails
+                log.info("Iniciando upload de vídeo para S3/Storage - Produto: {}", produtoId);
+                String videoUrl = imageStorageService.uploadImage(
                     file.getInputStream(),
                     file.getOriginalFilename(),
                     contentType,
                     folderPath
                 );
+                
+                imagem.setUrl(videoUrl);
+                imagem.setTamanhoBytes(file.getSize());
+                // Vídeos não têm thumbnails
+                imagem.setUrlThumbnail(null);
+                imagem.setUrlMedium(null);
+                imagem.setTamanhoThumbnailBytes(0L);
+                imagem.setTamanhoMediumBytes(0L);
+                
+                log.info("Upload de vídeo concluído - URL: {}, Size: {} bytes", videoUrl, file.getSize());
+            } else {
+                // Imagens: upload com thumbnails
+                log.info("Iniciando upload de imagem para S3/Storage - Produto: {}", produtoId);
+                ImageStorageService.ImageUploadResult uploadResult =
+                    imageStorageService.uploadImageWithThumbnail(
+                        file.getInputStream(),
+                        file.getOriginalFilename(),
+                        contentType,
+                        folderPath
+                    );
 
-            // Criar registro no banco
-            ImagemProduto imagem = new ImagemProduto();
-            imagem.setProduto(produto);
-            imagem.setUrl(uploadResult.getOriginalUrl());
-            imagem.setUrlThumbnail(uploadResult.getThumbnailUrl());
-            imagem.setUrlMedium(uploadResult.getMediumUrl());
-            imagem.setTamanhoBytes(uploadResult.getOriginalSize());
-            imagem.setTamanhoThumbnailBytes(uploadResult.getThumbnailSize());
-            imagem.setTamanhoMediumBytes(uploadResult.getMediumSize());
-            imagem.setTipoConteudo(contentType);
-            imagem.setTextoAlternativo(textoAlternativo);
-            imagem.setOrdemExibicao(ordemExibicao);
+                imagem.setUrl(uploadResult.getOriginalUrl());
+                imagem.setUrlThumbnail(uploadResult.getThumbnailUrl());
+                imagem.setUrlMedium(uploadResult.getMediumUrl());
+                imagem.setTamanhoBytes(uploadResult.getOriginalSize());
+                imagem.setTamanhoThumbnailBytes(uploadResult.getThumbnailSize());
+                imagem.setTamanhoMediumBytes(uploadResult.getMediumSize());
+                
+                log.info("Upload de imagem concluído - ID: {}, Original: {} bytes, Thumb: {} bytes",
+                    imagem.getId(), uploadResult.getOriginalSize(), uploadResult.getThumbnailSize());
+            }
 
             imagemProdutoRepository.save(imagem);
-
-            log.info("Upload concluído com sucesso - Imagem ID: {}, Original: {} bytes, Thumb: {} bytes",
-                imagem.getId(), uploadResult.getOriginalSize(), uploadResult.getThumbnailSize());
 
             // Retornar DTO
             ImagemProdutoResponseDTO response = toDTO(imagem);
