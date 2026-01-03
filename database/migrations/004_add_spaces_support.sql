@@ -20,11 +20,13 @@ ALTER TABLE imagem_produto
     ADD COLUMN IF NOT EXISTS tipo_conteudo VARCHAR(100),
     ADD COLUMN IF NOT EXISTS texto_alternativo VARCHAR(200);
 
--- Renomear coluna 'ordem' para 'ordem_exibicao' (se existir)
+-- Renomear coluna 'ordem' para 'ordem_exibicao' (se existir E ordem_exibicao não existir)
 DO $$ 
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns 
-               WHERE table_name='imagem_produto' AND column_name='ordem') THEN
+               WHERE table_name='imagem_produto' AND column_name='ordem')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='imagem_produto' AND column_name='ordem_exibicao') THEN
         ALTER TABLE imagem_produto RENAME COLUMN ordem TO ordem_exibicao;
     END IF;
 END $$;
