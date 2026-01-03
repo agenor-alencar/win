@@ -287,6 +287,6 @@ public class ImagemProdutoController {
     }
 
     private ImagemProdutoResponseDTO toDTO(ImagemProduto imagem) {
-        return imagemProdutoMapper.toDTO(imagem);
+        return imagemProdutoMapper.toResponseDTO(imagem);
     }
 }
