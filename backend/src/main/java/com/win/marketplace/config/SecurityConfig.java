@@ -104,6 +104,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/dev/**").permitAll() // Dev Tools (gerador de hash)
                 .requestMatchers("/api/v1/produtos/**").permitAll() // Permitir listagem pública de produtos
                 .requestMatchers("/api/v1/categoria/**").permitAll() // Permitir listagem pública de categorias
+                .requestMatchers("/api/v1/banners").permitAll() // Permitir listagem pública de banners
                 .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger público
                 .requestMatchers("/error").permitAll()
