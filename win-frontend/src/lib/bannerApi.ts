@@ -45,7 +45,7 @@ export const bannerApi = {
    * Lista banners ativos (público)
    */
   listarBannersAtivos: async (): Promise<Banner[]> => {
-    const response = await api.get<Banner[]>("/api/v1/banners");
+    const response = await api.get<Banner[]>("/v1/banners");
     return response.data;
   },
 
@@ -53,7 +53,7 @@ export const bannerApi = {
    * Lista todos os banners (admin)
    */
   listarTodosBanners: async (): Promise<Banner[]> => {
-    const response = await api.get<Banner[]>("/api/v1/admin/banners");
+    const response = await api.get<Banner[]>("/v1/admin/banners");
     return response.data;
   },
 
@@ -61,7 +61,7 @@ export const bannerApi = {
    * Busca um banner por ID (admin)
    */
   buscarPorId: async (id: string): Promise<Banner> => {
-    const response = await api.get<Banner>(`/api/v1/admin/banners/${id}`);
+    const response = await api.get<Banner>(`/v1/admin/banners/${id}`);
     return response.data;
   },
 
@@ -81,7 +81,7 @@ export const bannerApi = {
     formData.append("ativo", (dados.ativo !== false).toString());
 
     const response = await api.post<Banner>(
-      "/api/v1/admin/banners",
+      "/v1/admin/banners",
       formData,
       {
         headers: {
@@ -100,7 +100,7 @@ export const bannerApi = {
     dados: BannerUpdateRequest
   ): Promise<Banner> => {
     const response = await api.put<Banner>(
-      `/api/v1/admin/banners/${id}`,
+      `/v1/admin/banners/${id}`,
       dados
     );
     return response.data;
@@ -114,7 +114,7 @@ export const bannerApi = {
     formData.append("file", arquivo);
 
     const response = await api.put<Banner>(
-      `/api/v1/admin/banners/${id}/imagem`,
+      `/v1/admin/banners/${id}/imagem`,
       formData,
       {
         headers: {
@@ -130,7 +130,7 @@ export const bannerApi = {
    */
   toggleAtivo: async (id: string): Promise<Banner> => {
     const response = await api.patch<Banner>(
-      `/api/v1/admin/banners/${id}/toggle`
+      `/v1/admin/banners/${id}/toggle`
     );
     return response.data;
   },
@@ -139,6 +139,6 @@ export const bannerApi = {
    * Deleta um banner (admin)
    */
   deletarBanner: async (id: string): Promise<void> => {
-    await api.delete(`/api/v1/admin/banners/${id}`);
+    await api.delete(`/v1/admin/banners/${id}`);
   },
 };
