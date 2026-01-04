@@ -109,12 +109,12 @@ public class FavoritoService {
         dto.setProdutoId(favorito.getProduto().getId());
         dto.setProdutoNome(favorito.getProduto().getNome());
         dto.setProdutoPreco(favorito.getProduto().getPreco());
-        dto.setProdutoEmEstoque(favorito.getProduto().getQuantidadeEstoque() > 0);
+        dto.setProdutoEmEstoque(favorito.getProduto().getEstoque() != null && favorito.getProduto().getEstoque() > 0);
         dto.setCriadoEm(favorito.getCriadoEm());
 
         // Imagem principal
-        if (!favorito.getProduto().getImagens().isEmpty()) {
-            dto.setProdutoImagem(favorito.getProduto().getImagens().get(0).getUrl());
+        if (favorito.getProduto().getImagens() != null && !favorito.getProduto().getImagens().isEmpty()) {
+            dto.setProdutoImagem(favorito.getProduto().getImagens().iterator().next().getUrl());
         }
 
         // Lojista
