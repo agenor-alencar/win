@@ -44,7 +44,7 @@ public class FavoritoService {
     @Transactional(readOnly = true)
     public List<FavoritoResponseDTO> listarMeusFavoritos() {
         Usuario usuario = getUsuarioAutenticado();
-        List<Favorito> favoritos = favoritoRepository.findByUsuarioOrderBycriadoEmDesc(usuario);
+        List<Favorito> favoritos = favoritoRepository.findByUsuarioOrderByCriadoEmDesc(usuario);
         
         return favoritos.stream()
                 .map(this::toResponseDTO)
