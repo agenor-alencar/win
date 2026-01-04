@@ -13,7 +13,7 @@ import java.util.UUID;
 @Repository
 public interface FavoritoRepository extends JpaRepository<Favorito, UUID> {
     
-    List<Favorito> findByUsuarioOrderBycriadoEmDesc(Usuario usuario);
+    List<Favorito> findByUsuarioOrderByCriadoEmDesc(Usuario usuario);
     
     Optional<Favorito> findByUsuarioAndProduto(Usuario usuario, Produto produto);
     
