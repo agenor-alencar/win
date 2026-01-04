@@ -7,8 +7,17 @@ export interface Product {
   preco: number;
   estoque: number;
   ativo: boolean;
-  lojistaNome?: string;
-  categoriaNome?: string;
+  lojista?: {
+    id: string;
+    nomeFantasia: string;
+    cnpj: string;
+  };
+  categoria?: {
+    id: string;
+    nome: string;
+  };
+  imagemPrincipal?: string;
+  imagensUrls?: string[];
   criadoEm: string;
 }
 
@@ -60,10 +69,10 @@ class ProductApiService extends AdminApi {
 
         return {
           id: produto.id,
-          image: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMEwyOCAyOEgyMFYyMFoiIGZpbGw9IiNFNUU3RUIiLz4KPHA+CjxwYXRoIGQ9Ik0yOCAyMEwyMCAyOEgyOFYyMFoiIGZpbGw9IiNFNUU3RUIiLz4KPC9zdmc+Cg==",
+          image: produto.imagemPrincipal || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMEwyOCAyOEgyMFYyMFoiIGZpbGw9IiNFNUU3RUIiLz4KPHA+CjxwYXRoIGQ9Ik0yOCAyMEwyMCAyOEgyOFYyMFoiIGZpbGw9IiNFNUU3RUIiLz4KPC9zdmc+Cg==",
           title: produto.nome,
-          category: produto.categoriaNome || "Sem categoria",
-          store: produto.lojistaNome || "Sem loja",
+          category: produto.categoria?.nome || "Sem categoria",
+          store: produto.lojista?.nomeFantasia || "Sem loja",
           price: this.formatCurrency(produto.preco),
           stock: produto.estoque,
           status,
