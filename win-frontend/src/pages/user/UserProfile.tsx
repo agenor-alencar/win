@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { User, Mail, Phone, Calendar, Shield, Camera } from "lucide-react";
+import { userApi } from "@/lib/api/userApi";
 
 export default function UserProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.nome || "",
     email: user?.email || "",
@@ -21,20 +23,42 @@ export default function UserProfile() {
     cpf: "",
   });
 
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.nome || "",
+        email: user.email || "",
+        phone: user.telefone || "",
+        cpf: "",
+      });
+    }
+  }, [user]);
+
   const handleSave = async () => {
+    if (!user?.id) return;
+    
+    setLoading(true);
     try {
-      // TODO: Implementar chamada à API para atualizar perfil
+      await userApi.updateProfile(user.id, {
+        nome: formData.name,
+        telefone: formData.phone,
+        cpf: formData.cpf || undefined,
+      });
+      
       toast({
         title: "Perfil atualizado!",
         description: "Suas informações foram salvas com sucesso.",
       });
       setIsEditing(false);
     } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
       toast({
         title: "Erro ao atualizar",
         description: "Não foi possível salvar as alterações.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

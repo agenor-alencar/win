@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RotateCcw, Package, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { returnsApi } from "@/lib/api/returnsApi";
 
 interface Return {
   id: string;
@@ -38,8 +39,22 @@ export default function UserReturns() {
 
   const fetchReturns = async () => {
     try {
-      // TODO: Implementar chamada à API
-      setReturns([]);
+      const data = await returnsApi.getMyReturns();
+      
+      // Mapear dados da API para o formato esperado
+      const mappedReturns = data.map(ret => ({
+        id: ret.id,
+        orderId: ret.pedidoId,
+        orderNumber: ret.numeroPedido,
+        productName: ret.produto.nome,
+        productImage: ret.produto.imagem || "/placeholder.svg",
+        reason: ret.motivo,
+        status: ret.status.toLowerCase() as Return["status"],
+        requestDate: ret.dataSolicitacao,
+        refundAmount: Number(ret.valorReembolso),
+      }));
+      
+      setReturns(mappedReturns);
     } catch (error) {
       console.error("Erro ao buscar devoluções:", error);
     } finally {

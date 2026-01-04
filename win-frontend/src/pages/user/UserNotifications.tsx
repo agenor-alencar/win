@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bell, Package, Truck, ShoppingCart, Star, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { notificationsApi } from "@/lib/api/notificationsApi";
 
 interface Notification {
   id: string;

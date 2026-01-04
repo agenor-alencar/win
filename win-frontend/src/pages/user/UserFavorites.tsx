@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, Trash2, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { favoritesApi } from "@/lib/api/favoritesApi";
 
 interface FavoriteProduct {
   id: string;
@@ -28,8 +29,19 @@ export default function UserFavorites() {
 
   const fetchFavorites = async () => {
     try {
-      // TODO: Implementar chamada à API
-      setFavorites([]);
+      const data = await favoritesApi.getMyFavorites();
+      
+      // Mapear dados da API para o formato esperado
+      const mappedFavorites = data.map(fav => ({
+        id: fav.produtoId,
+        name: fav.produtoNome,
+        price: Number(fav.produtoPreco),
+        image: fav.produtoImagem || "/placeholder.svg",
+        inStock: fav.produtoEmEstoque || false,
+        lojistaName: fav.lojista?.nomeFantasia || "Loja",
+      }));
+      
+      setFavorites(mappedFavorites);
     } catch (error) {
       console.error("Erro ao buscar favoritos:", error);
     } finally {
@@ -39,13 +51,14 @@ export default function UserFavorites() {
 
   const removeFavorite = async (productId: string) => {
     try {
-      // TODO: Implementar chamada à API
+      await favoritesApi.removeFavorite(productId);
       setFavorites(prev => prev.filter(item => item.id !== productId));
       toast({
         title: "Removido dos favoritos",
         description: "O produto foi removido da sua lista de favoritos.",
       });
     } catch (error) {
+      console.error("Erro ao remover favorito:", error);
       toast({
         title: "Erro",
         description: "Não foi possível remover o produto.",

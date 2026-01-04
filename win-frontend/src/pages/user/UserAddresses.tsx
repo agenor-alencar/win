@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { MapPin, Plus, Edit, Trash2, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { addressesApi } from "@/lib/api/addressesApi";
 
 interface Address {
   id: string;
@@ -56,13 +57,14 @@ export default function UserAddresses() {
 
   const handleDelete = async (id: string) => {
     try {
-      // TODO: Implementar chamada à API
+      await addressesApi.deleteAddress(id);
       setAddresses(prev => prev.filter(addr => addr.id !== id));
       toast({
         title: "Endereço removido",
         description: "O endereço foi excluído com sucesso.",
       });
     } catch (error) {
+      console.error("Erro ao remover endereço:", error);
       toast({
         title: "Erro",
         description: "Não foi possível remover o endereço.",
@@ -73,7 +75,7 @@ export default function UserAddresses() {
 
   const handleSetDefault = async (id: string) => {
     try {
-      // TODO: Implementar chamada à API
+      await addressesApi.setDefaultAddress(id);
       setAddresses(prev =>
         prev.map(addr => ({ ...addr, isDefault: addr.id === id }))
       );
@@ -82,6 +84,7 @@ export default function UserAddresses() {
         description: "Este endereço será usado por padrão nas suas compras.",
       });
     } catch (error) {
+      console.error("Erro ao definir endereço padrão:", error);
       toast({
         title: "Erro",
         description: "Não foi possível definir o endereço padrão.",

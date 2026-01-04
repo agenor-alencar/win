@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { reviewsApi } from "@/lib/api/reviewsApi";
 
 interface Review {
   id: string;
@@ -30,8 +31,21 @@ export default function UserReviews() {
 
   const fetchReviews = async () => {
     try {
-      // TODO: Implementar chamada à API
-      setReviews([]);
+      const data = await reviewsApi.getMyReviews();
+      
+      // Mapear dados da API para o formato esperado
+      const mappedReviews = data.map(review => ({
+        id: review.id,
+        productId: review.produtoId,
+        productName: review.produto.nome,
+        productImage: review.produto.imagem || "/placeholder.svg",
+        rating: review.avaliacao,
+        comment: review.comentario,
+        date: review.dataCriacao,
+        orderId: review.pedidoId,
+      }));
+      
+      setReviews(mappedReviews);
     } catch (error) {
       console.error("Erro ao buscar avaliações:", error);
     } finally {

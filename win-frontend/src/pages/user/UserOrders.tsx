@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Package, Truck, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ordersApi } from "@/lib/api/ordersApi";
 
 interface Order {
   id: string;
@@ -62,27 +63,31 @@ export default function UserOrders() {
   }, []);
 
   const fetchOrders = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      // TODO: Implementar chamada à API
-      // Simulação de dados
-      setOrders([
-        {
-          id: "1",
-          orderNumber: "WIN-2025-001",
-          date: "2025-12-10",
-          status: "delivered",
-          total: 299.90,
-          items: [
-            {
-              id: "1",
-              name: "Produto Exemplo",
-              image: "/placeholder.svg",
-              quantity: 2,
-              price: 149.95,
-            },
-          ],
-        },
-      ]);
+      const data = await ordersApi.getMyOrders(user.id);
+      
+      // Mapear dados da API para o formato esperado
+      const mappedOrders = data.map(order => ({
+        id: order.id,
+        orderNumber: order.numeroPedido,
+        date: order.dataCriacao,
+        status: order.status.toLowerCase() as Order["status"],
+        total: order.valorTotal,
+        items: order.itens.map(item => ({
+          id: item.id,
+          name: item.nome,
+          image: item.imagem || "/placeholder.svg",
+          quantity: item.quantidade,
+          price: item.preco,
+        })),
+      }));
+      
+      setOrders(mappedOrders);
     } catch (error) {
       console.error("Erro ao buscar pedidos:", error);
     } finally {
