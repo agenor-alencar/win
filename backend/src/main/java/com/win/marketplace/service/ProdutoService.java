@@ -86,6 +86,19 @@ public class ProdutoService {
     }
 
     /**
+     * Lista TODOS os produtos (incluindo inativos) - Para Admin
+     */
+    @Transactional(readOnly = true)
+    public List<ProdutoResponseDTO> listarTodosProdutos() {
+        log.info("Listando TODOS os produtos (Admin)");
+        
+        List<Produto> produtos = produtoRepository.findAll();
+        return produtos.stream()
+                .map(produtoMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Lista todos os produtos de um lojista
      */
     @Transactional(readOnly = true)

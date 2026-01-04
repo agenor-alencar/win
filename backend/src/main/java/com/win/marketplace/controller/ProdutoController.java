@@ -71,6 +71,18 @@ public class ProdutoController {
     }
 
     /**
+     * Lista TODOS os produtos (incluindo inativos) - Apenas ADMIN
+     */
+    @GetMapping("/admin/todos")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Listar todos produtos (Admin)", description = "Lista todos os produtos incluindo inativos")
+    public ResponseEntity<List<ProdutoResponseDTO>> listarTodosProdutosAdmin() {
+        log.info("GET /api/v1/produtos/admin/todos - Listando todos produtos (Admin)");
+        List<ProdutoResponseDTO> produtos = produtoService.listarTodosProdutos();
+        return ResponseEntity.ok(produtos);
+    }
+
+    /**
      * Lista produtos de um lojista específico
      */
     @GetMapping("/lojista/{lojistaId}")

@@ -35,11 +35,11 @@ export interface ProductStats {
 
 class ProductApiService extends AdminApi {
   /**
-   * Lista todos os produtos
+   * Lista todos os produtos (incluindo inativos) para Admin
    */
   async getAllProducts(): Promise<Product[]> {
     try {
-      const response = await api.get<Product[]>(`${this.baseUrl}/produtos`);
+      const response = await api.get<Product[]>(`${this.baseUrl}/produtos/admin/todos`);
       return response.data;
     } catch (error) {
       this.handleError(error, "Erro ao buscar produtos");
@@ -60,7 +60,7 @@ class ProductApiService extends AdminApi {
 
         return {
           id: produto.id,
-          image: "/products/placeholder.jpg",
+          image: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMEwyOCAyOEgyMFYyMFoiIGZpbGw9IiNFNUU3RUIiLz4KPHA+CjxwYXRoIGQ9Ik0yOCAyMEwyMCAyOEgyOFYyMFoiIGZpbGw9IiNFNUU3RUIiLz4KPC9zdmc+Cg==",
           title: produto.nome,
           category: produto.categoriaNome || "Sem categoria",
           store: produto.lojistaNome || "Sem loja",
