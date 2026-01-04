@@ -156,26 +156,6 @@ export default function MainCarousel() {
                       {banner.subtitulo}
                     </motion.p>
                   )}
-
-                  {/* Botão com animação */}
-                  {banner.linkUrl && (
-                    <motion.div
-                      initial="hidden"
-                      whileInView="visible"
-                      viewport={{ once: true }}
-                      variants={buttonVariants}
-                    >
-                      <Link to={banner.linkUrl}>
-                        <motion.button
-                          whileHover="hover"
-                          variants={buttonVariants}
-                          className="bg-gradient-to-r from-primary to-secondary text-white px-8 py-3 lg:px-10 lg:py-4 rounded-xl font-semibold text-base lg:text-lg shadow-xl hover:shadow-2xl transition-shadow duration-300"
-                        >
-                          Ver Produtos
-                        </motion.button>
-                      </Link>
-                    </motion.div>
-                  )}
                 </div>
               </div>
             </div>
