@@ -13,6 +13,7 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { productApi, type ProductFormatted } from "@/lib/admin";
+import { categoryApi, type Category } from "@/lib/CategoryApi";
 import { useNotification } from "@/contexts/NotificationContext";
 
 const AdminProducts: React.FC = () => {
@@ -23,6 +24,7 @@ const AdminProducts: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [products, setProducts] = useState<ProductFormatted[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
@@ -33,6 +35,7 @@ const AdminProducts: React.FC = () => {
 
   useEffect(() => {
     loadProducts();
+    loadCategories();
   }, []);
 
   const loadProducts = async () => {
@@ -50,6 +53,16 @@ const AdminProducts: React.FC = () => {
       error(error.message || "Erro ao carregar produtos");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const allCategories = await categoryApi.getAllCategories();
+      setCategories(allCategories);
+    } catch (error: any) {
+      console.error("Erro ao carregar categorias:", error);
+      // Não exibir erro para o usuário, apenas logar
     }
   };
 
@@ -234,14 +247,6 @@ const AdminProducts: React.FC = () => {
     },
   ];
 
-  const categories = [
-    "Eletrônicos",
-    "Roupas",
-    "Casa & Jardim",
-    "Alimentos",
-    "Livros",
-  ];
-
   const actions = [
     {
       label: "Ver Detalhes",
@@ -367,8 +372,8 @@ const AdminProducts: React.FC = () => {
               >
                 <option value="all">Todas</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                  <option key={category.id} value={category.nome}>
+                    {category.nome}
                   </option>
                 ))}
               </select>
