@@ -407,6 +407,7 @@ const AdminOrders: React.FC = () => {
                       </div>
                     )}
                   </div>
+                </div>
               </div>
 
               {/* Items */}
