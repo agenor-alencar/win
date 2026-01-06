@@ -3,6 +3,7 @@ import { AdminLayout } from "../../components/admin/AdminLayout";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
 import { StoreForm } from "../../components/admin/forms/StoreForm";
+import { useNavigate } from "react-router-dom";
 import {
   PlusIcon,
   EyeIcon,
@@ -15,6 +16,7 @@ import { storeApi, type StoreFormatted } from "@/lib/admin";
 import { useNotification } from "@/contexts/NotificationContext";
 
 const AdminStores: React.FC = () => {
+  const navigate = useNavigate();
   const { success, error } = useNotification();
   const [selectedStore, setSelectedStore] = useState<StoreFormatted | null>(null);
   const [showStoreModal, setShowStoreModal] = useState(false);
@@ -319,6 +321,7 @@ const AdminStores: React.FC = () => {
           data={stores}
           actions={actions}
           itemsPerPage={10}
+          onRowDoubleClick={(store) => navigate(`/admin/stores/${store.id}`)}
         />
 
         {/* Store Details Modal */}

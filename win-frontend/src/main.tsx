@@ -59,6 +59,7 @@ import AdminIndex from "./pages/admin/AdminIndex";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminStores from "./pages/admin/AdminStores";
+import AdminStoreDetails from "./pages/admin/AdminStoreDetails";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
@@ -324,6 +325,14 @@ const App = () => (
                     element={
                       <ProtectedRoute requiredRoles={["admin"]}>
                         <AdminStores />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/stores/:id"
+                    element={
+                      <ProtectedRoute requiredRoles={["admin"]}>
+                        <AdminStoreDetails />
                       </ProtectedRoute>
                     }
                   />

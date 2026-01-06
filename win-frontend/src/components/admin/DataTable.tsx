@@ -27,6 +27,7 @@ interface DataTableProps {
   itemsPerPage?: number;
   loading?: boolean;
   searchable?: boolean;
+  onRowDoubleClick?: (row: any) => void;
 }
 
 export const DataTable: React.FC<DataTableProps> = ({
@@ -36,6 +37,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   itemsPerPage = 10,
   loading = false,
   searchable = true,
+  onRowDoubleClick,
 }) => {
   const [sortBy, setSortBy] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -145,7 +147,11 @@ export const DataTable: React.FC<DataTableProps> = ({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedData.map((row, index) => (
-              <tr key={index} className="hover:bg-gray-50">
+              <tr 
+                key={index} 
+                className={`hover:bg-gray-50 ${onRowDoubleClick ? 'cursor-pointer' : ''}`}
+                onDoubleClick={() => onRowDoubleClick?.(row)}
+              >
                 {columns.map((column) => (
                   <td
                     key={column.key}
