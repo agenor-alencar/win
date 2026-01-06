@@ -8,53 +8,7 @@ import {
   BanknoteIcon,
 } from "lucide-react";
 import { useNotification } from "@/contexts/NotificationContext";
-
-interface SystemSettings {
-  // Financial Model
-  taxaComissaoWin: number;
-  taxaRepasseLojista: number;
-  valorEntregaMotorista: number;
-  taxaProcessamentoPagamento: number;
-  diasRepasse: number;
-
-  // General
-  taxaEntregaPadrao: number;
-  freteGratisAcimaDe: number;
-  limiteAprovacaoAutomatica: number;
-  distanciaMaximaEntregaKm: number;
-  timeoutPedidoMinutos: number;
-
-  // Delivery
-  tempoPreparacaoMinimo: number;
-  tempoPreparacaoMaximo: number;
-  raioMaximoEntregaKm: number;
-  timeoutBuscaMotoristaMicro: number;
-  atribuirMotoristaAutomaticamente: boolean;
-
-  // Notifications
-  notificacoesPedidosEmail: boolean;
-  notificacoesPedidosSMS: boolean;
-  notificacoesPedidosPush: boolean;
-  notificacoesEntregasEmail: boolean;
-  notificacoesEntregasSMS: boolean;
-  notificacoesEntregasPush: boolean;
-  notificacoesPromocoes: boolean;
-  notificacoesNewsletters: boolean;
-
-  // Security
-  requisitarAutenticacaoDuploFator: boolean;
-  duracaoSessaoMinutos: number;
-  tentativasLoginMaximas: number;
-  bloqueioTemporarioMinutos: number;
-  requisitarSenhaForte: boolean;
-
-  // Legal
-  termosUsoVersao: string;
-  politicaPrivacidadeVersao: string;
-  politicaCookiesVersao: string;
-  requisitarAceiteTermos: boolean;
-  lgpdAtivo: boolean;
-}
+import { settingsApi, SystemSettings } from "@/lib/admin/SettingsApi";
 
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
@@ -118,18 +72,7 @@ export default function AdminSettings() {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        "http://localhost:8080/admin/configuracoes",
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Erro ao carregar configurações");
-
-      const data = await response.json();
+      const data = await settingsApi.getSettings();
       setSettings(data);
     } catch (error) {
       console.error("Erro ao carregar configurações:", error);
@@ -152,20 +95,7 @@ export default function AdminSettings() {
   const saveSettings = async () => {
     setSaving(true);
     try {
-      const response = await fetch(
-        "http://localhost:8080/admin/configuracoes",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(settings),
-        }
-      );
-
-      if (!response.ok) throw new Error("Erro ao salvar configurações");
-
+      await settingsApi.updateSettings(settings);
       showNotification("Configurações salvas com sucesso!", "success");
     } catch (error) {
       console.error("Erro ao salvar configurações:", error);
@@ -181,19 +111,7 @@ export default function AdminSettings() {
 
     setSaving(true);
     try {
-      const response = await fetch(
-        "http://localhost:8080/admin/configuracoes/restaurar-padrao",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Erro ao restaurar configurações");
-
-      const data = await response.json();
+      const data = await settingsApi.restoreDefaults();
       setSettings(data);
       showNotification("Configurações restauradas com sucesso!", "success");
     } catch (error) {
