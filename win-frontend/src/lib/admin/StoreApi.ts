@@ -58,22 +58,51 @@ class StoreApiService extends AdminApi {
     try {
       const stores = await this.getAllStores();
       
-      return stores.map((loja) => ({
-        id: loja.id,
-        name: loja.nomeFantasia,
-        cnpj: loja.cnpj,
-        owner: loja.usuarioNome,
-        category: "Geral",
-        rating: "4.5",
-        status: loja.ativo ? "Ativo" : "Suspenso",
-        products: 0, // TODO: Implementar contagem de produtos
-        createdAt: this.formatDate(loja.criadoEm),
-        phone: loja.telefone || "-",
-        email: loja.email || loja.usuarioEmail,
-        address: "-",
-        description: loja.descricao || "-",
-        ativo: loja.ativo,
-      }));
+      // Buscar informações adicionais para cada loja em paralelo
+      const storesWithDetails = await Promise.all(
+        stores.map(async (loja) => {
+          let productsCount = 0;
+          let rating = "0.0";
+
+          try {
+            // Buscar contagem de produtos
+            const productsResponse = await api.get(`${this.baseUrl}/produtos/lojista/${loja.id}`);
+            productsCount = productsResponse.data?.length || 0;
+
+            // Calcular média de avaliação dos produtos
+            if (productsResponse.data && productsResponse.data.length > 0) {
+              const produtos = productsResponse.data;
+              const totalAvaliacoes = produtos.reduce((sum: number, p: any) => sum + (p.avaliacao || 0), 0);
+              const produtosComAvaliacao = produtos.filter((p: any) => (p.avaliacao || 0) > 0).length;
+              
+              if (produtosComAvaliacao > 0) {
+                rating = (totalAvaliacoes / produtosComAvaliacao).toFixed(1);
+              }
+            }
+          } catch (error) {
+            console.error(`Erro ao buscar detalhes da loja ${loja.id}:`, error);
+          }
+
+          return {
+            id: loja.id,
+            name: loja.nomeFantasia,
+            cnpj: loja.cnpj,
+            owner: loja.usuarioNome,
+            category: "Geral",
+            rating,
+            status: loja.ativo ? "Ativo" : "Suspenso",
+            products: productsCount,
+            createdAt: this.formatDate(loja.criadoEm),
+            phone: loja.telefone || "-",
+            email: loja.email || loja.usuarioEmail,
+            address: "-",
+            description: loja.descricao || "-",
+            ativo: loja.ativo,
+          };
+        })
+      );
+
+      return storesWithDetails;
     } catch (error) {
       this.handleError(error, "Erro ao buscar lojas formatadas");
     }

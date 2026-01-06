@@ -194,37 +194,6 @@ const AdminStores: React.FC = () => {
     },
   ];
 
-  const actions: Action[] = [
-    {
-      label: "Ver Detalhes",
-      onClick: (store) => {
-        setSelectedStore(store);
-        setShowStoreModal(true);
-      },
-      color: "primary",
-    },
-    {
-      label: "Horários",
-      onClick: (store) => {
-        setSelectedStore(store);
-        setShowScheduleModal(true);
-      },
-      color: "secondary",
-    },
-    {
-      label: "Aprovar",
-      onClick: (store) => {
-        console.log("Approve store:", store.id);
-      },
-      color: "primary",
-    },
-    {
-      label: "Ativar/Suspender",
-      onClick: handleToggleStoreStatus,
-      color: "danger",
-    },
-  ];
-
   const dayNames = {
     monday: "Segunda-feira",
     tuesday: "Terça-feira",
@@ -319,7 +288,6 @@ const AdminStores: React.FC = () => {
         <DataTable
           columns={columns}
           data={stores}
-          actions={actions}
           itemsPerPage={10}
           onRowDoubleClick={(store) => navigate(`/admin/stores/${store.id}`)}
         />
