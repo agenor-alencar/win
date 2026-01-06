@@ -91,17 +91,9 @@ const AdminDeliveries: React.FC = () => {
       render: (status) => {
         const statusTranslated = deliveryApi.translateStatus(status);
         const color = deliveryApi.getStatusColor(status);
-        const colorClasses = {
-          green: "bg-green-100 text-green-800",
-          blue: "bg-blue-100 text-blue-800",
-          yellow: "bg-yellow-100 text-yellow-800",
-          purple: "bg-purple-100 text-purple-800",
-          red: "bg-red-100 text-red-800",
-          gray: "bg-gray-100 text-gray-800",
-        };
         
         return (
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${colorClasses[color as keyof typeof colorClasses]}`}>
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${color}`}>
             {statusTranslated}
           </span>
         );
@@ -115,7 +107,7 @@ const AdminDeliveries: React.FC = () => {
     {
       key: "distanciaEstimada",
       label: "Distância",
-      render: (distance) => `${distance} km`,
+      render: (distance) => distance ? `${distance} km` : "N/A",
     },
   ];
 
@@ -372,27 +364,43 @@ const AdminDeliveries: React.FC = () => {
                         {deliveryApi.translateStatus(selectedDelivery.status)}
                       </span>
                     </div>
-                    {selectedDelivery.distanciaEstimadaKm && (
+                    {selectedDelivery.distanciaEstimada && (
                       <div>
                         <span className="text-gray-600">Distância:</span>
                         <span className="ml-2 font-medium">
-                          {selectedDelivery.distanciaEstimadaKm.toFixed(1)} km
+                          {selectedDelivery.distanciaEstimada} km
                         </span>
                       </div>
                     )}
-                    {selectedDelivery.tempoEstimadoMin && (
+                    {selectedDelivery.tempoEstimado && (
                       <div>
                         <span className="text-gray-600">Tempo Estimado:</span>
                         <span className="ml-2 font-medium">
-                          {selectedDelivery.tempoEstimadoMin} min
+                          {selectedDelivery.tempoEstimado}
                         </span>
                       </div>
                     )}
-                    {selectedDelivery.codigoConfirmacao && (
+                    {selectedDelivery.valorFreteCliente && (
                       <div>
-                        <span className="text-gray-600">Código de Confirmação:</span>
+                        <span className="text-gray-600">Valor do Frete:</span>
+                        <span className="ml-2 font-medium">
+                          R$ {selectedDelivery.valorFreteCliente.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedDelivery.codigoRetirada && (
+                      <div>
+                        <span className="text-gray-600">Código de Retirada:</span>
                         <span className="ml-2 font-medium font-mono">
-                          {selectedDelivery.codigoConfirmacao}
+                          {selectedDelivery.codigoRetirada}
+                        </span>
+                      </div>
+                    )}
+                    {selectedDelivery.codigoEntrega && (
+                      <div>
+                        <span className="text-gray-600">Código de Entrega:</span>
+                        <span className="ml-2 font-medium font-mono">
+                          {selectedDelivery.codigoEntrega}
                         </span>
                       </div>
                     )}
@@ -432,11 +440,19 @@ const AdminDeliveries: React.FC = () => {
                             </span>
                           </div>
                         )}
-                        {selectedDelivery.veiculoMotorista && (
+                        {selectedDelivery.placaVeiculo && (
                           <div>
-                            <span className="text-gray-600">Veículo:</span>
+                            <span className="text-gray-600">Placa:</span>
                             <span className="ml-2 font-medium">
-                              {selectedDelivery.veiculoMotorista}
+                              {selectedDelivery.placaVeiculo}
+                            </span>
+                          </div>
+                        )}
+                        {selectedDelivery.tipoVeiculo && (
+                          <div>
+                            <span className="text-gray-600">Tipo de Veículo:</span>
+                            <span className="ml-2 font-medium">
+                              {selectedDelivery.tipoVeiculo}
                             </span>
                           </div>
                         )}
@@ -446,19 +462,19 @@ const AdminDeliveries: React.FC = () => {
                         Aguardando atribuição de motorista
                       </div>
                     )}
-                    {selectedDelivery.dataHoraColeta && (
+                    {selectedDelivery.dataHoraRetirada && (
                       <div>
-                        <span className="text-gray-600">Coleta:</span>
+                        <span className="text-gray-600">Retirada:</span>
                         <span className="ml-2 font-medium">
-                          {new Date(selectedDelivery.dataHoraColeta).toLocaleString('pt-BR')}
+                          {new Date(selectedDelivery.dataHoraRetirada).toLocaleString('pt-BR')}
                         </span>
                       </div>
                     )}
-                    {selectedDelivery.dataHoraConclusao && (
+                    {selectedDelivery.dataHoraEntrega && (
                       <div>
-                        <span className="text-gray-600">Conclusão:</span>
+                        <span className="text-gray-600">Entrega:</span>
                         <span className="ml-2 font-medium">
-                          {new Date(selectedDelivery.dataHoraConclusao).toLocaleString('pt-BR')}
+                          {new Date(selectedDelivery.dataHoraEntrega).toLocaleString('pt-BR')}
                         </span>
                       </div>
                     )}
@@ -470,14 +486,11 @@ const AdminDeliveries: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 mb-3">
-                    Coleta
+                    Loja (Coleta)
                   </h4>
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <p className="font-medium text-[#111827]">
-                      {selectedDelivery.nomeLojista}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {selectedDelivery.enderecoColeta}
+                      {selectedDelivery.lojistaFantasia}
                     </p>
                   </div>
                 </div>
@@ -488,14 +501,14 @@ const AdminDeliveries: React.FC = () => {
                   </h4>
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <p className="font-medium text-[#111827]">
-                      {selectedDelivery.nomeCliente}
+                      {selectedDelivery.clienteNome}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 mt-1">
                       {selectedDelivery.enderecoEntrega}
                     </p>
-                    {selectedDelivery.contatoCliente && (
+                    {selectedDelivery.clienteTelefone && (
                       <p className="text-sm text-gray-500 mt-1">
-                        Tel: {selectedDelivery.contatoCliente}
+                        Tel: {selectedDelivery.clienteTelefone}
                       </p>
                     )}
                   </div>
@@ -616,7 +629,7 @@ const AdminDeliveries: React.FC = () => {
                   <div>
                     <span className="text-gray-600">Cliente:</span>
                     <span className="ml-2 font-medium">
-                      {selectedDelivery.nomeCliente}
+                      {selectedDelivery.clienteNome}
                     </span>
                   </div>
                 </div>

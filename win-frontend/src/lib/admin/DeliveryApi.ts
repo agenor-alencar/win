@@ -19,24 +19,22 @@ export interface EntregaListItem {
   nomeMotorista?: string;
   placaVeiculo?: string;
   contatoMotorista?: string;
-  veiculoMotorista?: string;
-  nomeCliente: string;
-  contatoCliente: string;
-  nomeLojista: string;
-  enderecoColeta: string;
+  clienteNome: string;
+  clienteTelefone: string;
+  lojistaFantasia: string;
   enderecoEntrega: string;
   status: string;
   statusDescricao: string;
   tipoVeiculo?: string;
   valorFreteCliente?: number;
-  tempoEstimadoMin?: number;
-  distanciaEstimadaKm?: number;
+  tempoEstimado?: string;
+  distanciaEstimada?: string;
   dataHoraSolicitacao?: string;
-  dataHoraColeta?: string;
-  dataHoraConclusao?: string;
+  dataHoraRetirada?: string;
+  dataHoraEntrega?: string;
   urlRastreamento?: string;
-  codigoConfirmacao?: string;
   codigoRetirada?: string;
+  codigoEntrega?: string;
   observacoes?: string;
 }
 
