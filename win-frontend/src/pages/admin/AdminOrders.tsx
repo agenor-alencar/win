@@ -538,14 +538,3 @@ const AdminOrders: React.FC = () => {
 };
 
 export default AdminOrders;
-                  </div>
-                )}
-            </div>
-          )}
-        </AdminModal>
-      </div>
-    </AdminLayout>
-  );
-};
-
-export default AdminOrders;
