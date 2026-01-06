@@ -14,7 +14,7 @@ import { settingsApi, SystemSettings } from "@/lib/admin/SettingsApi";
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { showNotification } = useNotification();
+  const { success, error: showError } = useNotification();
   const [activeTab, setActiveTab] = useState<
     "financial" | "general" | "delivery" | "notifications" | "security" | "legal"
   >("financial");
@@ -77,7 +77,7 @@ export default function AdminSettings() {
       setSettings(data);
     } catch (error) {
       console.error("Erro ao carregar configurações:", error);
-      showNotification("Erro ao carregar configurações", "error");
+      showError("Erro ao carregar configurações");
     } finally {
       setLoading(false);
     }
@@ -97,10 +97,10 @@ export default function AdminSettings() {
     setSaving(true);
     try {
       await settingsApi.updateSettings(settings);
-      showNotification("Configurações salvas com sucesso!", "success");
+      success("Configurações salvas com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar configurações:", error);
-      showNotification("Erro ao salvar configurações", "error");
+      showError("Erro ao salvar configurações");
     } finally {
       setSaving(false);
     }
@@ -114,10 +114,10 @@ export default function AdminSettings() {
     try {
       const data = await settingsApi.restoreDefaults();
       setSettings(data);
-      showNotification("Configurações restauradas com sucesso!", "success");
+      success("Configurações restauradas com sucesso!");
     } catch (error) {
       console.error("Erro ao restaurar configurações:", error);
-      showNotification("Erro ao restaurar configurações", "error");
+      showError("Erro ao restaurar configurações");
     } finally {
       setSaving(false);
     }
@@ -886,6 +886,7 @@ export default function AdminSettings() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </AdminLayout>
