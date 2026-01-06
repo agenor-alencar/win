@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import {
   Settings,
   Truck,
@@ -140,7 +141,8 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -884,6 +886,6 @@ export default function AdminSettings() {
           </div>
         </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
