@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../components/admin/AdminLayout";
-import { api } from "../../lib/Api";
 import { useNotification } from "../../contexts/NotificationContext";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
 import { KPICard } from "../../components/admin/KPICard";
 import { RevenueChart } from "../../components/admin/Charts";
 import {
+  financeApi,
+  type FinanceStats,
+  type ReceitaMensal,
+  type TransacaoFinanceira,
+} from "@/lib/admin";
+import {
   BanknotesIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
   DocumentArrowDownIcon,
   ArrowPathIcon,
   PlusIcon,
@@ -18,27 +21,17 @@ import {
   TruckIcon,
 } from "@heroicons/react/24/outline";
 
-interface FinanceData {
-  receitaTotal: number;
-  comissaoWIN: number;
-  repassesLojas: number;
-  pagamentosMotoristas: number;
-}
-
 const AdminFinances: React.FC = () => {
-  const { addNotification } = useNotification();
-  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const { addNotification, success, error: showError } = useNotification();
+  const [selectedTransaction, setSelectedTransaction] = useState<TransacaoFinanceira | null>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [filterPeriod, setFilterPeriod] = useState("month");
   const [filterType, setFilterType] = useState("all");
   const [loading, setLoading] = useState(false);
-  const [financeData, setFinanceData] = useState<FinanceData>({
-    receitaTotal: 0,
-    comissaoWIN: 0,
-    repassesLojas: 0,
-    pagamentosMotoristas: 0,
-  });
+  const [financeData, setFinanceData] = useState<FinanceStats | null>(null);
+  const [revenueData, setRevenueData] = useState<ReceitaMensal[]>([]);
+  const [transactions, setTransactions] = useState<TransacaoFinanceira[]>([]);
 
   useEffect(() => {
     loadFinanceData();
@@ -47,61 +40,58 @@ const AdminFinances: React.FC = () => {
   const loadFinanceData = async () => {
     setLoading(true);
     try {
-      // Buscar todos os pedidos para calcular estatísticas financeiras
-      const pedidosResponse = await api.get("/v1/pedidos");
-      const pedidos = pedidosResponse.data;
+      const [stats, chartData, transactionsList] = await Promise.all([
+        financeApi.getStats(),
+        financeApi.getChartData(),
+        financeApi.listTransactions(),
+      ]);
 
-      // Calcular receita total (soma de todos os pedidos concluídos)
-      const receitaTotal = pedidos
-        .filter((p: any) => p.status === "ENTREGUE")
-        .reduce((sum: number, p: any) => sum + p.total, 0);
-
-      // Calcular comissão WIN (7% da receita)
-      const comissaoWIN = receitaTotal * 0.07;
-
-      // Calcular repasses às lojas (93% da receita)
-      const repassesLojas = receitaTotal * 0.93;
-
-      // Estimar pagamentos a motoristas (5% da receita)
-      const pagamentosMotoristas = receitaTotal * 0.05;
-
-      setFinanceData({
-        receitaTotal,
-        comissaoWIN,
-        repassesLojas,
-        pagamentosMotoristas,
-      });
+      setFinanceData(stats);
+      setRevenueData(chartData.receitas.map(r => ({
+        name: r.mes,
+        receita: r.valor,
+      })));
+      setTransactions(transactionsList);
     } catch (error: any) {
       console.error("Erro ao carregar dados financeiros:", error);
-      addNotification({
-        type: "error",
-        message: "Erro ao carregar dados financeiros",
-      });
+      showError("Erro ao carregar dados financeiros");
     } finally {
       setLoading(false);
     }
   };
 
   // Financial KPIs - usando dados reais
-  const financialKPIs = [
+  const financialKPIs = financeData ? [
     {
       title: "Receita Total",
       value: `R$ ${financeData.receitaTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      change: { value: 15, type: "increase" as const, period: "este mês" },
+      change: { 
+        value: Math.abs(financeData.variacaoReceitaMes), 
+        type: financeData.variacaoReceitaMes >= 0 ? "increase" as const : "decrease" as const, 
+        period: "este mês" 
+      },
       icon: BanknotesIcon,
       color: "green" as const,
     },
     {
       title: "Comissão WIN",
       value: `R$ ${financeData.comissaoWIN.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      change: { value: 12, type: "increase" as const, period: "este mês" },
+      change: { 
+        value: Math.abs(financeData.variacaoReceitaMes * 0.07), 
+        type: financeData.variacaoReceitaMes >= 0 ? "increase" as const : "decrease" as const, 
+        period: "este mês" 
+      },
       icon: CreditCardIcon,
       color: "blue" as const,
     },
     {
       title: "Repasses Lojas",
       value: `R$ ${financeData.repassesLojas.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      change: { value: 16, type: "increase" as const, period: "este mês" },
+      change: { 
+        value: Math.abs(financeData.variacaoReceitaMes * 0.93), 
+        type: financeData.variacaoReceitaMes >= 0 ? "increase" as const : "decrease" as const, 
+        period: "este mês" 
+      },
       icon: BuildingLibraryIcon,
       color: "purple" as const,
     },
@@ -112,161 +102,70 @@ const AdminFinances: React.FC = () => {
       icon: TruckIcon,
       color: "orange" as const,
     },
-  ];
+  ] : [];
 
-  // Revenue chart data
-  const revenueData = [
-    { name: "Jan", receita: 950000 },
-    { name: "Fev", receita: 1100000 },
-    { name: "Mar", receita: 1200000 },
-    { name: "Abr", receita: 1150000 },
-    { name: "Mai", receita: 1300000 },
-    { name: "Jun", receita: 1250000 },
-    { name: "Jul", receita: 1247890 },
-  ];
+  // Revenue chart data formatado
+  const revenueChartData = revenueData.map(r => ({
+    name: r.name,
+    receita: r.receita || 0,
+  }));
 
   const transactionColumns: Column[] = [
     { key: "id", label: "ID", sortable: true },
-    { key: "date", label: "Data", sortable: true },
+    { key: "data", label: "Data", sortable: true },
     {
-      key: "type",
+      key: "tipo",
       label: "Tipo",
-      render: (type) => (
-        <span
-          className={`px-2 py-1 text-xs font-medium rounded-full ${
-            type === "Receita"
-              ? "bg-green-100 text-green-800"
-              : type === "Comissão"
-                ? "bg-blue-100 text-blue-800"
-                : type === "Repasse"
-                  ? "bg-purple-100 text-purple-800"
-                  : type === "Pagamento"
-                    ? "bg-orange-100 text-orange-800"
-                    : "bg-gray-100 text-gray-800"
-          }`}
-        >
-          {type}
-        </span>
-      ),
+      render: (tipo) => {
+        const typeMap: { [key: string]: { label: string; class: string } } = {
+          RECEITA: { label: "Receita", class: "bg-green-100 text-green-800" },
+          COMISSAO: { label: "Comissão", class: "bg-blue-100 text-blue-800" },
+          REPASSE: { label: "Repasse", class: "bg-purple-100 text-purple-800" },
+          PAGAMENTO: { label: "Pagamento", class: "bg-orange-100 text-orange-800" },
+        };
+        const typeInfo = typeMap[tipo] || { label: tipo, class: "bg-gray-100 text-gray-800" };
+        return (
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${typeInfo.class}`}>
+            {typeInfo.label}
+          </span>
+        );
+      },
     },
-    { key: "description", label: "Descrição", sortable: true },
-    { key: "origin", label: "Origem", sortable: true },
-    { key: "destination", label: "Destino", sortable: true },
+    { key: "descricao", label: "Descrição", sortable: true },
+    { key: "origem", label: "Origem", sortable: true },
+    { key: "destino", label: "Destino", sortable: true },
     {
-      key: "amount",
+      key: "valor",
       label: "Valor",
       sortable: true,
-      render: (amount, row) => (
+      render: (valor, row) => (
         <span
           className={`font-medium ${
-            row.type === "Receita" || row.type === "Comissão"
+            row.tipo === "RECEITA" || row.tipo === "COMISSAO"
               ? "text-green-600"
               : "text-red-600"
           }`}
         >
-          {row.type === "Receita" || row.type === "Comissão" ? "+" : "-"}R${" "}
-          {amount}
+          {row.tipo === "RECEITA" || row.tipo === "COMISSAO" ? "+" : "-"}R${" "}
+          {typeof valor === 'number' ? valor.toFixed(2) : valor}
         </span>
       ),
     },
     {
       key: "status",
       label: "Status",
-      render: (status) => (
-        <span
-          className={`px-2 py-1 text-xs font-medium rounded-full ${
-            status === "Concluído"
-              ? "bg-green-100 text-green-800"
-              : status === "Pendente"
-                ? "bg-yellow-100 text-yellow-800"
-                : "bg-red-100 text-red-800"
-          }`}
-        >
-          {status}
-        </span>
-      ),
-    },
-  ];
-
-  const transactions = [
-    {
-      id: "T001",
-      date: "24/07/2024",
-      type: "Receita",
-      description: "Venda - Pedido #12847",
-      origin: "Cliente João Silva",
-      destination: "WIN Marketplace",
-      amount: "1,299.90",
-      status: "Concluído",
-      orderId: "12847",
-      commission: "90.99",
-      storeShare: "1,168.91",
-      paymentMethod: "Cartão de Crédito",
-      details: {
-        products: [
-          { name: "iPhone 14 Pro Max", price: "1,299.90", quantity: 1 },
-        ],
-        fees: {
-          commission: "90.99",
-          payment: "32.50",
-          total: "123.49",
-        },
-      },
-    },
-    {
-      id: "T002",
-      date: "24/07/2024",
-      type: "Repasse",
-      description: "Repasse semanal TechStore",
-      origin: "WIN Marketplace",
-      destination: "TechStore Pro",
-      amount: "15,450.80",
-      status: "Concluído",
-      bankAccount: "Banco do Brasil - Ag: 1234 - CC: 56789-0",
-      reference: "Semana 29/2024",
-      details: {
-        period: "17/07 - 23/07/2024",
-        totalSales: "17,890.50",
-        commission: "1,252.34",
-        fees: "187.36",
-        netAmount: "15,450.80",
-      },
-    },
-    {
-      id: "T003",
-      date: "24/07/2024",
-      type: "Pagamento",
-      description: "Pagamento entregador",
-      origin: "WIN Marketplace",
-      destination: "Carlos Silva (Motorista)",
-      amount: "127.50",
-      status: "Pendente",
-      deliveryId: "D12845",
-      reference: "Entrega Pedido #12845",
-      details: {
-        deliveries: 12,
-        baseValue: "96.00",
-        bonus: "31.50",
-        totalAmount: "127.50",
-        period: "17/07 - 23/07/2024",
-      },
-    },
-    {
-      id: "T004",
-      date: "23/07/2024",
-      type: "Comissão",
-      description: "Comissão WIN - Pedido #12846",
-      origin: "Venda Marketplace",
-      destination: "WIN Marketplace",
-      amount: "6.29",
-      status: "Concluído",
-      orderId: "12846",
-      commissionRate: "7%",
-      details: {
-        orderValue: "89.90",
-        commissionRate: "7%",
-        commissionAmount: "6.29",
-        store: "Fashion Plus",
+      render: (status) => {
+        const statusMap: { [key: string]: { label: string; class: string } } = {
+          CONCLUIDO: { label: "Concluído", class: "bg-green-100 text-green-800" },
+          PENDENTE: { label: "Pendente", class: "bg-yellow-100 text-yellow-800" },
+          CANCELADO: { label: "Cancelado", class: "bg-red-100 text-red-800" },
+        };
+        const statusInfo = statusMap[status] || { label: status, class: "bg-gray-100 text-gray-800" };
+        return (
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusInfo.class}`}>
+            {statusInfo.label}
+          </span>
+        );
       },
     },
   ];
@@ -280,26 +179,11 @@ const AdminFinances: React.FC = () => {
       },
       color: "primary",
     },
-    {
-      label: "Exportar",
-      onClick: (transaction) => {
-        console.log("Export transaction:", transaction.id);
-      },
-      color: "secondary",
-    },
-    {
-      label: "Ajustar",
-      onClick: (transaction) => {
-        setSelectedTransaction(transaction);
-        setShowAdjustmentModal(true);
-      },
-      color: "secondary",
-    },
   ];
 
   const filteredTransactions = transactions.filter((transaction) => {
-    if (filterType !== "all" && transaction.type !== filterType) return false;
-    // Add date filtering based on filterPeriod
+    if (filterType !== "all" && transaction.tipo !== filterType) return false;
+    // TODO: Add date filtering based on filterPeriod
     return true;
   });
 
@@ -357,7 +241,7 @@ const AdminFinances: React.FC = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <RevenueChart data={revenueData} />
+            <RevenueChart data={revenueChartData} />
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-semibold text-[#111827] mb-4">
@@ -366,23 +250,33 @@ const AdminFinances: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Taxa de comissão média</span>
-                <span className="font-medium text-[#111827]">7.2%</span>
+                <span className="font-medium text-[#111827]">
+                  {financeData?.taxaComissaoMedia.toFixed(1)}%
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Ticket médio</span>
-                <span className="font-medium text-[#111827]">R$ 256,80</span>
+                <span className="font-medium text-[#111827]">
+                  R$ {financeData?.ticketMedio.toFixed(2) || "0.00"}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total de lojas ativas</span>
-                <span className="font-medium text-[#111827]">1,205</span>
+                <span className="font-medium text-[#111827]">
+                  {financeData?.totalLojasAtivas.toLocaleString() || 0}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Motoristas ativos</span>
-                <span className="font-medium text-[#111827]">267</span>
+                <span className="font-medium text-[#111827]">
+                  {financeData?.motoristasAtivos || 0}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Tempo médio repasse</span>
-                <span className="font-medium text-[#111827]">D+2</span>
+                <span className="font-medium text-[#111827]">
+                  {financeData?.tempoMedioRepasse || "N/A"}
+                </span>
               </div>
             </div>
           </div>
@@ -417,10 +311,10 @@ const AdminFinances: React.FC = () => {
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
               >
                 <option value="all">Todas</option>
-                <option value="Receita">Receitas</option>
-                <option value="Comissão">Comissões</option>
-                <option value="Repasse">Repasses</option>
-                <option value="Pagamento">Pagamentos</option>
+                <option value="RECEITA">Receitas</option>
+                <option value="COMISSAO">Comissões</option>
+                <option value="REPASSE">Repasses</option>
+                <option value="PAGAMENTO">Pagamentos</option>
               </select>
             </div>
           </div>
@@ -476,34 +370,41 @@ const AdminFinances: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-gray-600">Data:</span>
-                    <p className="font-medium">{selectedTransaction.date}</p>
+                    <p className="font-medium">{selectedTransaction.data}</p>
                   </div>
                   <div>
                     <span className="text-gray-600">Tipo:</span>
-                    <p className="font-medium">{selectedTransaction.type}</p>
+                    <p className="font-medium">
+                      {selectedTransaction.tipo === "RECEITA" ? "Receita" :
+                       selectedTransaction.tipo === "COMISSAO" ? "Comissão" :
+                       selectedTransaction.tipo === "REPASSE" ? "Repasse" :
+                       selectedTransaction.tipo === "PAGAMENTO" ? "Pagamento" : selectedTransaction.tipo}
+                    </p>
                   </div>
                   <div>
                     <span className="text-gray-600">Status:</span>
                     <span
                       className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${
-                        selectedTransaction.status === "Concluído"
+                        selectedTransaction.status === "CONCLUIDO"
                           ? "bg-green-100 text-green-800"
-                          : selectedTransaction.status === "Pendente"
+                          : selectedTransaction.status === "PENDENTE"
                             ? "bg-yellow-100 text-yellow-800"
                             : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {selectedTransaction.status}
+                      {selectedTransaction.status === "CONCLUIDO" ? "Concluído" :
+                       selectedTransaction.status === "PENDENTE" ? "Pendente" :
+                       selectedTransaction.status === "CANCELADO" ? "Cancelado" : selectedTransaction.status}
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-600">Origem:</span>
-                    <p className="font-medium">{selectedTransaction.origin}</p>
+                    <p className="font-medium">{selectedTransaction.origem}</p>
                   </div>
                   <div>
                     <span className="text-gray-600">Destino:</span>
                     <p className="font-medium">
-                      {selectedTransaction.destination}
+                      {selectedTransaction.destino}
                     </p>
                   </div>
                 </div>
@@ -513,40 +414,63 @@ const AdminFinances: React.FC = () => {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-[#111827]">
-                    {selectedTransaction.type === "Receita" ||
-                    selectedTransaction.type === "Comissão"
+                    {selectedTransaction.tipo === "RECEITA" ||
+                    selectedTransaction.tipo === "COMISSAO"
                       ? "+"
                       : "-"}
-                    R$ {selectedTransaction.amount}
+                    R$ {typeof selectedTransaction.valor === 'number' 
+                        ? selectedTransaction.valor.toFixed(2) 
+                        : selectedTransaction.valor}
                   </p>
                   <p className="text-gray-600">
-                    {selectedTransaction.description}
+                    {selectedTransaction.descricao}
                   </p>
                 </div>
               </div>
 
               {/* Specific Details */}
-              {selectedTransaction.details && (
+              {selectedTransaction.detalhes && (
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 mb-3">
-                    Detalhes Específicos
+                    Detalhes da Transação
                   </h4>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <pre className="text-sm text-gray-600 whitespace-pre-wrap">
-                      {JSON.stringify(selectedTransaction.details, null, 2)}
-                    </pre>
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                    {selectedTransaction.detalhes.total && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total:</span>
+                        <span className="font-medium">R$ {selectedTransaction.detalhes.total.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedTransaction.detalhes.subtotal && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span className="font-medium">R$ {selectedTransaction.detalhes.subtotal.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedTransaction.detalhes.frete && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Frete:</span>
+                        <span className="font-medium">R$ {selectedTransaction.detalhes.frete.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedTransaction.detalhes.desconto > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Desconto:</span>
+                        <span className="font-medium">- R$ {selectedTransaction.detalhes.desconto.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Reference Info */}
-              {selectedTransaction.reference && (
+              {/* Pedido Reference */}
+              {selectedTransaction.pedidoId && (
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 mb-2">
-                    Referência
+                    Pedido Relacionado
                   </h4>
-                  <p className="text-sm text-gray-600">
-                    {selectedTransaction.reference}
+                  <p className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
+                    Ver Pedido #{selectedTransaction.pedidoId}
                   </p>
                 </div>
               )}
@@ -582,7 +506,7 @@ const AdminFinances: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tipo de Ajuste
               </label>
-              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent">
+              <select aria-label="Tipo de Ajuste" className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent">
                 <option>Correção de Repasse</option>
                 <option>Ajuste de Comissão</option>
                 <option>Reembolso</option>
@@ -606,7 +530,7 @@ const AdminFinances: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Loja/Motorista
               </label>
-              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent">
+              <select aria-label="Loja ou Motorista" className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent">
                 <option>TechStore Pro</option>
                 <option>Fashion Plus</option>
                 <option>Casa Moderna</option>

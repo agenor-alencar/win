@@ -13,6 +13,7 @@ export { orderApi } from "./OrderApi";
 export { productApi } from "./ProductApi";
 export { dashboardApi } from "./DashboardApi";
 export { deliveryApi } from "./DeliveryApi";
+export { financeApi } from "./FinanceApi";
 
 // Types - User
 export type {
