@@ -2,15 +2,29 @@ import { AdminApi, api } from "./AdminApi";
 
 export interface Order {
   id: string;
-  clienteNome: string;
-  lojistaNome: string;
-  total: number;
+  numeroPedido: string;
+  usuarioId: string;
+  usuarioNome: string;
+  motoristaId?: string;
+  motoristaNome?: string;
   status: string;
+  subtotal: number;
+  desconto: number;
+  frete: number;
+  total: number;
+  enderecoEntrega?: any;
+  pagamento?: any;
+  notaFiscal?: any;
+  codigoEntrega?: string;
   criadoEm: string;
+  confirmadoEm?: string;
+  entregueEm?: string;
+  itens?: any[];
 }
 
 export interface OrderFormatted {
   id: string;
+  numeroPedido: string;
   date: string;
   customer: string;
   store: string;
@@ -19,6 +33,7 @@ export interface OrderFormatted {
   paymentMethod: string;
   deliveryTime: string;
   originalStatus: string;
+  fullOrder?: Order;
 }
 
 export interface OrderStats {
@@ -65,20 +80,81 @@ class OrderApiService extends AdminApi {
     try {
       const orders = await this.getAllOrders();
       
-      return orders.map((pedido) => ({
-        id: pedido.id,
-        date: this.formatDateTime(pedido.criadoEm),
-        customer: pedido.clienteNome,
-        store: pedido.lojistaNome,
-        total: this.formatCurrency(pedido.total),
-        status: this.translateStatus(pedido.status),
-        paymentMethod: "-",
-        deliveryTime: "-",
-        originalStatus: pedido.status,
-      }));
+      return orders.map((pedido) => {
+        // Extrair nome da loja do primeiro item (se existir)
+        const lojaNome = pedido.itens && pedido.itens.length > 0 
+          ? pedido.itens[0].lojistaFantasia || "Loja"
+          : "Loja";
+
+        // Calcular tempo estimado de entrega
+        const deliveryTime = this.calculateDeliveryTime(pedido);
+
+        // Método de pagamento
+        const paymentMethod = this.getPaymentMethod(pedido.pagamento);
+
+        return {
+          id: pedido.numeroPedido || pedido.id,
+          numeroPedido: pedido.numeroPedido,
+          date: this.formatDateTime(pedido.criadoEm),
+          customer: pedido.usuarioNome,
+          store: lojaNome,
+          total: this.formatCurrency(pedido.total),
+          status: this.translateStatus(pedido.status),
+          paymentMethod,
+          deliveryTime,
+          originalStatus: pedido.status,
+          fullOrder: pedido,
+        };
+      });
     } catch (error) {
       this.handleError(error, "Erro ao buscar pedidos formatados");
     }
+  }
+
+  /**
+   * Calcula tempo de entrega estimado ou real
+   */
+  private calculateDeliveryTime(pedido: Order): string {
+    if (pedido.entregueEm && pedido.criadoEm) {
+      const inicio = new Date(pedido.criadoEm);
+      const fim = new Date(pedido.entregueEm);
+      const diffMinutes = Math.floor((fim.getTime() - inicio.getTime()) / 60000);
+      return `${diffMinutes} min`;
+    }
+
+    if (pedido.status === "ENTREGUE") {
+      return "Entregue";
+    }
+
+    if (["PENDENTE", "AGUARDANDO_PAGAMENTO", "CONFIRMADO"].includes(pedido.status)) {
+      return "Estimado 30-45 min";
+    }
+
+    if (["EM_PREPARACAO", "EM_TRANSITO"].includes(pedido.status)) {
+      return "Em andamento";
+    }
+
+    if (pedido.status === "CANCELADO") {
+      return "Cancelado";
+    }
+
+    return "-";
+  }
+
+  /**
+   * Extrai método de pagamento
+   */
+  private getPaymentMethod(pagamento: any): string {
+    if (!pagamento) return "-";
+    
+    const metodosMap: { [key: string]: string } = {
+      CREDIT_CARD: "Cartão de Crédito",
+      DEBIT_CARD: "Cartão de Débito",
+      PIX: "PIX",
+      BANK_SLIP: "Boleto",
+    };
+
+    return metodosMap[pagamento.metodoPagamento] || pagamento.metodoPagamento || "-";
   }
 
   /**

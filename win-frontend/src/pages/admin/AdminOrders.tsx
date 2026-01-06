@@ -19,7 +19,7 @@ const AdminOrders: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<OrderFormatted | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
-  const [filterPeriod, setFilterPeriod] = useState("today");
+  const [filterPeriod, setFilterPeriod] = useState("all");
   const [orders, setOrders] = useState<OrderFormatted[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -131,225 +131,32 @@ const AdminOrders: React.FC = () => {
     },
   ];
 
-  const ordersMock = [
-    {
-      id: "12847",
-      date: "24/07/2024 14:30",
-      customer: "João Silva",
-      customerPhone: "(11) 99999-9999",
-      customerEmail: "joao@email.com",
-      store: "TechStore Pro",
-      storeId: "2001",
-      total: "1,299.90",
-      status: "Entregue",
-      paymentMethod: "Cartão de Crédito",
-      deliveryTime: "45 min",
-      deliveryAddress: "Rua das Flores, 123 - São Paulo, SP",
-      driver: "Carlos Silva",
-      driverId: "3001",
-      confirmationCode: "TECH2024",
-      items: [
-        {
-          id: "P001",
-          name: "iPhone 14 Pro Max 256GB",
-          price: "1,299.90",
-          quantity: 1,
-          image: "/products/iphone.jpg",
-        },
-      ],
-      payment: {
-        method: "Cartão de Crédito",
-        card: "****1234",
-        installments: 12,
-        amount: "1,299.90",
-        commission: "90.99",
-        storeShare: "1,168.91",
-        driverFee: "12.00",
-      },
-      timeline: [
-        { time: "14:30", event: "Pedido realizado", status: "completed" },
-        { time: "14:32", event: "Pagamento aprovado", status: "completed" },
-        {
-          time: "14:35",
-          event: "Pedido confirmado pela loja",
-          status: "completed",
-        },
-        { time: "14:50", event: "Pedido em preparação", status: "completed" },
-        { time: "15:10", event: "Saiu para entrega", status: "completed" },
-        { time: "15:15", event: "Entregue", status: "completed" },
-      ],
-    },
-    {
-      id: "12846",
-      date: "24/07/2024 13:15",
-      customer: "Maria Santos",
-      customerPhone: "(11) 88888-8888",
-      customerEmail: "maria@email.com",
-      store: "Fashion Plus",
-      storeId: "2002",
-      total: "89.90",
-      status: "Em entrega",
-      paymentMethod: "PIX",
-      deliveryTime: "Estimado 20 min",
-      deliveryAddress: "Av. Paulista, 1000 - São Paulo, SP",
-      driver: "João Oliveira",
-      driverId: "3002",
-      confirmationCode: "FASH2024",
-      items: [
-        {
-          id: "P002",
-          name: "Vestido Floral Verão 2024",
-          price: "89.90",
-          quantity: 1,
-          image: "/products/dress.jpg",
-        },
-      ],
-      payment: {
-        method: "PIX",
-        amount: "89.90",
-        commission: "6.29",
-        storeShare: "78.61",
-        driverFee: "8.50",
-      },
-      timeline: [
-        { time: "13:15", event: "Pedido realizado", status: "completed" },
-        {
-          time: "13:16",
-          event: "Pagamento PIX confirmado",
-          status: "completed",
-        },
-        {
-          time: "13:18",
-          event: "Pedido confirmado pela loja",
-          status: "completed",
-        },
-        { time: "13:35", event: "Pedido em preparação", status: "completed" },
-        { time: "14:00", event: "Saiu para entrega", status: "current" },
-      ],
-    },
-    {
-      id: "12845",
-      date: "24/07/2024 12:45",
-      customer: "Pedro Costa",
-      customerPhone: "(11) 77777-7777",
-      customerEmail: "pedro@email.com",
-      store: "Casa Moderna",
-      storeId: "2003",
-      total: "234.50",
-      status: "Cancelado",
-      paymentMethod: "Cartão de Débito",
-      deliveryTime: "N/A",
-      deliveryAddress: "Rua do Lar, 456 - São Paulo, SP",
-      driver: null,
-      driverId: null,
-      confirmationCode: "CASA2024",
-      cancellationReason: "Produto em falta no estoque",
-      items: [
-        {
-          id: "P003",
-          name: "Sofá 3 Lugares Cinza",
-          price: "234.50",
-          quantity: 1,
-          image: "/products/sofa.jpg",
-        },
-      ],
-      payment: {
-        method: "Cartão de Débito",
-        card: "****5678",
-        amount: "234.50",
-        refunded: true,
-        refundAmount: "234.50",
-      },
-      timeline: [
-        { time: "12:45", event: "Pedido realizado", status: "completed" },
-        { time: "12:46", event: "Pagamento aprovado", status: "completed" },
-        { time: "12:50", event: "Cancelado pela loja", status: "cancelled" },
-        { time: "12:52", event: "Reembolso processado", status: "completed" },
-      ],
-    },
-    {
-      id: "12844",
-      date: "24/07/2024 11:20",
-      customer: "Ana Paula",
-      customerPhone: "(11) 66666-6666",
-      customerEmail: "ana@email.com",
-      store: "Sport Center",
-      storeId: "2004",
-      total: "156.80",
-      status: "Preparando",
-      paymentMethod: "Cartão de Crédito",
-      deliveryTime: "Estimado 35 min",
-      deliveryAddress: "Av. dos Esportes, 789 - São Paulo, SP",
-      driver: null,
-      driverId: null,
-      confirmationCode: "SPORT2024",
-      items: [
-        {
-          id: "P004",
-          name: "Tênis Esportivo Preto",
-          price: "156.80",
-          quantity: 1,
-          image: "/products/sneaker.jpg",
-        },
-      ],
-      payment: {
-        method: "Cartão de Crédito",
-        card: "****9012",
-        installments: 3,
-        amount: "156.80",
-        commission: "10.98",
-        storeShare: "137.32",
-        driverFee: "8.50",
-      },
-      timeline: [
-        { time: "11:20", event: "Pedido realizado", status: "completed" },
-        { time: "11:21", event: "Pagamento aprovado", status: "completed" },
-        {
-          time: "11:25",
-          event: "Pedido confirmado pela loja",
-          status: "completed",
-        },
-        { time: "11:30", event: "Pedido em preparação", status: "current" },
-      ],
-    },
-  ];
-
-  const actions: Action[] = [
-    {
-      label: "Ver Detalhes",
-      onClick: (order) => {
-        setSelectedOrder(order);
-        setShowOrderModal(true);
-      },
-      color: "primary",
-    },
-    {
-      label: "Cancelar",
-      onClick: (order) => {
-        const motivo = prompt("Motivo do cancelamento:");
-        if (motivo) {
-          handleCancelOrder(order.id, motivo);
-        }
-      },
-      color: "danger",
-    },
-    {
-      label: "Forçar Status",
-      onClick: (order) => {
-        const novoStatus = prompt(
-          "Digite o novo status (PENDENTE, CONFIRMADO, EM_PREPARACAO, EM_TRANSITO, ENTREGUE):"
-        );
-        if (novoStatus) {
-          handleUpdateOrderStatus(order.id, novoStatus);
-        }
-      },
-      color: "secondary",
-    },
-  ];
-
   const filteredOrders = orders.filter((order) => {
+    // Filtro de status
     if (filterStatus !== "all" && order.status !== filterStatus) return false;
-    // Add date filtering based on filterPeriod
+    
+    // Filtro de período
+    if (filterPeriod !== "all") {
+      const orderDate = order.fullOrder?.criadoEm ? new Date(order.fullOrder.criadoEm) : null;
+      if (!orderDate) return false;
+
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      if (filterPeriod === "today") {
+        const orderDay = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
+        if (orderDay.getTime() !== today.getTime()) return false;
+      } else if (filterPeriod === "week") {
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        if (orderDate < weekAgo) return false;
+      } else if (filterPeriod === "month") {
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        if (orderDate < monthAgo) return false;
+      }
+    }
+    
     return true;
   });
 
@@ -452,8 +259,10 @@ const AdminOrders: React.FC = () => {
               >
                 <option value="all">Todos</option>
                 <option value="Pendente">Pendente</option>
-                <option value="Preparando">Preparando</option>
-                <option value="Em entrega">Em entrega</option>
+                <option value="Aguardando Pagamento">Aguardando Pagamento</option>
+                <option value="Confirmado">Confirmado</option>
+                <option value="Em Preparação">Em Preparação</option>
+                <option value="Em Trânsito">Em Trânsito</option>
                 <option value="Entregue">Entregue</option>
                 <option value="Cancelado">Cancelado</option>
               </select>
@@ -468,6 +277,7 @@ const AdminOrders: React.FC = () => {
                 onChange={(e) => setFilterPeriod(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
               >
+                <option value="all">Todos os Períodos</option>
                 <option value="today">Hoje</option>
                 <option value="week">Esta Semana</option>
                 <option value="month">Este Mês</option>
@@ -480,8 +290,11 @@ const AdminOrders: React.FC = () => {
         <DataTable
           columns={columns}
           data={filteredOrders}
-          actions={actions}
           itemsPerPage={10}
+          onRowDoubleClick={(order) => {
+            setSelectedOrder(order);
+            setShowOrderModal(true);
+          }}
         />
 
         {/* Order Details Modal */}
@@ -491,7 +304,7 @@ const AdminOrders: React.FC = () => {
             setShowOrderModal(false);
             setSelectedOrder(null);
           }}
-          title={`Pedido #${selectedOrder?.id}`}
+          title={`Pedido #${selectedOrder?.numeroPedido || selectedOrder?.id}`}
           size="xl"
           actions={
             <div className="flex space-x-3">
@@ -503,17 +316,22 @@ const AdminOrders: React.FC = () => {
               </button>
               {selectedOrder?.status !== "Cancelado" &&
                 selectedOrder?.status !== "Entregue" && (
-                  <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                  <button
+                    onClick={() => {
+                      const motivo = prompt("Motivo do cancelamento:");
+                      if (motivo && selectedOrder) {
+                        handleCancelOrder(selectedOrder.fullOrder?.id || selectedOrder.id, motivo);
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
                     Cancelar Pedido
                   </button>
                 )}
-              <button className="px-4 py-2 bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] text-white rounded-lg hover:shadow-lg transition-shadow">
-                Forçar Entrega
-              </button>
             </div>
           }
         >
-          {selectedOrder && (
+          {selectedOrder && selectedOrder.fullOrder && (
             <div className="space-y-6">
               {/* Order Summary */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -523,41 +341,43 @@ const AdminOrders: React.FC = () => {
                   </h4>
                   <div className="space-y-3 text-sm">
                     <div>
-                      <span className="text-gray-600">ID:</span>
+                      <span className="text-gray-600">Número:</span>
                       <span className="ml-2 font-medium">
-                        #{selectedOrder?.id || "N/A"}
+                        #{selectedOrder.numeroPedido}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Data:</span>
                       <span className="ml-2 font-medium">
-                        {selectedOrder?.date || "N/A"}
+                        {selectedOrder.date}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">Status:</span>
                       <span
                         className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${
-                          selectedOrder?.status === "Entregue"
+                          selectedOrder.status === "Entregue"
                             ? "bg-green-100 text-green-800"
-                            : selectedOrder?.status === "Em entrega"
+                            : selectedOrder.status === "Em Trânsito"
                               ? "bg-blue-100 text-blue-800"
-                              : selectedOrder?.status === "Preparando"
+                              : selectedOrder.status === "Em Preparação"
                                 ? "bg-yellow-100 text-yellow-800"
-                                : selectedOrder?.status === "Cancelado"
+                                : selectedOrder.status === "Cancelado"
                                   ? "bg-red-100 text-red-800"
                                   : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {selectedOrder?.status || "Pendente"}
+                        {selectedOrder.status}
                       </span>
                     </div>
-                    <div>
-                      <span className="text-gray-600">Código Confirmação:</span>
-                      <span className="ml-2 font-medium">
-                        {selectedOrder?.confirmationCode || "N/A"}
-                      </span>
-                    </div>
+                    {selectedOrder.fullOrder.codigoEntrega && (
+                      <div>
+                        <span className="text-gray-600">Código de Entrega:</span>
+                        <span className="ml-2 font-medium font-mono">
+                          {selectedOrder.fullOrder.codigoEntrega}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -569,173 +389,155 @@ const AdminOrders: React.FC = () => {
                     <div>
                       <span className="text-gray-600">Nome:</span>
                       <span className="ml-2 font-medium">
-                        {selectedOrder?.customer || "N/A"}
+                        {selectedOrder.customer}
                       </span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Telefone:</span>
+                      <span className="text-gray-600">Loja:</span>
                       <span className="ml-2 font-medium">
-                        {selectedOrder?.customerPhone || "N/A"}
+                        {selectedOrder.store}
                       </span>
                     </div>
-                    <div>
-                      <span className="text-gray-600">E-mail:</span>
-                      <span className="ml-2 font-medium">
-                        {selectedOrder?.customerEmail || "N/A"}
-                      </span>
-                    </div>
+                    {selectedOrder.fullOrder.motoristaNome && (
+                      <div>
+                        <span className="text-gray-600">Motorista:</span>
+                        <span className="ml-2 font-medium">
+                          {selectedOrder.fullOrder.motoristaNome}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                </div>
               </div>
 
               {/* Items */}
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Itens do Pedido
+                  Itens do Pedido ({selectedOrder.fullOrder.itens?.length || 0})
                 </h4>
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  {selectedOrder?.items?.map((item: any, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center p-4 border-b border-gray-200 last:border-b-0"
-                    >
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-16 h-16 object-cover rounded border"
-                        onError={(e) => {
-                          (e.target as any).src =
-                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNiAyNkwzOCAzOEgyNlYyNloiIGZpbGw9IiNFNUU3RUIiLz4KPHA+CjxwYXRoIGQ9Ik0zOCAyNkwyNiAzOEgzOFYyNloiIGZpbGw9IiNFNUU3RUIiLz4KPC9zdmc+Cg==";
-                        }}
-                      />
-                      <div className="ml-4 flex-1">
-                        <h5 className="font-medium text-[#111827]">
-                          {item.name}
-                        </h5>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm text-gray-600">
-                            Quantidade: {item.quantity}
-                          </span>
-                          <span className="font-medium text-[#111827]">
-                            R$ {item.price}
+                {selectedOrder.fullOrder.itens && selectedOrder.fullOrder.itens.length > 0 ? (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    {selectedOrder.fullOrder.itens.map((item: any, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0"
+                      >
+                        <div className="flex-1">
+                          <h5 className="font-medium text-[#111827]">
+                            {item.produtoNome || "Produto"}
+                          </h5>
+                          <div className="flex items-center mt-1 text-sm text-gray-600">
+                            <span>Quantidade: {item.quantidade || 1}</span>
+                            <span className="mx-2">•</span>
+                            <span>Preço unit.: R$ {item.precoUnitario?.toFixed(2) || "0.00"}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-semibold text-[#111827]">
+                            R$ {((item.quantidade || 1) * (item.precoUnitario || 0)).toFixed(2)}
                           </span>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">Nenhum item no pedido</p>
+                )}
               </div>
 
-              {/* Payment & Financial */}
+              {/* Financial Summary */}
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Pagamento e Financeiro
+                  Resumo Financeiro
                 </h4>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Método:</span>
-                      <span className="ml-2 font-medium">
-                        {selectedOrder.payment.method}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Total:</span>
-                      <span className="ml-2 font-medium">
-                        R$ {selectedOrder.payment.amount}
-                      </span>
-                    </div>
-                    {selectedOrder.payment.commission && (
-                      <div>
-                        <span className="text-gray-600">Comissão WIN:</span>
-                        <span className="ml-2 font-medium">
-                          R$ {selectedOrder.payment.commission}
-                        </span>
-                      </div>
-                    )}
-                    {selectedOrder.payment.storeShare && (
-                      <div>
-                        <span className="text-gray-600">Repasse Loja:</span>
-                        <span className="ml-2 font-medium">
-                          R$ {selectedOrder.payment.storeShare}
-                        </span>
-                      </div>
-                    )}
+                <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">R$ {selectedOrder.fullOrder.subtotal?.toFixed(2) || "0.00"}</span>
                   </div>
+                  {selectedOrder.fullOrder.desconto > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Desconto:</span>
+                      <span className="font-medium">- R$ {selectedOrder.fullOrder.desconto?.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Frete:</span>
+                    <span className="font-medium">R$ {selectedOrder.fullOrder.frete?.toFixed(2) || "0.00"}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-gray-300 font-semibold text-base">
+                    <span>Total:</span>
+                    <span className="text-[#3DBEAB]">R$ {selectedOrder.fullOrder.total?.toFixed(2)}</span>
+                  </div>
+                  {selectedOrder.fullOrder.pagamento && (
+                    <div className="flex justify-between pt-2 border-t border-gray-200">
+                      <span className="text-gray-600">Método de Pagamento:</span>
+                      <span className="font-medium">{selectedOrder.paymentMethod}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Delivery Info */}
+              {selectedOrder.fullOrder.enderecoEntrega && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">
+                    Endereço de Entrega
+                  </h4>
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm">
+                    <p className="text-gray-700">
+                      {selectedOrder.fullOrder.enderecoEntrega.logradouro}, {selectedOrder.fullOrder.enderecoEntrega.numero}
+                      {selectedOrder.fullOrder.enderecoEntrega.complemento && ` - ${selectedOrder.fullOrder.enderecoEntrega.complemento}`}
+                    </p>
+                    <p className="text-gray-700">
+                      {selectedOrder.fullOrder.enderecoEntrega.bairro}
+                    </p>
+                    <p className="text-gray-700">
+                      {selectedOrder.fullOrder.enderecoEntrega.cidade} - {selectedOrder.fullOrder.enderecoEntrega.estado}
+                    </p>
+                    <p className="text-gray-700">
+                      CEP: {selectedOrder.fullOrder.enderecoEntrega.cep}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Dates */}
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Informações de Entrega
+                  Datas Importantes
                 </h4>
-                <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Endereço:</span>
-                    <span className="ml-2 font-medium">
-                      {selectedOrder.deliveryAddress}
-                    </span>
+                    <span className="text-gray-600 block">Criado em:</span>
+                    <span className="font-medium">{selectedOrder.date}</span>
                   </div>
-                  {selectedOrder.driver && (
+                  {selectedOrder.fullOrder.confirmadoEm && (
                     <div>
-                      <span className="text-gray-600">Motorista:</span>
-                      <span className="ml-2 font-medium">
-                        {selectedOrder.driver}
+                      <span className="text-gray-600 block">Confirmado em:</span>
+                      <span className="font-medium">
+                        {new Date(selectedOrder.fullOrder.confirmadoEm).toLocaleString('pt-BR')}
                       </span>
                     </div>
                   )}
-                  <div>
-                    <span className="text-gray-600">Tempo de entrega:</span>
-                    <span className="ml-2 font-medium">
-                      {selectedOrder.deliveryTime}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Timeline */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Histórico do Pedido
-                </h4>
-                <div className="space-y-3">
-                  {selectedOrder.timeline.map((event: any, index: number) => (
-                    <div key={index} className="flex items-start space-x-3">
-                      <div
-                        className={`w-3 h-3 rounded-full mt-1 ${
-                          event.status === "completed"
-                            ? "bg-green-500"
-                            : event.status === "current"
-                              ? "bg-blue-500"
-                              : "bg-red-500"
-                        }`}
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-[#111827]">
-                            {event.event}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {event.time}
-                          </span>
-                        </div>
-                      </div>
+                  {selectedOrder.fullOrder.entregueEm && (
+                    <div>
+                      <span className="text-gray-600 block">Entregue em:</span>
+                      <span className="font-medium">
+                        {new Date(selectedOrder.fullOrder.entregueEm).toLocaleString('pt-BR')}
+                      </span>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
+            </div>
+          )}
+        </AdminModal>
+      </div>
+    </AdminLayout>
+  );
+};
 
-              {/* Cancellation reason if applicable */}
-              {selectedOrder.status === "Cancelado" &&
-                selectedOrder.cancellationReason && (
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <h4 className="text-sm font-medium text-red-800 mb-2">
-                      Motivo do Cancelamento
-                    </h4>
-                    <p className="text-sm text-red-600">
-                      {selectedOrder.cancellationReason}
-                    </p>
+export default AdminOrders;
                   </div>
                 )}
             </div>
