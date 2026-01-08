@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 
 interface Product {
   id: number;
@@ -13,6 +13,13 @@ interface Product {
   inStock: boolean;
 }
 
+interface SearchCache {
+  [key: string]: {
+    data: Product[];
+    timestamp: number;
+  };
+}
+
 interface SearchContextType {
   searchQuery: string;
   searchResults: Product[];
@@ -20,6 +27,7 @@ interface SearchContextType {
   setSearchQuery: (query: string) => void;
   searchProducts: (query: string) => void;
   clearSearch: () => void;
+  clearCache: () => void;
   getProductsByCategory: (category: string) => Product[];
   getProductById: (id: number) => Product | undefined;
   getAllProducts: () => Product[];
@@ -27,61 +35,148 @@ interface SearchContextType {
 
 const SearchContext = createContext<SearchContextType | null>(null);
 
+// Tempo de cache em milissegundos (5 minutos)
+const CACHE_DURATION = 5 * 60 * 1000;
+
 export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const searchCache = useRef<SearchCache>({});
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const searchProducts = async (query: string) => {
+  // Função para verificar se o cache é válido
+  const isCacheValid = (timestamp: number): boolean => {
+    return Date.now() - timestamp < CACHE_DURATION;
+  };
+
+  // Função para limpar cache expirado
+  const cleanExpiredCache = useCallback(() => {
+    const now = Date.now();
+    Object.keys(searchCache.current).forEach((key) => {
+      if (!isCacheValid(searchCache.current[key].timestamp)) {
+        delete searchCache.current[key];
+      }
+    });
+  }, []);
+
+  const searchProducts = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
     }
 
+    // Cancela requisição anterior se existir
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Verifica cache primeiro
+    const cacheKey = `search:${query.toLowerCase()}`;
+    const cachedResult = searchCache.current[cacheKey];
+    
+    if (cachedResult && isCacheValid(cachedResult.timestamp)) {
+      setSearchResults(cachedResult.data);
+      return;
+    }
+
     setIsSearching(true);
 
+    // Cria novo AbortController para esta requisição
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     try {
-      // **CHAMADA DA API PARA O BACKEND**
-      const response = await fetch(`/api/products?q=${query}`); // Use a URL relativa
+      const response = await fetch(`/api/products?q=${encodeURIComponent(query)}`, {
+        signal: abortController.signal,
+      });
+      
       if (!response.ok) {
         throw new Error(`Erro ao buscar produtos: ${response.status}`);
       }
-      const data: Product[] = await response.json(); // Garanta que o tipo corresponda
+      
+      const data: Product[] = await response.json();
+
+      // Salva no cache
+      searchCache.current[cacheKey] = {
+        data,
+        timestamp: Date.now(),
+      };
 
       setSearchResults(data);
+      
+      // Limpa cache expirado periodicamente
+      cleanExpiredCache();
     } catch (error: any) {
+      // Ignora erros de abort
+      if (error.name === "AbortError") {
+        return;
+      }
       console.error("Erro ao buscar produtos:", error);
-      // TODO: Implementar tratamento de erro adequado (exibir mensagem para o usuário)
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
+      abortControllerRef.current = null;
     }
-  };
+  }, [cleanExpiredCache]);
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery("");
     setSearchResults([]);
-  };
+    
+    // Cancela requisição em andamento
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  }, []);
 
-  const getProductsByCategory = async (category: string) => {
+  const clearCache = useCallback(() => {
+    searchCache.current = {};
+  }, []);
+
+  const getProductsByCategory = useCallback(async (category: string) => {
+    // Verifica cache primeiro
+    const cacheKey = `category:${category}`;
+    const cachedResult = searchCache.current[cacheKey];
+    
+    if (cachedResult && isCacheValid(cachedResult.timestamp)) {
+      return cachedResult.data;
+    }
+
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/products/category/${category}`);
+      const response = await fetch(`/api/products/category/${encodeURIComponent(category)}`);
       if (!response.ok) {
         throw new Error(`Erro ao buscar produtos por categoria: ${response.status}`);
       }
       const data: Product[] = await response.json();
+      
+      // Salva no cache
+      searchCache.current[cacheKey] = {
+        data,
+        timestamp: Date.now(),
+      };
+      
       return data;
     } catch (error: any) {
       console.error("Erro ao buscar produtos por categoria:", error);
-      return []; // Retorna um array vazio em caso de erro
+      return [];
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
 
-  const getProductById = async (id: number) => {
+  const getProductById = useCallback(async (id: number) => {
+    // Verifica cache primeiro
+    const cacheKey = `product:${id}`;
+    const cachedResult = searchCache.current[cacheKey];
+    
+    if (cachedResult && isCacheValid(cachedResult.timestamp)) {
+      return cachedResult.data[0]; // Cache armazena array, retorna primeiro item
+    }
+
     setIsSearching(true);
     try {
       const response = await fetch(`/api/products/${id}`);
@@ -89,16 +184,31 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error(`Erro ao buscar produto por ID: ${response.status}`);
       }
       const data: Product = await response.json();
+      
+      // Salva no cache
+      searchCache.current[cacheKey] = {
+        data: [data],
+        timestamp: Date.now(),
+      };
+      
       return data;
     } catch (error: any) {
       console.error("Erro ao buscar produto por ID:", error);
-      return undefined; // Retorna undefined em caso de erro
+      return undefined;
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
 
-  const getAllProducts = async () => {
+  const getAllProducts = useCallback(async () => {
+    // Verifica cache primeiro
+    const cacheKey = "all-products";
+    const cachedResult = searchCache.current[cacheKey];
+    
+    if (cachedResult && isCacheValid(cachedResult.timestamp)) {
+      return cachedResult.data;
+    }
+
     setIsSearching(true);
     try {
       const response = await fetch(`/api/products`);
@@ -106,14 +216,21 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error(`Erro ao buscar todos os produtos: ${response.status}`);
       }
       const data: Product[] = await response.json();
+      
+      // Salva no cache
+      searchCache.current[cacheKey] = {
+        data,
+        timestamp: Date.now(),
+      };
+      
       return data;
     } catch (error: any) {
       console.error("Erro ao buscar todos os produtos:", error);
-      return []; // Retorna um array vazio em caso de erro
+      return [];
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
 
   return (
     <SearchContext.Provider
@@ -124,6 +241,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         setSearchQuery,
         searchProducts,
         clearSearch,
+        clearCache,
         getProductsByCategory,
         getProductById,
         getAllProducts,

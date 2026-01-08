@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../contexts/CartContext";
 import { Trash2, ShoppingBag, ArrowRight, Plus, Minus } from "lucide-react";
+import { CartSuggestions } from "../../components/CartSuggestions";
 
 const Cart: React.FC = () => {
   const { state, removeItem, updateQuantity, clearCart } = useCart();
@@ -19,6 +20,16 @@ const Cart: React.FC = () => {
       updateQuantity(id, newQuantity);
     }
   };
+
+  // Agrupa produtos por loja
+  const groupedByStore = state.items.reduce((acc, item) => {
+    const storeName = item.store || "Loja Desconhecida";
+    if (!acc[storeName]) {
+      acc[storeName] = [];
+    }
+    acc[storeName].push(item);
+    return acc;
+  }, {} as Record<string, typeof state.items>);
 
   if (state.items.length === 0) {
     return (
@@ -150,6 +161,28 @@ const Cart: React.FC = () => {
             >
               Limpar Carrinho
             </button>
+
+            {/* Sugestões de produtos da mesma loja */}
+            {Object.entries(groupedByStore).map(([storeName, items]) => {
+              // Extrai lojistaId do primeiro item (assumindo que todos têm)
+              const firstItem = items[0];
+              const lojistaId = (firstItem as any).lojistaId; // Você precisará adicionar isso ao CartContext
+              const productIds = items.map(item => String(item.id));
+              
+              // Por enquanto, vamos usar um ID fictício se não houver
+              // TODO: Adicionar lojistaId aos itens do carrinho
+              if (!lojistaId) return null;
+
+              return (
+                <div key={storeName} className="mt-6">
+                  <CartSuggestions
+                    lojistaId={lojistaId}
+                    lojistaName={storeName}
+                    excludeProductIds={productIds}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           {/* Resumo do Pedido */}

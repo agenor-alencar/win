@@ -13,6 +13,7 @@ export interface CartItem {
   quantity: number;
   image: string;
   store: string;
+  lojistaId?: string; // ID do lojista para sugestões
   inStock: boolean;
 }
 

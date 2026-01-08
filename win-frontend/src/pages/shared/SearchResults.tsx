@@ -145,6 +145,7 @@ export default function SearchResults() {
       originalPrice: product.originalPrice,
       image: product.image,
       store: product.store,
+      lojistaId: product.lojistaId || product.storeId,
       inStock: product.inStock,
     });
     success(

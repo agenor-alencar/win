@@ -219,6 +219,7 @@ export default function NewArrivals() {
       quantity: 1,
       image: product.image,
       store: product.store,
+      lojistaId: product.storeId,
     });
     success(
       "Produto adicionado ao carrinho!",

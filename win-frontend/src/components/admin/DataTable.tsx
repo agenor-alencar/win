@@ -6,6 +6,7 @@ import {
   ChevronRightIcon,
   EllipsisVerticalIcon,
 } from "@heroicons/react/24/outline";
+import { SearchInput } from "@/components/SearchInput";
 
 export interface Column {
   key: string;
@@ -27,6 +28,7 @@ interface DataTableProps {
   itemsPerPage?: number;
   loading?: boolean;
   searchable?: boolean;
+  searchPlaceholder?: string;
   onRowDoubleClick?: (row: any) => void;
 }
 
@@ -37,6 +39,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   itemsPerPage = 10,
   loading = false,
   searchable = true,
+  searchPlaceholder = "Pesquisar...",
   onRowDoubleClick,
 }) => {
   const [sortBy, setSortBy] = useState<string>("");
@@ -101,12 +104,15 @@ export const DataTable: React.FC<DataTableProps> = ({
       {/* Search */}
       {searchable && (
         <div className="p-4 border-b border-gray-200">
-          <input
-            type="text"
-            placeholder="Pesquisar..."
+          <SearchInput
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full max-w-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
+            onChange={setSearchTerm}
+            placeholder={searchPlaceholder}
+            showHistory={false}
+            showSuggestions={false}
+            debounceMs={300}
+            size="md"
+            variant="default"
           />
         </div>
       )}

@@ -72,6 +72,7 @@ export default function Index() {
       quantity: 1,
       image: produto.imagemPrincipal || '/placeholder.svg',
       store: produto.nomeLojista,
+      lojistaId: produto.lojistaId,
       inStock: produto.estoque > 0,
     });
     success(

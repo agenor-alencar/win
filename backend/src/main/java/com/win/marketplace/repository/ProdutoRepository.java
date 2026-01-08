@@ -26,6 +26,16 @@ public interface ProdutoRepository extends JpaRepository<Produto, UUID> {
     List<Produto> findByLojistaId(UUID lojistaId);
     
     /**
+     * Busca produtos ativos por lojista ordenados por data de criação
+     */
+    List<Produto> findByLojistaIdAndAtivoTrueOrderByCriadoEmDesc(UUID lojistaId, Pageable pageable);
+    
+    /**
+     * Busca produtos ativos por lojista excluindo IDs específicos (para sugestões)
+     */
+    List<Produto> findByLojistaIdAndAtivoTrueAndIdNotInOrderByCriadoEmDesc(UUID lojistaId, List<UUID> excluirIds, Pageable pageable);
+    
+    /**
      * Busca produtos por categoria (apenas ativos)
      */
     List<Produto> findByCategoriaIdAndAtivoTrue(UUID categoriaId);

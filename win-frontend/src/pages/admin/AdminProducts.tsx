@@ -3,6 +3,7 @@ import { AdminLayout } from "../../components/admin/AdminLayout";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
 import { ProductForm } from "../../components/admin/forms/ProductForm";
+import { AdvancedFilters, FilterConfig } from "../../components/admin/AdvancedFilters";
 import {
   PlusIcon,
   EyeIcon,
@@ -21,8 +22,11 @@ const AdminProducts: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<ProductFormatted | null>(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCreateProductModal, setShowCreateProductModal] = useState(false);
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({
+    category: "all",
+    status: "all",
+    stock: "all",
+  });
   const [products, setProducts] = useState<ProductFormatted[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -270,10 +274,78 @@ const AdminProducts: React.FC = () => {
     },
   ];
 
+  // Configuração dos filtros
+  const filterConfigs: FilterConfig[] = [
+    {
+      id: "category",
+      label: "Categoria",
+      options: [
+        { label: "Todas", value: "all" },
+        ...categories.map((cat) => ({ label: cat.nome, value: cat.nome })),
+      ],
+      defaultValue: "all",
+    },
+    {
+      id: "status",
+      label: "Status",
+      options: [
+        { label: "Todos", value: "all" },
+        { label: "Ativo", value: "Ativo" },
+        { label: "Inativo", value: "Inativo" },
+        { label: "Irregular", value: "Irregular" },
+      ],
+      defaultValue: "all",
+    },
+    {
+      id: "stock",
+      label: "Estoque",
+      options: [
+        { label: "Todos", value: "all" },
+        { label: "Em estoque", value: "in-stock" },
+        { label: "Sem estoque", value: "out-of-stock" },
+        { label: "Estoque baixo", value: "low-stock" },
+      ],
+      defaultValue: "all",
+    },
+  ];
+
+  const handleFilterChange = (filterId: string, value: string) => {
+    setActiveFilters((prev) => ({ ...prev, [filterId]: value }));
+  };
+
+  const handleClearFilters = () => {
+    setActiveFilters({
+      category: "all",
+      status: "all",
+      stock: "all",
+    });
+  };
+
   const filteredProducts = products.filter((product) => {
-    if (filterCategory !== "all" && product.category !== filterCategory)
+    // Filtro de categoria
+    if (activeFilters.category !== "all" && product.category !== activeFilters.category) {
       return false;
-    if (filterStatus !== "all" && product.status !== filterStatus) return false;
+    }
+    
+    // Filtro de status
+    if (activeFilters.status !== "all" && product.status !== activeFilters.status) {
+      return false;
+    }
+    
+    // Filtro de estoque
+    if (activeFilters.stock !== "all") {
+      const stockValue = product.stock || 0;
+      if (activeFilters.stock === "in-stock" && stockValue <= 0) {
+        return false;
+      }
+      if (activeFilters.stock === "out-of-stock" && stockValue > 0) {
+        return false;
+      }
+      if (activeFilters.stock === "low-stock" && (stockValue > 10 || stockValue <= 0)) {
+        return false;
+      }
+    }
+    
     return true;
   });
 
@@ -358,43 +430,13 @@ const AdminProducts: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center space-x-4">
-            <div>
-              <label htmlFor="filter-category" className="block text-sm font-medium text-gray-700 mb-1">
-                Categoria
-              </label>
-              <select
-                id="filter-category"
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
-              >
-                <option value="all">Todas</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.nome}>
-                    {category.nome}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="filter-status" className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                id="filter-status"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
-              >
-                <option value="all">Todos</option>
-                <option value="Ativo">Ativo</option>
-                <option value="Inativo">Inativo</option>
-                <option value="Irregular">Irregular</option>
-              </select>
-            </div>
-          </div>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <AdvancedFilters
+            filters={filterConfigs}
+            activeFilters={activeFilters}
+            onFilterChange={handleFilterChange}
+            onClearFilters={handleClearFilters}
+          />
         </div>
 
         {/* Products Table */}

@@ -111,6 +111,7 @@ export default function Product() {
       price: produto.preco,
       image: images[0],
       store: produto.lojista.nomeFantasia,
+      lojistaId: produto.lojista.id,
       inStock: produto.estoque > 0,
       quantity,
     });
@@ -273,9 +274,22 @@ export default function Product() {
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="px-4 py-2 text-center min-w-12">
-                    {quantity}
-                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={produto.estoque}
+                    value={quantity}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 1;
+                      setQuantity(Math.min(Math.max(1, value), produto.estoque));
+                    }}
+                    onBlur={(e) => {
+                      const value = parseInt(e.target.value) || 1;
+                      if (value < 1) setQuantity(1);
+                      else if (value > produto.estoque) setQuantity(produto.estoque);
+                    }}
+                    className="px-4 py-2 text-center min-w-12 w-16 focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] rounded"
+                  />
                   <Button
                     variant="ghost"
                     size="icon"

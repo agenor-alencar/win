@@ -249,6 +249,21 @@ public class ProdutoController {
     }
 
     /**
+     * Lista sugestões de produtos da mesma loja (exclui o produto informado)
+     */
+    @GetMapping("/lojista/{lojistaId}/sugestoes")
+    @Operation(summary = "Sugestões da mesma loja", description = "Lista produtos da mesma loja para sugestão (exclui produtos específicos)")
+    public ResponseEntity<List<ProdutoSummaryResponseDTO>> listarSugestoesDaMesmaLoja(
+            @Parameter(description = "ID do lojista") @PathVariable UUID lojistaId,
+            @Parameter(description = "IDs de produtos a excluir") @RequestParam(required = false) List<UUID> excluirIds,
+            @Parameter(description = "Limite de produtos a retornar") @RequestParam(defaultValue = "6") int limite) {
+        
+        log.info("GET /api/v1/produtos/lojista/{}/sugestoes - Buscando sugestões (limite: {})", lojistaId, limite);
+        List<ProdutoSummaryResponseDTO> produtos = produtoService.listarSugestoesDaMesmaLoja(lojistaId, excluirIds, limite);
+        return ResponseEntity.ok(produtos);
+    }
+
+    /**
      * Deleta produto (soft delete - apenas desativa) - LOJISTA ou ADMIN
      */
     @DeleteMapping("/{id}")

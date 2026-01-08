@@ -173,6 +173,7 @@ export default function Deals() {
       quantity: 1,
       image: deal.image,
       store: deal.store,
+      lojistaId: deal.storeId,
     });
     success(
       "Produto adicionado ao carrinho!",

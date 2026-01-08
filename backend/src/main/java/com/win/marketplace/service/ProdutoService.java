@@ -385,4 +385,32 @@ public class ProdutoService {
                 .map(produtoMapper::toSummaryResponseDTO)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Lista sugestões de produtos da mesma loja (exclui produtos específicos)
+     */
+    @Transactional(readOnly = true)
+    public List<ProdutoSummaryResponseDTO> listarSugestoesDaMesmaLoja(UUID lojistaId, List<UUID> excluirIds, int limite) {
+        log.info("Listando sugestões da loja {} (limite: {}, excluir: {})", lojistaId, limite, excluirIds != null ? excluirIds.size() : 0);
+        
+        // Validar lojista
+        if (!lojistaRepository.existsById(lojistaId)) {
+            throw new ResourceNotFoundException("Lojista não encontrado com ID: " + lojistaId);
+        }
+        
+        Pageable pageable = PageRequest.of(0, limite);
+        List<Produto> produtos;
+        
+        if (excluirIds != null && !excluirIds.isEmpty()) {
+            // Busca produtos da loja excluindo os IDs informados
+            produtos = produtoRepository.findByLojistaIdAndAtivoTrueAndIdNotInOrderByCriadoEmDesc(lojistaId, excluirIds, pageable);
+        } else {
+            // Busca todos os produtos ativos da loja
+            produtos = produtoRepository.findByLojistaIdAndAtivoTrueOrderByCriadoEmDesc(lojistaId, pageable);
+        }
+        
+        return produtos.stream()
+                .map(produtoMapper::toSummaryResponseDTO)
+                .collect(Collectors.toList());
+    }
 }

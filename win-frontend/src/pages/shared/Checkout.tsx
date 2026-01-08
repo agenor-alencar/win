@@ -674,7 +674,7 @@ const Checkout: React.FC = () => {
                 {/* Botão Finalizar */}
                 <button
                   type="submit"
-                  disabled={loading || preferenceId !== null}
+                  disabled={loading}
                   className="w-full py-3 bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] text-white rounded-lg hover:shadow-lg transition-shadow font-semibold flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
