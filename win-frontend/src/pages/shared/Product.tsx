@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { useCart } from "../../contexts/CartContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { produtoApi, type Produto } from "@/lib/produtoApi";
-import { getImageUrl } from "@/lib/Api";
+import { getImageUrl, api } from "@/lib/Api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,16 @@ import {
   Loader2,
 } from "lucide-react";
 
+interface ProdutoSugestao {
+  id: string;
+  nome: string;
+  preco: number;
+  imagemPrincipal: string;
+  estoque: number;
+  lojistaId: string;
+  nomeLojista: string;
+}
+
 export default function Product() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -38,6 +48,8 @@ export default function Product() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [sugestoes, setSugestoes] = useState<ProdutoSugestao[]>([]);
+  const [loadingSugestoes, setLoadingSugestoes] = useState(false);
 
   // Buscar produto da API
   useEffect(() => {
@@ -58,6 +70,38 @@ export default function Product() {
 
     fetchProduto();
   }, [id]);
+
+  // Buscar sugestões de produtos da mesma loja
+  useEffect(() => {
+    const fetchSugestoes = async () => {
+      if (!produto?.lojista?.id || !id) return;
+      
+      try {
+        setLoadingSugestoes(true);
+        const params = new URLSearchParams();
+        params.append('excluirIds', id);
+        
+        const response = await api.get(
+          `/api/v1/produtos/lojista/${produto.lojista.id}/sugestoes?limite=4&${params.toString()}`
+        );
+        
+        setSugestoes(response.data);
+      } catch (err) {
+        console.error('Erro ao buscar sugestões:', err);
+      } finally {
+        setLoadingSugestoes(false);
+      }
+    };
+
+    fetchSugestoes();
+  }, [produto?.lojista?.id, id]);
+
+  const formatPrice = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   if (loading) {
     return (
@@ -197,6 +241,7 @@ export default function Product() {
               <img
                 src={images[selectedImage]}
                 alt={produto.nome}
+                loading="eager"
                 className="w-full h-96 object-cover rounded-lg"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/placeholder.svg';
@@ -229,6 +274,7 @@ export default function Product() {
                   <img
                     src={image}
                     alt={`${produto.nome} ${index + 1}`}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
@@ -403,6 +449,89 @@ export default function Product() {
               <p className="text-muted-foreground text-center py-8">
                 Sistema de avaliações em desenvolvimento
               </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Produtos Sugeridos da Mesma Loja */}
+        {sugestoes.length > 0 && (
+          <Card className="mt-8">
+            <CardContent className="p-6">
+              <h3 className="font-semibold text-lg mb-4">
+                Mais produtos de {produto.lojista.nomeFantasia}
+              </h3>
+              
+              {loadingSugestoes ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {sugestoes.map((sugestao) => (
+                    <Link
+                      key={sugestao.id}
+                      to={`/product/${sugestao.id}`}
+                      className="group block"
+                    >
+                      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="relative aspect-square overflow-hidden bg-gray-100">
+                          <img
+                            src={getImageUrl(sugestao.imagemPrincipal)}
+                            alt={sugestao.nome}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder.svg';
+                            }}
+                          />
+                          {sugestao.estoque === 0 && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <span className="text-white font-semibold">Esgotado</span>
+                            </div>
+                          )}
+                        </div>
+                        <CardContent className="p-4">
+                          <h4 className="font-medium text-sm mb-2 line-clamp-2 min-h-[40px]">
+                            {sugestao.nome}
+                          </h4>
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-bold text-primary">
+                              {formatPrice(sugestao.preco)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (sugestao.estoque > 0) {
+                                  addItem({
+                                    id: sugestao.id,
+                                    name: sugestao.nome,
+                                    price: sugestao.preco,
+                                    image: getImageUrl(sugestao.imagemPrincipal),
+                                    store: sugestao.nomeLojista,
+                                    lojistaId: sugestao.lojistaId,
+                                    inStock: sugestao.estoque > 0,
+                                    quantity: 1,
+                                  });
+                                  success('Produto adicionado!', `${sugestao.nome} foi adicionado ao carrinho`);
+                                }
+                              }}
+                              disabled={sugestao.estoque === 0}
+                            >
+                              <ShoppingCart className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {sugestao.estoque} unidades disponíveis
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

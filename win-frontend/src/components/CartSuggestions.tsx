@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ShoppingCart, Star, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
@@ -19,14 +19,18 @@ interface Product {
 }
 
 interface CartSuggestionsProps {
-  lojistaId?: string; // Opcional por enquanto
+  lojistaId?: string;
   lojistaName: string;
   excludeProductIds?: string[];
 }
 
+// Cache simples em memória para evitar requisições duplicadas
+const suggestionsCache = new Map<string, { data: Product[], timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
 /**
- * Componente de sugestões de produtos da mesma loja no carrinho
- * Mostra produtos do mesmo lojista para incentivar compras adicionais
+ * Componente otimizado de sugestões de produtos da mesma loja no carrinho
+ * Usa cache e memoização para melhor performance
  */
 export const CartSuggestions: React.FC<CartSuggestionsProps> = ({
   lojistaId,
@@ -37,17 +41,24 @@ export const CartSuggestions: React.FC<CartSuggestionsProps> = ({
   const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
 
-  useEffect(() => {
-    if (lojistaId) {
-      loadSuggestions();
-    } else {
-      setLoading(false);
-    }
-  }, [lojistaId, excludeProductIds]);
+  // Memoiza a chave de cache para evitar recalcular
+  const cacheKey = useMemo(() => {
+    if (!lojistaId) return null;
+    const sortedExclude = [...excludeProductIds].sort().join(',');
+    return `${lojistaId}-${sortedExclude}`;
+  }, [lojistaId, excludeProductIds.join(',')]); // Usa join para comparação
 
-  const loadSuggestions = async () => {
-    if (!lojistaId) return;
+  const loadSuggestions = useCallback(async () => {
+    if (!lojistaId || !cacheKey) return;
     
+    // Verificar cache primeiro
+    const cached = suggestionsCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setSuggestions(cached.data);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const excludeParams = excludeProductIds.length > 0 
@@ -61,15 +72,30 @@ export const CartSuggestions: React.FC<CartSuggestionsProps> = ({
       if (response.ok) {
         const data = await response.json();
         setSuggestions(data);
+        
+        // Armazenar no cache
+        suggestionsCache.set(cacheKey, {
+          data,
+          timestamp: Date.now()
+        });
       }
     } catch (error) {
       console.error("Erro ao carregar sugestões:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [lojistaId, cacheKey, excludeProductIds]);
 
-  const handleAddToCart = (product: Product) => {
+  useEffect(() => {
+    if (lojistaId) {
+      loadSuggestions();
+    } else {
+      setLoading(false);
+    }
+  }, [lojistaId, loadSuggestions]);
+
+  // Memoiza o handler para evitar recriar função
+  const handleAddToCart = useCallback((product: Product) => {
     addItem({
       id: product.id,
       name: product.nome,
@@ -80,7 +106,7 @@ export const CartSuggestions: React.FC<CartSuggestionsProps> = ({
       lojistaId: product.lojista.id,
       inStock: product.estoque > 0,
     });
-  };
+  }, [addItem]);
 
   // Não renderiza nada se não houver lojistaId ou sugestões
   if (!lojistaId || (loading === false && suggestions.length === 0)) {
@@ -136,6 +162,7 @@ export const CartSuggestions: React.FC<CartSuggestionsProps> = ({
                 <img
                   src={product.imagemPrincipal || "/placeholder-product.png"}
                   alt={product.nome}
+                  loading="lazy"
                   className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
                   onError={(e) => {
                     e.currentTarget.src = "/placeholder-product.png";

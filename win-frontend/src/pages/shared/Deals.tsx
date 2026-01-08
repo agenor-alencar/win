@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -152,20 +152,22 @@ export default function Deals() {
   const { addItem } = useCart();
   const { success } = useNotification();
 
-  const filteredDeals = deals
-    .filter(
-      (deal) =>
-        selectedCategory === "Todos" || deal.category === selectedCategory,
-    )
-    .filter((deal) => selectedType === "all" || deal.type === selectedType)
-    .sort((a, b) => {
-      if (sortBy === "discount") return b.discount - a.discount;
-      if (sortBy === "price") return a.salePrice - b.salePrice;
-      if (sortBy === "rating") return b.rating - a.rating;
-      return 0;
-    });
+  const filteredDeals = useMemo(() => {
+    return deals
+      .filter(
+        (deal) =>
+          selectedCategory === "Todos" || deal.category === selectedCategory,
+      )
+      .filter((deal) => selectedType === "all" || deal.type === selectedType)
+      .sort((a, b) => {
+        if (sortBy === "discount") return b.discount - a.discount;
+        if (sortBy === "price") return a.salePrice - b.salePrice;
+        if (sortBy === "rating") return b.rating - a.rating;
+        return 0;
+      });
+  }, [selectedCategory, selectedType, sortBy]);
 
-  const handleAddToCart = (deal: Deal) => {
+  const handleAddToCart = useCallback((deal: Deal) => {
     addItem({
       id: deal.id,
       name: deal.name,
@@ -179,9 +181,9 @@ export default function Deals() {
       "Produto adicionado ao carrinho!",
       `${deal.name} foi adicionado com sucesso.`,
     );
-  };
+  }, [addItem, success]);
 
-  const getDealTypeInfo = (type: Deal["type"]) => {
+  const getDealTypeInfo = useCallback((type: Deal["type"]) => {
     switch (type) {
       case "flash":
         return { label: "Flash", color: "bg-red-500", icon: Zap };
@@ -194,7 +196,7 @@ export default function Deals() {
       default:
         return { label: "Oferta", color: "bg-gray-500", icon: Gift };
     }
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -299,6 +301,7 @@ export default function Deals() {
                     <img
                       src={deal.image}
                       alt={deal.name}
+                      loading="lazy"
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
                     />
 

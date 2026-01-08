@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -211,7 +211,7 @@ export default function NewArrivals() {
     });
   };
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = useCallback((product: Product) => {
     addItem({
       id: product.id,
       name: product.name,
@@ -225,19 +225,21 @@ export default function NewArrivals() {
       "Produto adicionado ao carrinho!",
       `${product.name} foi adicionado com sucesso.`,
     );
-  };
+  }, [addItem, success]);
 
-  const getDaysAgo = (dateString: string) => {
-    const today = new Date();
-    const productDate = new Date(dateString);
-    const daysDiff = Math.floor(
-      (today.getTime() - productDate.getTime()) / (1000 * 60 * 60 * 24),
-    );
+  const getDaysAgo = useMemo(() => {
+    return (dateString: string) => {
+      const today = new Date();
+      const productDate = new Date(dateString);
+      const daysDiff = Math.floor(
+        (today.getTime() - productDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
 
-    if (daysDiff === 0) return "Hoje";
-    if (daysDiff === 1) return "Ontem";
-    return `${daysDiff} dias atrás`;
-  };
+      if (daysDiff === 0) return "Hoje";
+      if (daysDiff === 1) return "Ontem";
+      return `${daysDiff} dias atrás`;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -352,6 +354,7 @@ export default function NewArrivals() {
                   <img
                     src={product.image}
                     alt={product.name}
+                    loading="lazy"
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
                   />
 

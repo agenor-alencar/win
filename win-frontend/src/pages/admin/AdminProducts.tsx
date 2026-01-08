@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { AdminLayout } from "../../components/admin/AdminLayout";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
@@ -42,7 +42,7 @@ const AdminProducts: React.FC = () => {
     loadCategories();
   }, []);
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
       const [formattedProducts, productStats] = await Promise.all([
@@ -52,25 +52,25 @@ const AdminProducts: React.FC = () => {
 
       setProducts(formattedProducts);
       setStats(productStats);
-    } catch (error: any) {
-      console.error("Erro ao carregar produtos:", error);
-      error(error.message || "Erro ao carregar produtos");
+    } catch (err: any) {
+      console.error("Erro ao carregar produtos:", err);
+      error(err.message || "Erro ao carregar produtos");
     } finally {
       setLoading(false);
     }
-  };
+  }, [error]);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const allCategories = await categoryApi.getAllCategories();
       setCategories(allCategories);
-    } catch (error: any) {
-      console.error("Erro ao carregar categorias:", error);
+    } catch (err: any) {
+      console.error("Erro ao carregar categorias:", err);
       // Não exibir erro para o usuário, apenas logar
     }
-  };
+  }, []);
 
-  const handleDeleteProduct = async (product: ProductFormatted) => {
+  const handleDeleteProduct = useCallback(async (product: ProductFormatted) => {
     if (!confirm(`Tem certeza que deseja excluir o produto "${product.title}"?`)) {
       return;
     }
@@ -113,6 +113,7 @@ const AdminProducts: React.FC = () => {
         <img
           src={image}
           alt="Produto"
+          loading="lazy"
           className="w-12 h-12 object-cover rounded border"
           onError={(e) => {
             (e.target as any).src =

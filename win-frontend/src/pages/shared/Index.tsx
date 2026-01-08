@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,8 +39,8 @@ export default function Index() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // Buscar produtos da API
-  const fetchProdutos = async () => {
+  // Buscar produtos da API (memoizada para evitar recriar função)
+  const fetchProdutos = useCallback(async () => {
     try {
       setLoading(true);
       const response = await produtoApi.listarProdutos(page, 12);
@@ -52,14 +52,14 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, error]);
 
   // Carregar produtos quando a página muda
   useEffect(() => {
     fetchProdutos();
-  }, [page]);
+  }, [fetchProdutos]);
 
-  const handleAddToCart = (produto: ProdutoSummary) => {
+  const handleAddToCart = useCallback((produto: ProdutoSummary) => {
     if (produto.estoque === 0) {
       error('Produto sem estoque', 'Este produto não está disponível no momento.');
       return;
@@ -79,7 +79,7 @@ export default function Index() {
       "Produto adicionado!",
       `${produto.nome} foi adicionado ao carrinho.`,
     );
-  };
+  }, [addItem, success, error]);
 
   // Função para lidar com clique em "Venda no WIN"
   const handleVendaClick = () => {
@@ -200,6 +200,7 @@ export default function Index() {
                       <img
                         src={produto.imagemPrincipal || '/placeholder.svg'}
                         alt={produto.nome}
+                        loading="lazy"
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
