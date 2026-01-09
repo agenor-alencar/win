@@ -4,6 +4,7 @@ import { useCart } from "../../contexts/CartContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { produtoApi, type Produto } from "@/lib/produtoApi";
 import { getImageUrl, api } from "@/lib/Api";
+import Header from "../../components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -235,18 +236,23 @@ export default function Product() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <Link to="/categories" className="flex items-center mr-4">
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                <span className="hidden sm:block">Voltar</span>
+      {/* Header Padrão */}
+      <Header showCategories={false} />
+      
+      {/* Breadcrumb e Ações do Produto */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Link to="/" className="text-muted-foreground hover:text-primary">
+                <Home className="h-4 w-4" />
               </Link>
-              <h1 className="text-lg font-semibold truncate max-w-xs">
-                {produto.nome}
-              </h1>
+              <span className="text-muted-foreground">/</span>
+              <Link to="/categories" className="text-muted-foreground hover:text-primary text-sm">
+                Categorias
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <span className="text-sm font-medium truncate max-w-xs">{produto.nome}</span>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -270,23 +276,10 @@ export default function Product() {
               >
                 <Share2 className="h-5 w-5" />
               </Button>
-              <Link to="/cart">
-                <Button variant="ghost" size="icon" className="relative">
-                  <ShoppingCart className="h-5 w-5" />
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                    {state.itemCount}
-                  </Badge>
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
