@@ -87,11 +87,16 @@ export default function Product() {
       
       try {
         setLoadingSugestoes(true);
-        const params = new URLSearchParams();
-        params.append('excluirIds', id);
         
+        // Corrigir a URL da API - remover /api duplicado e usar query params corretos
         const response = await api.get(
-          `/api/v1/produtos/lojista/${produto.lojista.id}/sugestoes?limite=4&${params.toString()}`
+          `/v1/produtos/lojista/${produto.lojista.id}/sugestoes`,
+          {
+            params: {
+              excluirIds: [id], // Backend espera array de UUIDs
+              limite: 4
+            }
+          }
         );
         
         setSugestoes(response.data);
@@ -373,6 +378,9 @@ export default function Product() {
                     min="1"
                     max={produto.estoque}
                     value={quantity}
+                    title="Quantidade"
+                    placeholder="1"
+                    aria-label="Quantidade do produto"
                     onChange={(e) => {
                       const value = parseInt(e.target.value) || 1;
                       setQuantity(Math.min(Math.max(1, value), produto.estoque));
