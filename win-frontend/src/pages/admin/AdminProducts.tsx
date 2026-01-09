@@ -83,7 +83,7 @@ const AdminProducts: React.FC = () => {
       console.error("Erro ao excluir produto:", error);
       error(error.message || "Erro ao excluir produto");
     }
-  };
+  }, [loadProducts, success, error]);
 
   const handleToggleProductStatus = async (product: ProductFormatted) => {
     try {
