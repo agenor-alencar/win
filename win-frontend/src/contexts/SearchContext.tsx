@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import { produtoApi, type ProdutoSummary } from "@/lib/produtoApi";
+import { getImageUrl } from "@/lib/Api";
 
 interface Product {
   id: number;
@@ -89,15 +91,22 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
     abortControllerRef.current = abortController;
 
     try {
-      const response = await fetch(`/api/products?q=${encodeURIComponent(query)}`, {
-        signal: abortController.signal,
-      });
+      // Usa a API real do backend
+      const produtos = await produtoApi.buscarPorNome(query);
       
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar produtos: ${response.status}`);
-      }
-      
-      const data: Product[] = await response.json();
+      // Converte ProdutoSummary para Product
+      const data: Product[] = produtos.map((produto: any) => ({
+        id: produto.id,
+        name: produto.nome,
+        price: produto.preco,
+        originalPrice: undefined,
+        image: produto.imagemPrincipal ? getImageUrl(produto.imagemPrincipal) : produto.imagensUrls?.[0] ? getImageUrl(produto.imagensUrls[0]) : '/placeholder.svg',
+        store: produto.nomeLojista,
+        category: produto.nomeCategoria || produto.categoria?.nome || 'Sem categoria',
+        rating: produto.avaliacao || 0,
+        reviews: produto.quantidadeAvaliacoes || 0,
+        inStock: produto.estoque > 0,
+      }));
 
       // Salva no cache
       searchCache.current[cacheKey] = {
@@ -147,19 +156,35 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/products/category/${encodeURIComponent(category)}`);
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar produtos por categoria: ${response.status}`);
+      // Se category for um UUID, usa a API de categoria
+      // Caso contrário, retorna vazio (necessário buscar por nome via backend)
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(category)) {
+        const produtos = await produtoApi.listarPorCategoria(category);
+        
+        // Converte Produto para Product
+        const data: Product[] = produtos.map((produto: any) => ({
+          id: produto.id,
+          name: produto.nome,
+          price: produto.preco,
+          originalPrice: undefined,
+          image: produto.imagensUrls?.[0] ? getImageUrl(produto.imagensUrls[0]) : '/placeholder.svg',
+          store: produto.lojista.nomeFantasia,
+          category: produto.categoria.nome,
+          rating: produto.avaliacao || 0,
+          reviews: produto.quantidadeAvaliacoes || 0,
+          inStock: produto.estoque > 0,
+        }));
+        
+        // Salva no cache
+        searchCache.current[cacheKey] = {
+          data,
+          timestamp: Date.now(),
+        };
+        
+        return data;
       }
-      const data: Product[] = await response.json();
       
-      // Salva no cache
-      searchCache.current[cacheKey] = {
-        data,
-        timestamp: Date.now(),
-      };
-      
-      return data;
+      return [];
     } catch (error: any) {
       console.error("Erro ao buscar produtos por categoria:", error);
       return [];
@@ -179,11 +204,22 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/products/${id}`);
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar produto por ID: ${response.status}`);
-      }
-      const data: Product = await response.json();
+      // Usa a API real do backend
+      const produto = await produtoApi.buscarPorId(id.toString());
+      
+      // Converte Produto para Product
+      const data: Product = {
+        id: produto.id as any,
+        name: produto.nome,
+        price: produto.preco,
+        originalPrice: undefined,
+        image: produto.imagensUrls?.[0] ? getImageUrl(produto.imagensUrls[0]) : '/placeholder.svg',
+        store: produto.lojista.nomeFantasia,
+        category: produto.categoria.nome,
+        rating: produto.avaliacao || 0,
+        reviews: produto.quantidadeAvaliacoes || 0,
+        inStock: produto.estoque > 0,
+      };
       
       // Salva no cache
       searchCache.current[cacheKey] = {
@@ -211,11 +247,22 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/products`);
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar todos os produtos: ${response.status}`);
-      }
-      const data: Product[] = await response.json();
+      // Usa a API real do backend
+      const response = await produtoApi.listarProdutos(0, 100); // Busca até 100 produtos
+      
+      // Converte ProdutoSummary para Product
+      const data: Product[] = response.content.map((produto: ProdutoSummary) => ({
+        id: produto.id as any,
+        name: produto.nome,
+        price: produto.preco,
+        originalPrice: undefined,
+        image: produto.imagemPrincipal ? getImageUrl(produto.imagemPrincipal) : '/placeholder.svg',
+        store: produto.nomeLojista,
+        category: produto.nomeCategoria || 'Sem categoria',
+        rating: produto.avaliacao || 0,
+        reviews: produto.quantidadeAvaliacoes || 0,
+        inStock: produto.estoque > 0,
+      }));
       
       // Salva no cache
       searchCache.current[cacheKey] = {
