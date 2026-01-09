@@ -37,6 +37,7 @@ import PaymentPix from "./pages/shared/PaymentPix";
 import PaymentSuccess from "./pages/shared/PaymentSuccess";
 import PaymentFailure from "./pages/shared/PaymentFailure";
 import PaymentPending from "./pages/shared/PaymentPending";
+import Favorites from "./pages/shared/Favorites";
 import NotFound from "./pages/shared/NotFound";
 import Unauthorized from "./pages/shared/Unauthorized";
 
@@ -114,6 +115,7 @@ const App = () => (
                   <Route path="/new-arrivals" element={<NewArrivals />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/meus-favoritos" element={<Favorites />} />
                   <Route path="/pagamento/pix" element={<PaymentPix />} />
                   <Route path="/payment/success" element={<PaymentSuccess />} />
                   <Route path="/pedido/sucesso" element={<PaymentSuccess />} />

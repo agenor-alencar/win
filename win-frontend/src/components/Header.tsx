@@ -149,8 +149,8 @@ export default function Header({ showCategories = true }: HeaderProps) {
           {/* Actions */}
           <div className="flex items-center space-x-4">
             {/* Favorites - Desktop only */}
-            <Link to="/favorites" className="hidden md:block">
-              <Button variant="ghost" size="icon">
+            <Link to="/meus-favoritos" className="hidden md:block">
+              <Button variant="ghost" size="icon" title="Meus Favoritos">
                 <Heart className="h-5 w-5" />
               </Button>
             </Link>
@@ -310,9 +310,10 @@ export default function Header({ showCategories = true }: HeaderProps) {
             </div>
             <div className="border-t pt-4 space-y-2">
               <Link
-                to="/favorites"
+                to="/meus-favoritos"
                 className="flex items-center p-3 rounded-lg hover:bg-gray-50"
                 onClick={() => setMobileMenuOpen(false)}
+                title="Meus Favoritos"
               >
                 <Heart className="h-5 w-5 mr-3" />
                 <span>Favoritos</span>

@@ -72,7 +72,7 @@ export default function Index() {
       quantity: 1,
       image: produto.imagemPrincipal || '/placeholder.svg',
       store: produto.nomeLojista,
-      lojistaId: produto.lojistaId,
+      lojistaId: produto.id,
       inStock: produto.estoque > 0,
     });
     success(

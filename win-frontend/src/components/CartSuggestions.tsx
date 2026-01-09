@@ -127,7 +127,6 @@ export const CartSuggestions: React.FC<CartSuggestionsProps> = ({
       </div>
     );
   }
-  }
 
   if (suggestions.length === 0) {
     return null;

@@ -51,6 +51,14 @@ export default function Product() {
   const [sugestoes, setSugestoes] = useState<ProdutoSugestao[]>([]);
   const [loadingSugestoes, setLoadingSugestoes] = useState(false);
 
+  // Verificar se o produto está favoritado ao carregar
+  useEffect(() => {
+    if (id) {
+      const favorites = JSON.parse(localStorage.getItem('win-favorites') || '[]');
+      setIsFavorite(favorites.includes(id));
+    }
+  }, [id]);
+
   // Buscar produto da API
   useEffect(() => {
     const fetchProduto = async () => {
@@ -101,6 +109,54 @@ export default function Product() {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  };
+
+  const handleToggleFavorite = () => {
+    if (!id) return;
+    
+    const favorites = JSON.parse(localStorage.getItem('win-favorites') || '[]');
+    let newFavorites: string[];
+    
+    if (isFavorite) {
+      // Remover dos favoritos
+      newFavorites = favorites.filter((favId: string) => favId !== id);
+      info('Removido dos favoritos', `${produto?.nome} foi removido da sua lista de favoritos.`);
+    } else {
+      // Adicionar aos favoritos
+      newFavorites = [...favorites, id];
+      success('Adicionado aos favoritos!', `${produto?.nome} foi adicionado à sua lista de favoritos.`);
+    }
+    
+    localStorage.setItem('win-favorites', JSON.stringify(newFavorites));
+    setIsFavorite(!isFavorite);
+  };
+
+  const handleShare = async () => {
+    if (!produto) return;
+    
+    const shareData = {
+      title: produto.nome,
+      text: `Confira ${produto.nome} por ${formatPrice(produto.preco)} no WIN Marketplace!`,
+      url: window.location.href,
+    };
+
+    try {
+      // Verificar se o navegador suporta Web Share API
+      if (navigator.share) {
+        await navigator.share(shareData);
+        success('Compartilhado!', 'Produto compartilhado com sucesso.');
+      } else {
+        // Fallback: copiar link para clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        success('Link copiado!', 'O link do produto foi copiado para sua área de transferência.');
+      }
+    } catch (err) {
+      // Usuário cancelou o compartilhamento ou houve erro
+      if ((err as Error).name !== 'AbortError') {
+        console.error('Erro ao compartilhar:', err);
+        error('Erro', 'Não foi possível compartilhar o produto.');
+      }
+    }
   };
 
   if (loading) {
@@ -204,15 +260,21 @@ export default function Product() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsFavorite(!isFavorite)}
+                onClick={handleToggleFavorite}
+                title={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
               >
                 <Heart
-                  className={`h-5 w-5 ${
+                  className={`h-5 w-5 transition-colors ${
                     isFavorite ? "fill-red-500 text-red-500" : ""
                   }`}
                 />
               </Button>
-              <Button variant="ghost" size="icon">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={handleShare}
+                title="Compartilhar produto"
+              >
                 <Share2 className="h-5 w-5" />
               </Button>
               <Link to="/cart">
