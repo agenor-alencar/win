@@ -1,16 +1,49 @@
 import React, { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../contexts/CartContext";
-import { Trash2, ShoppingBag, ArrowRight, Plus, Minus } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowRight, Plus, Minus, Share2 } from "lucide-react";
 import { CartSuggestions } from "../../components/CartSuggestions";
+import { useNotification } from "../../contexts/NotificationContext";
 
 const Cart: React.FC = () => {
   const { state, removeItem, updateQuantity, clearCart } = useCart();
   const navigate = useNavigate();
+  const { success, info } = useNotification();
 
   const handleCheckout = () => {
     if (state.items.length > 0) {
       navigate("/checkout");
+    }
+  };
+
+  const handleShare = async () => {
+    const cartUrl = window.location.origin + '/cart';
+    const itemsList = state.items.map(item => `${item.quantity}x ${item.name}`).join(', ');
+    const shareText = `Confira meu carrinho no WIN Marketplace!\n\n${itemsList}\n\nTotal: R$ ${state.total.toFixed(2)}`;
+
+    // Tenta usar Web Share API (funciona melhor em mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Meu Carrinho - WIN Marketplace',
+          text: shareText,
+          url: cartUrl,
+        });
+      } catch (err: any) {
+        // Usuário cancelou o compartilhamento
+        if (err.name !== 'AbortError') {
+          console.error('Erro ao compartilhar:', err);
+        }
+      }
+    } else {
+      // Fallback: copia para área de transferência
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n\n${cartUrl}`);
+        success('Link copiado!', 'O link do carrinho foi copiado para a área de transferência.');
+      } catch (err) {
+        console.error('Erro ao copiar:', err);
+        info('Compartilhar', `Copie este link: ${cartUrl}`);
+      }
     }
   };
 
@@ -76,9 +109,19 @@ const Cart: React.FC = () => {
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link to="/" className="text-[#3DBEAB] hover:text-[#2D9CDB] font-semibold">
-            ← Continuar Comprando
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link to="/" className="text-[#3DBEAB] hover:text-[#2D9CDB] font-semibold">
+              ← Continuar Comprando
+            </Link>
+            <button
+              onClick={handleShare}
+              className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-[#3DBEAB] transition-colors"
+              title="Compartilhar carrinho"
+            >
+              <Share2 className="w-5 h-5" />
+              <span className="hidden sm:inline">Compartilhar Carrinho</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -113,6 +156,8 @@ const Cart: React.FC = () => {
                       <button
                         onClick={() => handleQuantityChange(item.id as number, item.quantity, -1)}
                         className="p-2 hover:bg-gray-100 transition-colors"
+                        title="Diminuir quantidade"
+                        aria-label="Diminuir quantidade"
                       >
                         <Minus className="w-4 h-4 text-gray-600" />
                       </button>
@@ -122,6 +167,8 @@ const Cart: React.FC = () => {
                       <button
                         onClick={() => handleQuantityChange(item.id as number, item.quantity, 1)}
                         className="p-2 hover:bg-gray-100 transition-colors"
+                        title="Aumentar quantidade"
+                        aria-label="Aumentar quantidade"
                       >
                         <Plus className="w-4 h-4 text-gray-600" />
                       </button>
