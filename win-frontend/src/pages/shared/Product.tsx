@@ -187,13 +187,6 @@ export default function Product() {
     ? produto.imagensUrls.map(url => getImageUrl(url))
     : ['/placeholder.svg'];
 
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
-  };
-
   const handleAddToCart = () => {
     if (produto.estoque === 0) {
       error('Produto esgotado', 'Este produto não está disponível no momento.');
