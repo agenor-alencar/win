@@ -243,48 +243,6 @@ export default function Product() {
     <div className="min-h-screen bg-background">
       {/* Header Padrão */}
       <Header showCategories={false} />
-      
-      {/* Breadcrumb e Ações do Produto */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Link to="/" className="text-muted-foreground hover:text-primary">
-                <Home className="h-4 w-4" />
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link to="/categories" className="text-muted-foreground hover:text-primary text-sm">
-                Categorias
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <span className="text-sm font-medium truncate max-w-xs">{produto.nome}</span>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleToggleFavorite}
-                title={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-              >
-                <Heart
-                  className={`h-5 w-5 transition-colors ${
-                    isFavorite ? "fill-red-500 text-red-500" : ""
-                  }`}
-                />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={handleShare}
-                title="Compartilhar produto"
-              >
-                <Share2 className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
