@@ -237,6 +237,14 @@ public class PedidoService {
         return pedidoMapper.toResponseDTOList(pedidos);
     }
 
+    /**
+     * Conta o número de pedidos do usuário (para verificar primeira compra)
+     */
+    @Transactional(readOnly = true)
+    public long contarPedidosPorUsuario(UUID usuarioId) {
+        return pedidoRepository.countByUsuarioId(usuarioId);
+    }
+
     private String gerarNumeroPedido() {
         // Gera um número de pedido único baseado no timestamp
         return "PED" + System.currentTimeMillis();

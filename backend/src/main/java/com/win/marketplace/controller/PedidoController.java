@@ -57,6 +57,25 @@ public class PedidoController {
     }
 
     /**
+     * Verifica se é a primeira compra do usuário (para frete grátis)
+     */
+    @GetMapping("/usuario/{usuarioId}/primeira-compra")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> verificarPrimeiraCompra(@PathVariable UUID usuarioId) {
+        long totalPedidos = pedidoService.contarPedidosPorUsuario(usuarioId);
+        boolean ehPrimeiraCompra = totalPedidos == 0;
+        
+        return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
+            put("ehPrimeiraCompra", ehPrimeiraCompra);
+            put("totalPedidos", totalPedidos);
+            put("freteGratis", ehPrimeiraCompra);
+            put("mensagem", ehPrimeiraCompra ? 
+                "Parabéns! Você tem FRETE GRÁTIS na sua primeira compra!" : 
+                "Você já realizou " + totalPedidos + " compra(s) anteriormente.");
+        }});
+    }
+
+    /**
      * Listar pedidos por motorista - ADMIN ou MOTORISTA
      */
     @GetMapping("/motorista/{motoristaId}")

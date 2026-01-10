@@ -5,6 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { api } from "@/lib/Api";
 import AbacatePayCheckout from "@/components/AbacatePayCheckout";
+import { shippingApi, SimulacaoFreteResponse } from "@/lib/api/shippingApi";
 import {
   CreditCard,
   MapPin,
@@ -15,6 +16,8 @@ import {
   Lock,
   Calendar,
   CheckCircle,
+  Truck,
+  Loader2,
 } from "lucide-react";
 
 interface Address {
@@ -39,6 +42,12 @@ const Checkout: React.FC = () => {
   const [billingId, setBillingId] = useState<string | null>(null);
   const [billingAmount, setBillingAmount] = useState<number>(0);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
+  
+  // Estados para frete dinâmico
+  const [simulacaoFrete, setSimulacaoFrete] = useState<SimulacaoFreteResponse | null>(null);
+  const [loadingFrete, setLoadingFrete] = useState(false);
+  const [isPrimeiraCompra, setIsPrimeiraCompra] = useState(false);
+  const [freteCalculado, setFreteCalculado] = useState(false);
   
   const [address, setAddress] = useState<Address>({
     cep: "",
@@ -69,8 +78,91 @@ const Checkout: React.FC = () => {
     }
   }, [cartState.items, navigate]);
 
+  // Verifica se é primeira compra
+  useEffect(() => {
+    const verificarPrimeiraCompra = async () => {
+      if (user?.id) {
+        try {
+          const resultado = await shippingApi.verificarPrimeiraCompra(user.id);
+          setIsPrimeiraCompra(resultado.ehPrimeiraCompra);
+        } catch (error) {
+          console.error('Erro ao verificar primeira compra:', error);
+        }
+      }
+    };
+    
+    verificarPrimeiraCompra();
+  }, [user]);
+
+  // Calcula frete quando endereço estiver completo
+  useEffect(() => {
+    const calcularFrete = async () => {
+      // Se for primeira compra, não precisa calcular
+      if (isPrimeiraCompra) {
+        setFreteCalculado(true);
+        return;
+      }
+
+      // Verifica se endereço está completo
+      if (!address.cep || !address.logradouro || !address.numero || !address.cidade) {
+        return;
+      }
+
+      // Pega o primeiro item para obter lojistaId (assumindo pedido de uma única loja)
+      const primeiroItem = cartState.items[0];
+      if (!primeiroItem || !(primeiroItem as any).lojistaId) {
+        console.warn('Item sem lojistaId, usando frete estimado');
+        return;
+      }
+
+      setLoadingFrete(true);
+      
+      try {
+        const pesoTotal = shippingApi.calcularPesoTotal(cartState.items);
+        const enderecoCompleto = shippingApi.formatarEnderecoCompleto({
+          logradouro: address.logradouro,
+          numero: address.numero,
+          complemento: address.complemento,
+          bairro: address.bairro,
+          cidade: address.cidade,
+          uf: address.uf
+        });
+
+        const simulacao = await shippingApi.simularFrete({
+          lojistaId: (primeiroItem as any).lojistaId,
+          cepOrigem: '00000000', // TODO: Obter CEP da loja
+          enderecoOrigemCompleto: 'Endereço da loja', // TODO: Obter da API
+          cepDestino: address.cep.replace(/\D/g, ''),
+          enderecoDestinoCompleto: enderecoCompleto,
+          pesoTotalKg: pesoTotal
+        });
+
+        if (simulacao.sucesso) {
+          setSimulacaoFrete(simulacao);
+          setFreteCalculado(true);
+          success(
+            'Frete Calculado!',
+            `Entrega em ${simulacao.tempoEstimadoMinutos} min por R$ ${simulacao.valorFreteTotal.toFixed(2)}`
+          );
+        }
+      } catch (error: any) {
+        console.error('Erro ao simular frete:', error);
+        showError('Erro ao calcular frete', error.message || 'Usando valor estimado');
+      } finally {
+        setLoadingFrete(false);
+      }
+    };
+
+    calcularFrete();
+  }, [address.cep, address.logradouro, address.numero, address.cidade, isPrimeiraCompra, cartState.items]);
+
   const subtotal = cartState.total;
-  const shipping = 15.0;
+  
+  // Cálculo do frete:
+  // 1. Se for primeira compra -> GRÁTIS (sistema paga)
+  // 2. Se tiver simulação -> usa valor calculado
+  // 3. Caso contrário -> estimativa de R$ 15
+  const shipping = isPrimeiraCompra ? 0 : (simulacaoFrete ? simulacaoFrete.valorFreteTotal : 15.0);
   const total = subtotal + shipping;
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -661,10 +753,50 @@ const Checkout: React.FC = () => {
                     <span>Subtotal</span>
                     <span>R$ {subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Frete</span>
-                    <span>R$ {shipping.toFixed(2)}</span>
+                  
+                  {/* Exibição do Frete */}
+                  <div className="flex justify-between items-center text-gray-600">
+                    <div className="flex items-center space-x-2">
+                      <Truck className="w-4 h-4" />
+                      <span>Frete</span>
+                      {loadingFrete && <Loader2 className="w-3 h-3 animate-spin" />}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {isPrimeiraCompra ? (
+                        <>
+                          <span className="text-green-600 font-semibold">GRÁTIS</span>
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                            1ª compra 🎉
+                          </span>
+                        </>
+                      ) : shipping === 0 ? (
+                        <span className="text-green-600 font-semibold">GRÁTIS</span>
+                      ) : (
+                        <>
+                          <span>R$ {shipping.toFixed(2)}</span>
+                          {!freteCalculado && !loadingFrete && (
+                            <span className="text-xs text-gray-500">(estimado)</span>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* Info adicional do frete */}
+                  {simulacaoFrete && !isPrimeiraCompra && (
+                    <div className="text-xs text-gray-500 pl-6 flex items-center space-x-1">
+                      <span>⚡ Entrega em {simulacaoFrete.tempoEstimadoMinutos} min</span>
+                      <span className="mx-1">•</span>
+                      <span>{simulacaoFrete.distanciaKm.toFixed(1)} km</span>
+                    </div>
+                  )}
+                  
+                  {isPrimeiraCompra && (
+                    <div className="text-xs text-green-600 pl-6">
+                      🎁 O sistema paga a entrega para você!
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t">
                     <span>Total</span>
                     <span className="text-[#3DBEAB]">R$ {total.toFixed(2)}</span>

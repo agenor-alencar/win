@@ -1,14 +1,41 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../contexts/CartContext";
-import { Trash2, ShoppingBag, ArrowRight, Plus, Minus, Share2 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { Trash2, ShoppingBag, ArrowRight, Plus, Minus, Share2, Truck } from "lucide-react";
 import { CartSuggestions } from "../../components/CartSuggestions";
 import { useNotification } from "../../contexts/NotificationContext";
+import { shippingApi } from "../../lib/api/shippingApi";
 
 const Cart: React.FC = () => {
   const { state, removeItem, updateQuantity, clearCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { success, info } = useNotification();
+  
+  const [isPrimeiraCompra, setIsPrimeiraCompra] = useState(false);
+  const [freteEstimado, setFreteEstimado] = useState<number | null>(null);
+  const [loadingFrete, setLoadingFrete] = useState(false);
+
+  // Verifica primeira compra quando componente carrega
+  useEffect(() => {
+    const verificarPrimeiraCompra = async () => {
+      if (user?.id) {
+        try {
+          const resultado = await shippingApi.verificarPrimeiraCompra(user.id);
+          setIsPrimeiraCompra(resultado.ehPrimeiraCompra);
+          
+          if (resultado.ehPrimeiraCompra) {
+            success('Frete Grátis!', 'Parabéns! Você tem FRETE GRÁTIS na sua primeira compra! 🎉');
+          }
+        } catch (error) {
+          console.error('Erro ao verificar primeira compra:', error);
+        }
+      }
+    };
+    
+    verificarPrimeiraCompra();
+  }, [user]);
 
   const handleCheckout = () => {
     if (state.items.length > 0) {
@@ -101,7 +128,11 @@ const Cart: React.FC = () => {
   }
 
   const subtotal = state.total;
-  const shipping = 15.0; // Frete fixo por enquanto
+  
+  // Cálculo do frete considerando primeira compra
+  // Se for primeira compra, frete é SEMPRE grátis (sistema paga)
+  // Caso contrário, usa estimativa de R$ 15 (será calculado exato no checkout)
+  const shipping = isPrimeiraCompra ? 0 : (freteEstimado !== null ? freteEstimado : 15.0);
   const total = subtotal + shipping;
 
   return (
@@ -247,8 +278,27 @@ const Cart: React.FC = () => {
                   <span>R$ {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Frete</span>
-                  <span>R$ {shipping.toFixed(2)}</span>
+                  <div className="flex items-center space-x-1">
+                    <Truck className="w-4 h-4" />
+                    <span>Frete</span>
+                  </div>
+                  <span className="flex items-center space-x-2">
+                    {isPrimeiraCompra ? (
+                      <>
+                        <span className="text-green-600 font-semibold">GRÁTIS</span>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">1ª compra</span>
+                      </>
+                    ) : shipping === 0 ? (
+                      <span className="text-green-600 font-semibold">GRÁTIS</span>
+                    ) : (
+                      <>
+                        <span>R$ {shipping.toFixed(2)}</span>
+                        {freteEstimado === null && (
+                          <span className="text-xs text-gray-500">(estimativa)</span>
+                        )}
+                      </>
+                    )}
+                  </span>
                 </div>
                 <div className="border-t pt-3 flex justify-between text-lg font-bold text-gray-900">
                   <span>Total</span>
@@ -266,9 +316,23 @@ const Cart: React.FC = () => {
               </button>
 
               <div className="mt-6 space-y-3 text-sm text-gray-600">
+                {isPrimeiraCompra && (
+                  <div className="flex items-center space-x-2 bg-green-50 p-3 rounded-lg">
+                    <span className="text-green-600 text-xl">🎉</span>
+                    <span className="text-green-700 font-semibold">
+                      Frete GRÁTIS na sua primeira compra!
+                    </span>
+                  </div>
+                )}
+                {!isPrimeiraCompra && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-600">ℹ️</span>
+                    <span>Valor exato do frete calculado no checkout</span>
+                  </div>
+                )}
                 <div className="flex items-center space-x-2">
                   <span className="text-green-600">✓</span>
-                  <span>Frete grátis acima de R$ 100</span>
+                  <span>Entrega rápida via Uber Flash</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-green-600">✓</span>
