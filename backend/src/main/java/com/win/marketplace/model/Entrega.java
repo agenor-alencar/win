@@ -119,16 +119,16 @@ public class Entrega {
     // Geolocalização (Lat/Long)
     // ========================================
     
-    @Column(name = "origem_latitude", precision = 10, scale = 8)
+    @Column(name = "origem_latitude")
     private Double origemLatitude;
     
-    @Column(name = "origem_longitude", precision = 11, scale = 8)
+    @Column(name = "origem_longitude")
     private Double origemLongitude;
     
-    @Column(name = "destino_latitude", precision = 10, scale = 8)
+    @Column(name = "destino_latitude")
     private Double destinoLatitude;
     
-    @Column(name = "destino_longitude", precision = 11, scale = 8)
+    @Column(name = "destino_longitude")
     private Double destinoLongitude;
 
     // ========================================
