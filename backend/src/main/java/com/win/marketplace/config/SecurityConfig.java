@@ -106,6 +106,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/categoria/**").permitAll() // Permitir listagem pública de categorias
                 .requestMatchers("/api/v1/banners").permitAll() // Permitir listagem pública de banners
                 .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
+                .requestMatchers("/api/v1/webhooks/uber").permitAll() // Webhook da Uber Direct
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger público
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
