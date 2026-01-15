@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/webhooks/uber")
+@RequestMapping("/api/v1/webhooks/uber")
 @RequiredArgsConstructor
 public class UberWebhookController {
 
@@ -32,7 +32,7 @@ public class UberWebhookController {
      * @param webhook Dados do webhook enviado pela Uber
      * @return 200 OK para confirmar recebimento
      */
-    @PostMapping("/status")
+    @PostMapping
     public ResponseEntity<Void> receberAtualizacaoStatus(
             @RequestHeader(value = "X-Uber-Signature", required = false) String signature,
             @RequestBody UberWebhookDTO webhook) {
