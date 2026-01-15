@@ -132,6 +132,13 @@ public class Entrega {
     private Double destinoLongitude;
 
     // ========================================
+    // Flag para Primeira Compra Grátis
+    // ========================================
+    
+    @Column(name = "frete_gratis_primeira_compra", nullable = false)
+    private Boolean freteGratisPrimeiraCompra = false; // Se true, WIN paga o frete (marketing)
+
+    // ========================================
     // Timestamps das Etapas
     // ========================================
     

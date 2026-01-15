@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,17 +35,26 @@ public class EntregaService {
     /**
      * Cria registro inicial de entrega após simulação de frete.
      * Salva Quote ID e valores para uso posterior.
+     * 
+     * @param pedido Pedido associado à entrega
+     * @param simulacao Simulação do frete (sempre executada, mesmo em primeira compra)
+     * @param isPrimeiraCompra Se true, WIN paga o frete (cliente não é cobrado)
      */
     @Transactional
-    public Entrega criarEntregaInicial(Pedido pedido, SimulacaoFreteResponseDTO simulacao) {
-        log.info("Criando registro inicial de entrega para pedido: {}", pedido.getId());
+    public Entrega criarEntregaInicial(Pedido pedido, SimulacaoFreteResponseDTO simulacao, boolean isPrimeiraCompra) {
+        log.info("Criando registro inicial de entrega para pedido: {} (Primeira Compra: {})", 
+                pedido.getId(), isPrimeiraCompra);
 
         var entrega = new Entrega();
         entrega.setPedido(pedido);
         entrega.setTipoVeiculoSolicitado(simulacao.getTipoVeiculo());
         entrega.setValorCorridaUber(simulacao.getValorCorridaUber());
         entrega.setTaxaWinmarket(simulacao.getTaxaWinmarket());
-        entrega.setValorFreteCliente(simulacao.getValorFreteTotal());
+        
+        // ✅ Se for primeira compra, cliente paga R$ 0, mas valor real fica registrado
+        entrega.setValorFreteCliente(isPrimeiraCompra ? BigDecimal.ZERO : simulacao.getValorFreteTotal());
+        entrega.setFreteGratisPrimeiraCompra(isPrimeiraCompra);
+        
         entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_PREPARACAO);
 
         // ✅ SALVAR QUOTE ID (essencial para solicitar com preço garantido)
