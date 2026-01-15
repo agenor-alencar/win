@@ -6,6 +6,7 @@ import { useNotification } from "../../contexts/NotificationContext";
 import { api } from "@/lib/Api";
 import AbacatePayCheckout from "@/components/AbacatePayCheckout";
 import { shippingApi, SimulacaoFreteResponse } from "@/lib/api/shippingApi";
+import { lojistaApi } from "@/lib/api/lojistaApi";
 import {
   CreditCard,
   MapPin,
@@ -114,8 +115,19 @@ const Checkout: React.FC = () => {
       setLoadingFrete(true);
       
       try {
+        // 1. Buscar dados do lojista (incluindo endereço)
+        const lojistaId = (primeiroItem as any).lojistaId;
+        const lojista = await lojistaApi.buscarPorId(lojistaId);
+        
+        if (!lojista.cep || !lojista.logradouro) {
+          showError('Erro', 'Endereço do lojista não cadastrado. Contate o vendedor.');
+          return;
+        }
+
+        // 2. Calcular peso e formatar endereços
         const pesoTotal = shippingApi.calcularPesoTotal(cartState.items);
-        const enderecoCompleto = shippingApi.formatarEnderecoCompleto({
+        const enderecoOrigemCompleto = lojistaApi.formatarEnderecoCompleto(lojista);
+        const enderecoDestinoCompleto = shippingApi.formatarEnderecoCompleto({
           logradouro: address.logradouro,
           numero: address.numero,
           complemento: address.complemento,
@@ -124,12 +136,13 @@ const Checkout: React.FC = () => {
           uf: address.uf
         });
 
+        // 3. Simular frete com dados reais
         const simulacao = await shippingApi.simularFrete({
-          lojistaId: (primeiroItem as any).lojistaId,
-          cepOrigem: '00000000', // TODO: Obter CEP da loja
-          enderecoOrigemCompleto: 'Endereço da loja', // TODO: Obter da API
+          lojistaId: lojistaId,
+          cepOrigem: lojista.cep.replace(/\D/g, ''),
+          enderecoOrigemCompleto: enderecoOrigemCompleto,
           cepDestino: address.cep.replace(/\D/g, ''),
-          enderecoDestinoCompleto: enderecoCompleto,
+          enderecoDestinoCompleto: enderecoDestinoCompleto,
           pesoTotalKg: pesoTotal
         });
 

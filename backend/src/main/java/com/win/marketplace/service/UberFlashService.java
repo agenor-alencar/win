@@ -42,6 +42,7 @@ public class UberFlashService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final GeocodingService geocodingService;
 
     @Value("${uber.client.id:}")
     private String uberClientId;
@@ -189,19 +190,60 @@ public class UberFlashService {
         log.info("Realizando cotação real via API Uber Direct");
 
         try {
+            // 1. GEOCODIFICAR ORIGEM (se não informado)
+            if (request.getOrigemLatitude() == null || request.getOrigemLongitude() == null) {
+                log.info("Geocodificando origem - CEP: {}", request.getCepOrigem());
+                Double[] coordOrigem = geocodingService.geocodificar(
+                        request.getCepOrigem(), 
+                        request.getEnderecoOrigemCompleto()
+                );
+                
+                if (coordOrigem != null) {
+                    request.setOrigemLatitude(coordOrigem[0]);
+                    request.setOrigemLongitude(coordOrigem[1]);
+                    log.info("Origem geocodificada: lat={}, lon={}", coordOrigem[0], coordOrigem[1]);
+                } else {
+                    throw new RuntimeException("Não foi possível geocodificar o endereço de origem: " + 
+                            request.getEnderecoOrigemCompleto());
+                }
+            }
+
+            // 2. GEOCODIFICAR DESTINO (se não informado)
+            if (request.getDestinoLatitude() == null || request.getDestinoLongitude() == null) {
+                log.info("Geocodificando destino - CEP: {}", request.getCepDestino());
+                Double[] coordDestino = geocodingService.geocodificar(
+                        request.getCepDestino(), 
+                        request.getEnderecoDestinoCompleto()
+                );
+                
+                if (coordDestino != null) {
+                    request.setDestinoLatitude(coordDestino[0]);
+                    request.setDestinoLongitude(coordDestino[1]);
+                    log.info("Destino geocodificado: lat={}, lon={}", coordDestino[0], coordDestino[1]);
+                } else {
+                    throw new RuntimeException("Não foi possível geocodificar o endereço de destino: " + 
+                            request.getEnderecoDestinoCompleto());
+                }
+            }
+
+            // 3. PREPARAR REQUEST PARA UBER API
             // Preparar body da requisição
             Map<String, Object> quoteRequest = new HashMap<>();
             
-            // Endereço de origem (lojista)
+            // Endereço de origem (lojista) com coordenadas
             Map<String, Object> pickup = new HashMap<>();
             pickup.put("address", request.getEnderecoOrigemCompleto());
             pickup.put("postal_code", request.getCepOrigem());
+            pickup.put("latitude", request.getOrigemLatitude());
+            pickup.put("longitude", request.getOrigemLongitude());
             quoteRequest.put("pickup", pickup);
             
-            // Endereço de destino (cliente)
+            // Endereço de destino (cliente) com coordenadas
             Map<String, Object> dropoff = new HashMap<>();
             dropoff.put("address", request.getEnderecoDestinoCompleto());
             dropoff.put("postal_code", request.getCepDestino());
+            dropoff.put("latitude", request.getDestinoLatitude());
+            dropoff.put("longitude", request.getDestinoLongitude());
             quoteRequest.put("dropoff", dropoff);
             
             // Tipo de veículo baseado no peso

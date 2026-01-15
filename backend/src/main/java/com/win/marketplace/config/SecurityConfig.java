@@ -104,8 +104,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/dev/**").permitAll() // Dev Tools (gerador de hash)
                 .requestMatchers("/api/v1/produtos/**").permitAll() // Permitir listagem pública de produtos
                 .requestMatchers("/api/v1/categoria/**").permitAll() // Permitir listagem pública de categorias
+                .requestMatchers("/api/v1/lojistas/**").permitAll() // Permitir consulta pública de lojistas
                 .requestMatchers("/api/v1/banners").permitAll() // Permitir listagem pública de banners
                 .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
+                .requestMatchers("/api/v1/entregas/**").permitAll() // Permitir simulação de frete
                 .requestMatchers("/api/v1/webhooks/uber").permitAll() // Webhook da Uber Direct
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger público
                 .requestMatchers("/error").permitAll()

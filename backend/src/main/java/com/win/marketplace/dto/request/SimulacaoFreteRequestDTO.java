@@ -40,6 +40,18 @@ public class SimulacaoFreteRequestDTO {
     private Double pesoTotalKg;
 
     /**
+     * Coordenadas opcionais de origem (serão geocodificadas se não informadas)
+     */
+    private Double origemLatitude;
+    private Double origemLongitude;
+
+    /**
+     * Coordenadas opcionais de destino (serão geocodificadas se não informadas)
+     */
+    private Double destinoLatitude;
+    private Double destinoLongitude;
+
+    /**
      * Tipo de veículo pode ser informado ou calculado automaticamente
      * baseado no peso.
      */
