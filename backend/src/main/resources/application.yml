@@ -20,7 +20,11 @@ spring:
       minimum-idle: 5
       connection-timeout: 30000
       idle-timeout: 300000
-      max-lifetime: 1200000
+      max-lifetime: 580000  # 9.6 minutos (menor que wait_timeout do PostgreSQL)
+      keepalive-time: 300000  # 5 minutos - mantém conexões vivas
+      connection-test-query: SELECT 1  # Query para testar conexões
+      validation-timeout: 3000  # Timeout de validação em ms
+      leak-detection-threshold: 60000  # Detectar vazamento de conexões após 60s
   
   jpa:
     hibernate:

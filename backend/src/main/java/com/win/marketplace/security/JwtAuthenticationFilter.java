@@ -34,6 +34,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
         
+        // Rotas públicas que não precisam de autenticação JWT
+        String requestPath = request.getRequestURI();
+        if (requestPath.startsWith("/actuator/") || 
+            requestPath.startsWith("/api/v1/webhooks/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         final String authHeader = request.getHeader("Authorization");
         
         // Log para debug
