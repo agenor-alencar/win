@@ -45,7 +45,7 @@ class ShippingApi {
    */
   async simularFrete(request: SimulacaoFreteRequest): Promise<SimulacaoFreteResponse> {
     try {
-      const response = await api.post('/entregas/simular-frete', request);
+      const response = await api.post('/v1/entregas/simular-frete', request);
       return response.data;
     } catch (error: any) {
       console.error('Erro ao simular frete:', error);
