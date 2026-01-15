@@ -18,6 +18,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class SimulacaoFreteResponseDTO {
 
+    /**
+     * ID da cotação retornado pela Uber (usado para solicitar entrega com preço garantido).
+     */
+    private String quoteId;
+    
     private TipoVeiculoUber tipoVeiculo;
     
     /**
@@ -32,8 +37,15 @@ public class SimulacaoFreteResponseDTO {
     
     /**
      * Valor total a ser cobrado do cliente (valor Uber + taxa).
+     * NOTA: Valor já com arredondamento inteligente (sempre termina em X,90 ou X,00).
      */
     private BigDecimal valorFreteTotal;
+    
+    /**
+     * Valor original calculado ANTES do arredondamento inteligente.
+     * Usado apenas para auditoria interna.
+     */
+    private BigDecimal valorOriginalCotado;
     
     /**
      * Tempo estimado de entrega em minutos.

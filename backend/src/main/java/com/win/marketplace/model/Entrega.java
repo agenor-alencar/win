@@ -103,6 +103,35 @@ public class Entrega {
     private String urlRastreamentoUber; // Link de rastreamento em tempo real
 
     // ========================================
+    // Quote ID e Valores (para garantir preço)
+    // ========================================
+    
+    @Column(name = "quote_id_uber", length = 255)
+    private String quoteIdUber; // ID da cotação retornado pela Uber
+    
+    @Column(name = "valor_original_cotado", precision = 10, scale = 2)
+    private BigDecimal valorOriginalCotado; // Valor exato da cotação (antes do arredondamento)
+    
+    @Column(name = "valor_arredondado_cliente", precision = 10, scale = 2)
+    private BigDecimal valorArredondadoCliente; // Valor arredondado mostrado ao cliente
+
+    // ========================================
+    // Geolocalização (Lat/Long)
+    // ========================================
+    
+    @Column(name = "origem_latitude", precision = 10, scale = 8)
+    private Double origemLatitude;
+    
+    @Column(name = "origem_longitude", precision = 11, scale = 8)
+    private Double origemLongitude;
+    
+    @Column(name = "destino_latitude", precision = 10, scale = 8)
+    private Double destinoLatitude;
+    
+    @Column(name = "destino_longitude", precision = 11, scale = 8)
+    private Double destinoLongitude;
+
+    // ========================================
     // Timestamps das Etapas
     // ========================================
     

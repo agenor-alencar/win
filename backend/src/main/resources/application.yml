@@ -109,6 +109,15 @@ abacatepay:
   api-key: ${ABACATEPAY_API_KEY:}
   api-url: ${ABACATEPAY_API_URL:https://api.abacatepay.com}  # Access Token do Mercado Pago
 
+# Uber Direct API Configuration
+uber:
+  client:
+    id: ${UBER_CLIENT_ID:}
+    secret: ${UBER_CLIENT_SECRET:}
+  api:
+    base-url: ${UBER_API_BASE_URL:https://api.uber.com}
+    enabled: ${UBER_API_ENABLED:false}  # true para usar API real, false para modo MOCK
+
 logging:
   level:
     root: INFO
