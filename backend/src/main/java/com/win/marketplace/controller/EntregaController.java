@@ -19,15 +19,15 @@ import java.util.UUID;
  * Controller para gerenciamento de entregas via Uber Flash.
  * 
  * Endpoints:
- * - POST /entregas/simular-frete - Simula custo de frete (público)
- * - POST /entregas/{pedidoId}/solicitar - Solicita corrida Uber (lojista)
- * - GET /entregas/pedido/{pedidoId} - Busca entrega do pedido (lojista/cliente)
- * - GET /entregas/lojista/minhas - Lista entregas do lojista (lojista)
- * - GET /entregas/lojista/em-andamento - Lista entregas em andamento (lojista)
- * - DELETE /entregas/{entregaId} - Cancela entrega (lojista)
+ * - POST /api/entregas/simular-frete - Simula custo de frete (público)
+ * - POST /api/entregas/{pedidoId}/solicitar - Solicita corrida Uber (lojista)
+ * - GET /api/entregas/pedido/{pedidoId} - Busca entrega do pedido (lojista/cliente)
+ * - GET /api/entregas/lojista/minhas - Lista entregas do lojista (lojista)
+ * - GET /api/entregas/lojista/em-andamento - Lista entregas em andamento (lojista)
+ * - DELETE /api/entregas/{entregaId} - Cancela entrega (lojista)
  */
 @RestController
-@RequestMapping("/entregas")
+@RequestMapping("/api/entregas")
 @RequiredArgsConstructor
 public class EntregaController {
 
