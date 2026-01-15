@@ -97,12 +97,8 @@ const Checkout: React.FC = () => {
   // Calcula frete quando endereço estiver completo
   useEffect(() => {
     const calcularFrete = async () => {
-      // Se for primeira compra, não precisa calcular
-      if (isPrimeiraCompra) {
-        setFreteCalculado(true);
-        return;
-      }
-
+      // ✅ SEMPRE calcular frete, mesmo em primeira compra (para saber custo real da WIN)
+      
       // Verifica se endereço está completo
       if (!address.cep || !address.logradouro || !address.numero || !address.cidade) {
         return;
@@ -140,10 +136,19 @@ const Checkout: React.FC = () => {
         if (simulacao.sucesso) {
           setSimulacaoFrete(simulacao);
           setFreteCalculado(true);
-          success(
-            'Frete Calculado!',
-            `Entrega em ${simulacao.tempoEstimadoMinutos} min por R$ ${simulacao.valorFreteTotal.toFixed(2)}`
-          );
+          
+          // ✅ Mensagem diferente se for primeira compra
+          if (isPrimeiraCompra) {
+            success(
+              'Frete Grátis para Você! 🎉',
+              `Valor real: R$ ${simulacao.valorFreteTotal.toFixed(2)} (WIN paga por você). Entrega em ${simulacao.tempoEstimadoMinutos} min.`
+            );
+          } else {
+            success(
+              'Frete Calculado!',
+              `Entrega em ${simulacao.tempoEstimadoMinutos} min por R$ ${simulacao.valorFreteTotal.toFixed(2)}`
+            );
+          }
         }
       } catch (error: any) {
         console.error('Erro ao simular frete:', error);
@@ -158,11 +163,12 @@ const Checkout: React.FC = () => {
 
   const subtotal = cartState.total;
   
-  // Cálculo do frete:
-  // 1. Se for primeira compra -> GRÁTIS (sistema paga)
-  // 2. Se tiver simulação -> usa valor calculado
-  // 3. Caso contrário -> estimativa de R$ 15
-  const shipping = isPrimeiraCompra ? 0 : (simulacaoFrete ? simulacaoFrete.valorFreteTotal : 15.0);
+  // ✅ Cálculo do frete para exibição ao cliente:
+  // - Se for primeira compra: Cliente paga R$ 0 (WIN assume o custo)
+  // - Se não: Cliente paga o valor calculado pela Uber
+  const freteValorReal = simulacaoFrete ? simulacaoFrete.valorFreteTotal : 15.0;
+  const freteClientePaga = isPrimeiraCompra ? 0 : freteValorReal;
+  const shipping = freteClientePaga;
   const total = subtotal + shipping;
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
