@@ -3,6 +3,7 @@ import React, {
   useContext,
   useReducer,
   useEffect,
+  useState,
 } from "react";
 
 export interface CartItem {
@@ -122,23 +123,84 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     itemCount: 0,
   });
 
-  // Carregar carrinho do localStorage ao montar
+  // Rastrear usuário atual para detectar mudanças
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    const user = localStorage.getItem("user");
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        return userData.id;
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+    return null;
+  });
+
+  // Função para obter a chave do carrinho baseada no usuário
+  const getCartKey = (userId: string | null) => {
+    if (userId) {
+      return `win-cart-${userId}`;
+    }
+    return "win-cart-guest"; // Carrinho para usuário não logado
+  };
+
+  // Detectar mudanças no usuário logado
   useEffect(() => {
-    const storedCart = localStorage.getItem("win-cart");
+    const checkUserChange = () => {
+      const user = localStorage.getItem("user");
+      let newUserId: string | null = null;
+      
+      if (user) {
+        try {
+          const userData = JSON.parse(user);
+          newUserId = userData.id;
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+
+      if (newUserId !== currentUserId) {
+        setCurrentUserId(newUserId);
+      }
+    };
+
+    // Verificar mudanças no localStorage periodicamente
+    const interval = setInterval(checkUserChange, 500);
+    
+    // Verificar também em eventos de storage
+    window.addEventListener("storage", checkUserChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", checkUserChange);
+    };
+  }, [currentUserId]);
+
+  // Carregar carrinho quando o usuário mudar
+  useEffect(() => {
+    const cartKey = getCartKey(currentUserId);
+    const storedCart = localStorage.getItem(cartKey);
+    
     if (storedCart) {
       try {
         const items = JSON.parse(storedCart);
         dispatch({ type: "LOAD_CART", payload: items });
       } catch (error) {
         console.error("Error loading cart from localStorage:", error);
+        dispatch({ type: "CLEAR_CART" });
       }
+    } else {
+      // Limpar carrinho se não houver dados para este usuário
+      dispatch({ type: "CLEAR_CART" });
     }
-  }, []);
+  }, [currentUserId]);
 
   // Salvar carrinho no localStorage sempre que mudar
   useEffect(() => {
-    localStorage.setItem("win-cart", JSON.stringify(state.items));
-  }, [state.items]);
+    const cartKey = getCartKey(currentUserId);
+    localStorage.setItem(cartKey, JSON.stringify(state.items));
+  }, [state.items, currentUserId]);
 
   const addItem = (
     item: Omit<CartItem, "quantity"> & { quantity?: number },
@@ -156,7 +218,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const clearCart = () => {
     dispatch({ type: "CLEAR_CART" });
-    localStorage.removeItem("win-cart");
+    const cartKey = getCartKey(currentUserId);
+    localStorage.removeItem(cartKey);
   };
 
   // Criar pedido no backend (POST /api/v1/pedidos)
