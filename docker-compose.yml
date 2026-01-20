@@ -13,6 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/otimizacao_indices.sql:/docker-entrypoint-initdb.d/otimizacao_indices.sql
       - ./config/postgres.conf:/etc/postgresql/postgresql.conf
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
     networks:
