@@ -40,6 +40,111 @@ public class FreteService {
     private Boolean uberApiEnabled;
 
     /**
+     * 🚀 Estimativa rápida de frete apenas com CEP (otimizado para UX).
+     * 
+     * Usado na home/produto para dar visibilidade antecipada do custo de entrega.
+     * Não requer endereço completo nem autenticação.
+     * 
+     * Fluxo:
+     * 1. Buscar lojista (origem) com coordenadas
+     * 2. Geocodificar CEP de destino via ViaCEP + Nominatim
+     * 3. Calcular frete via Uber API
+     * 4. Retornar estimativa
+     * 
+     * @param cepDestino CEP do cliente (8 dígitos)
+     * @param lojistaId UUID do lojista
+     * @param pesoKg Peso estimado
+     * @return Estimativa de frete
+     */
+    public FreteResponseDTO estimarFretePorCep(String cepDestino, java.util.UUID lojistaId, Double pesoKg) {
+        log.info("📍 Estimando frete - CEP destino: {}, Lojista: {}", cepDestino, lojistaId);
+
+        try {
+            // 1. BUSCAR LOJISTA
+            Lojista lojista = lojistaRepository.findById(lojistaId)
+                    .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
+
+            if (!lojista.getAtivo()) {
+                throw new RuntimeException("Lojista inativo");
+            }
+
+            // 2. OBTER COORDENADAS DO LOJISTA
+            Double origemLat = lojista.getLatitude();
+            Double origemLon = lojista.getLongitude();
+
+            if (origemLat == null || origemLon == null) {
+                // Tentar geocodificar lojista em tempo real
+                String enderecoOrigem = construirEnderecoCompleto(
+                        lojista.getLogradouro(), lojista.getNumero(),
+                        lojista.getBairro(), lojista.getCidade(), lojista.getUf()
+                );
+                Double[] coordsOrigem = geocodingService.geocodificar(lojista.getCep(), enderecoOrigem);
+                if (coordsOrigem != null) {
+                    origemLat = coordsOrigem[0];
+                    origemLon = coordsOrigem[1];
+                } else {
+                    throw new RuntimeException("Não foi possível geocodificar endereço do lojista");
+                }
+            }
+
+            // 3. GEOCODIFICAR CEP DE DESTINO
+            String cepLimpo = cepDestino.replaceAll("\\D", "");
+            Double[] coordsDestino = geocodingService.geocodificarPorCep(cepLimpo);
+            
+            if (coordsDestino == null) {
+                throw new RuntimeException("CEP inválido ou não encontrado");
+            }
+
+            Double destinoLat = coordsDestino[0];
+            Double destinoLon = coordsDestino[1];
+
+            // 4. PREPARAR REQUEST PARA UBER API
+            SimulacaoFreteRequestDTO simulacaoRequest = SimulacaoFreteRequestDTO.builder()
+                    .cepOrigem(lojista.getCep())
+                    .cepDestino(cepLimpo)
+                    .origemLatitude(origemLat)
+                    .origemLongitude(origemLon)
+                    .destinoLatitude(destinoLat)
+                    .destinoLongitude(destinoLon)
+                    .pesoTotalKg(pesoKg != null ? pesoKg : 1.0)
+                    .build();
+
+            // 5. CHAMAR UBER API
+            SimulacaoFreteResponseDTO simulacao = uberFlashService.simularFrete(simulacaoRequest);
+
+            if (simulacao.getSucesso()) {
+                return FreteResponseDTO.builder()
+                        .sucesso(true)
+                        .quoteId(simulacao.getQuoteId())
+                        .valorFreteTotal(simulacao.getValorFreteTotal())
+                        .valorCorridaUber(simulacao.getValorCorridaUber())
+                        .taxaWin(simulacao.getTaxaWinmarket())
+                        .distanciaKm(simulacao.getDistanciaKm())
+                        .tempoEstimadoMinutos(simulacao.getTempoEstimadoMinutos())
+                        .tipoVeiculo(simulacao.getTipoVeiculo())
+                        .mensagem("Estimativa baseada no CEP. Valor final confirmado no checkout.")
+                        .modoProducao(uberApiEnabled)
+                        .build();
+            } else {
+                return FreteResponseDTO.builder()
+                        .sucesso(false)
+                        .erro(simulacao.getErro())
+                        .build();
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Erro ao estimar frete por CEP", e);
+            return FreteResponseDTO.builder()
+                    .sucesso(false)
+                    .erro("Erro ao estimar frete: " + e.getMessage())
+                    .valorFreteTotal(new BigDecimal("15.00")) // Fallback
+                    .tempoEstimadoMinutos(30)
+                    .modoProducao(false)
+                    .build();
+        }
+    }
+
+    /**
      * Calcula frete dinâmico usando coordenadas geocodificadas.
      * 
      * Fluxo:

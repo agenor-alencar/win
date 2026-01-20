@@ -1,7 +1,33 @@
 import { api } from '../Api';
 
 // ========================================
-// Interfaces
+// Interfaces - Uber Direct API (NOVO)
+// ========================================
+
+export interface FreteRequestDTO {
+  lojistaId: string;
+  enderecoEntregaId: string;
+  pesoTotalKg?: number;
+  cepOrigem?: string;
+  cepDestino?: string;
+}
+
+export interface FreteResponseDTO {
+  sucesso: boolean;
+  quoteId?: string;
+  valorFreteTotal: number;
+  valorCorridaUber: number;
+  taxaWin: number;
+  distanciaKm: number;
+  tempoEstimadoMinutos: number;
+  tipoVeiculo: string;
+  mensagem?: string;
+  erro?: string;
+  modoProducao: boolean;
+}
+
+// ========================================
+// Interfaces - Legado (compatibilidade)
 // ========================================
 
 export interface SimulacaoFreteRequest {
@@ -39,9 +65,47 @@ export interface VerificarPrimeiraCompraResponse {
 
 class ShippingApi {
   /**
-   * Simula o custo de frete via Uber Flash
-   * @param request Dados para simulação (origem, destino, peso)
-   * @returns Simulação com valores calculados
+   * 🚀 NOVO: Calcula frete dinâmico via Uber Direct API com geocoding
+   * @param request Dados para cálculo (lojistaId + enderecoEntregaId + peso)
+   * @returns Cotação real da Uber com valores exatos
+   */
+  async calcularFrete(request: FreteRequestDTO): Promise<FreteResponseDTO> {
+    try {
+      const response = await api.post('/v1/fretes/calcular', request);
+      return response.data;
+    } catch (error: any) {
+      console.error('Erro ao calcular frete:', error);
+      throw new Error(error.response?.data?.message || 'Erro ao calcular frete');
+    }
+  }
+
+  /**
+   * 📍 Estimativa rápida de frete por CEP (UX otimizada).
+   * Não requer autenticação nem endereço completo.
+   * @param cepDestino CEP do cliente (8 dígitos)
+   * @param lojistaId ID do lojista
+   * @param pesoKg Peso estimado (padrão: 1.0)
+   * @returns Estimativa de frete
+   */
+  async estimarFretePorCep(cepDestino: string, lojistaId: string, pesoKg: number = 1.0): Promise<FreteResponseDTO> {
+    try {
+      const response = await api.get('/v1/fretes/estimar', {
+        params: {
+          cepDestino: cepDestino.replace(/\D/g, ''),
+          lojistaId,
+          pesoKg
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Erro ao estimar frete:', error);
+      throw new Error(error.response?.data?.message || 'Erro ao estimar frete');
+    }
+  }
+
+  /**
+   * 📦 LEGADO: Simula frete via endpoint antigo (estimativa, sem Uber Direct)
+   * Mantido para compatibilidade. Prefira usar calcularFrete().
    */
   async simularFrete(request: SimulacaoFreteRequest): Promise<SimulacaoFreteResponse> {
     try {

@@ -5,7 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { api } from "@/lib/Api";
 import AbacatePayCheckout from "@/components/AbacatePayCheckout";
-import { shippingApi, SimulacaoFreteResponse } from "@/lib/api/shippingApi";
+import { shippingApi, FreteResponseDTO } from "@/lib/api/shippingApi";
 import { lojistaApi } from "@/lib/api/lojistaApi";
 import {
   CreditCard,
@@ -45,10 +45,11 @@ const Checkout: React.FC = () => {
   const [pedidoId, setPedidoId] = useState<string | null>(null);
   
   // Estados para frete dinâmico
-  const [simulacaoFrete, setSimulacaoFrete] = useState<SimulacaoFreteResponse | null>(null);
+  const [simulacaoFrete, setSimulacaoFrete] = useState<FreteResponseDTO | null>(null);
   const [loadingFrete, setLoadingFrete] = useState(false);
   const [isPrimeiraCompra, setIsPrimeiraCompra] = useState(false);
   const [freteCalculado, setFreteCalculado] = useState(false);
+  const [enderecoId, setEnderecoId] = useState<string | null>(null);
   
   const [address, setAddress] = useState<Address>({
     cep: "",
@@ -98,73 +99,70 @@ const Checkout: React.FC = () => {
   // Calcula frete quando endereço estiver completo
   useEffect(() => {
     const calcularFrete = async () => {
-      // ✅ SEMPRE calcular frete, mesmo em primeira compra (para saber custo real da WIN)
-      
-      // Verifica se endereço está completo
-      if (!address.cep || !address.logradouro || !address.numero || !address.cidade) {
+      // Pega o primeiro item para obter lojistaId
+      const primeiroItem = cartState.items[0];
+      if (!primeiroItem || !(primeiroItem as any).lojistaId) {
+        console.warn('Item sem lojistaId');
         return;
       }
 
-      // Pega o primeiro item para obter lojistaId (assumindo pedido de uma única loja)
-      const primeiroItem = cartState.items[0];
-      if (!primeiroItem || !(primeiroItem as any).lojistaId) {
-        console.warn('Item sem lojistaId, usando frete estimado');
+      const lojistaId = (primeiroItem as any).lojistaId;
+
+      // 🚀 ESTRATÉGIA 1: CEP salvo no localStorage (estimativa rápida)
+      const cepSalvo = localStorage.getItem('win_cep_cliente');
+      if (cepSalvo && !freteCalculado) {
+        setLoadingFrete(true);
+        try {
+          const estimativa = await shippingApi.estimarFretePorCep(cepSalvo, lojistaId);
+          if (estimativa.sucesso) {
+            setSimulacaoFrete(estimativa);
+            log.info('✅ Estimativa pré-calculada via CEP salvo');
+          }
+        } catch (error) {
+          console.warn('Erro ao pré-calcular frete:', error);
+        } finally {
+          setLoadingFrete(false);
+        }
+      }
+
+      // 🎯 ESTRATÉGIA 2: Cálculo preciso quando endereço completo + endereço salvo
+      if (!address.cep || !address.logradouro || !address.numero || !address.cidade || !enderecoId) {
         return;
       }
 
       setLoadingFrete(true);
       
       try {
-        // 1. Buscar dados do lojista (incluindo endereço)
-        const lojistaId = (primeiroItem as any).lojistaId;
-        const lojista = await lojistaApi.buscarPorId(lojistaId);
-        
-        if (!lojista.cep || !lojista.logradouro) {
-          showError('Erro', 'Endereço do lojista não cadastrado. Contate o vendedor.');
-          return;
-        }
-
-        // 2. Calcular peso e formatar endereços
         const pesoTotal = shippingApi.calcularPesoTotal(cartState.items);
-        const enderecoOrigemCompleto = lojistaApi.formatarEnderecoCompleto(lojista);
-        const enderecoDestinoCompleto = shippingApi.formatarEnderecoCompleto({
-          logradouro: address.logradouro,
-          numero: address.numero,
-          complemento: address.complemento,
-          bairro: address.bairro,
-          cidade: address.cidade,
-          uf: address.uf
-        });
 
-        // 3. Simular frete com dados reais
-        const simulacao = await shippingApi.simularFrete({
+        // Usar novo endpoint com endereço geocodificado
+        const calculoPreciso = await shippingApi.calcularFrete({
           lojistaId: lojistaId,
-          cepOrigem: lojista.cep.replace(/\D/g, ''),
-          enderecoOrigemCompleto: enderecoOrigemCompleto,
-          cepDestino: address.cep.replace(/\D/g, ''),
-          enderecoDestinoCompleto: enderecoDestinoCompleto,
-          pesoTotalKg: pesoTotal
+          enderecoEntregaId: enderecoId,
+          pesoTotalKg: pesoTotal,
+          cepOrigem: address.cep.replace(/\D/g, ''),
+          cepDestino: address.cep.replace(/\D/g, '')
         });
 
-        if (simulacao.sucesso) {
-          setSimulacaoFrete(simulacao);
+        if (calculoPreciso.sucesso) {
+          setSimulacaoFrete(calculoPreciso);
           setFreteCalculado(true);
           
-          // ✅ Mensagem diferente se for primeira compra
+          // Mensagem diferenciada
           if (isPrimeiraCompra) {
             success(
               'Frete Grátis para Você! 🎉',
-              `Valor real: R$ ${simulacao.valorFreteTotal.toFixed(2)} (WIN paga por você). Entrega em ${simulacao.tempoEstimadoMinutos} min.`
+              `Valor real: R$ ${calculoPreciso.valorFreteTotal.toFixed(2)} (WIN paga por você). Entrega em ${calculoPreciso.tempoEstimadoMinutos} min.`
             );
           } else {
             success(
               'Frete Calculado!',
-              `Entrega em ${simulacao.tempoEstimadoMinutos} min por R$ ${simulacao.valorFreteTotal.toFixed(2)}`
+              `Entrega em ${calculoPreciso.tempoEstimadoMinutos} min por R$ ${calculoPreciso.valorFreteTotal.toFixed(2)}`
             );
           }
         }
       } catch (error: any) {
-        console.error('Erro ao simular frete:', error);
+        console.error('Erro ao calcular frete:', error);
         showError('Erro ao calcular frete', error.message || 'Usando valor estimado');
       } finally {
         setLoadingFrete(false);
@@ -172,7 +170,7 @@ const Checkout: React.FC = () => {
     };
 
     calcularFrete();
-  }, [address.cep, address.logradouro, address.numero, address.cidade, isPrimeiraCompra, cartState.items]);
+  }, [address.cep, address.logradouro, address.numero, address.cidade, enderecoId, isPrimeiraCompra, cartState.items]);
 
   const subtotal = cartState.total;
   
