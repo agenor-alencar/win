@@ -8,6 +8,7 @@ import com.win.marketplace.model.*;
 import com.win.marketplace.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -28,6 +30,7 @@ public class PedidoService {
     private final ProdutoRepository produtoRepository;
     private final PedidoMapper pedidoMapper;
     private final ObjectMapper objectMapper;
+    private final EntregaService entregaService;
 
     public PedidoResponseDTO criarPedido(PedidoCreateRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(requestDTO.usuarioId())
@@ -162,6 +165,22 @@ public class PedidoService {
         pedido.setStatus(Pedido.StatusPedido.CONFIRMADO);
         pedido.setConfirmadoEm(OffsetDateTime.now());
         Pedido savedPedido = pedidoRepository.save(pedido);
+        
+        // 🚚 INTEGRAÇÃO UBER DIRECT: Solicitar entrega automaticamente
+        // NOTA: Entrega só é solicitada quando lojista marcar como "Pronto para Retirada"
+        // por isso apenas logamos aqui
+        try {
+            log.info("✅ Pedido confirmado: {}. Entrega Uber será solicitada quando estiver pronto para retirada.", 
+                    savedPedido.getNumeroPedido());
+            
+            // TODO: Lojista deve chamar entregaService.solicitarCorridaUber() quando produto estiver pronto
+            // Para integração automática imediata, descomente:
+            // entregaService.solicitarCorridaUber(savedPedido.getId());
+        } catch (Exception e) {
+            log.error("❌ Erro ao processar confirmação do pedido {}: {}", 
+                    savedPedido.getNumeroPedido(), e.getMessage(), e);
+        }
+        
         return pedidoMapper.toResponseDTO(savedPedido);
     }
 

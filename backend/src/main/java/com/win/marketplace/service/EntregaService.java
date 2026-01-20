@@ -145,6 +145,15 @@ public class EntregaService {
     }
 
     /**
+     * Alias/wrapper para solicitarCorridaUber - facilita a integração.
+     * Útil para chamadas automáticas no fluxo de pedido.
+     */
+    @Transactional
+    public void solicitarEntrega(UUID pedidoId) {
+        solicitarCorridaUber(pedidoId);
+    }
+
+    /**
      * Processa webhook da Uber com atualização de status.
      */
     @Transactional

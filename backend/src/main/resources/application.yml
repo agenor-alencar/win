@@ -126,6 +126,8 @@ uber:
   api:
     base-url: ${UBER_API_BASE_URL:https://api.uber.com}
     enabled: ${UBER_API_ENABLED:false}  # true para usar API real, false para modo MOCK
+  webhook:
+    secret: ${UBER_WEBHOOK_SECRET:}  # Secret para validação HMAC de webhooks
 
 logging:
   level:
