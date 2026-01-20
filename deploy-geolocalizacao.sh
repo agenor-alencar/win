@@ -14,13 +14,14 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Diretório do projeto
-PROJECT_DIR="/root/win-marketplace"
+# Diretório do projeto (detectar automaticamente)
+PROJECT_DIR=$(pwd)
 
 # 1. Atualizar código
 echo -e "${YELLOW}📥 Atualizando código do repositório...${NC}"
 cd "$PROJECT_DIR"
-git pull origin main
+echo "Diretório atual: $(pwd)"
+git pull origin main || git pull
 echo -e "${GREEN}✅ Código atualizado${NC}"
 echo ""
 
