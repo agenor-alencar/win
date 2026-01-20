@@ -2,7 +2,6 @@ package com.win.marketplace.service;
 
 import com.win.marketplace.dto.response.AdminChartDataDTO;
 import com.win.marketplace.model.Pedido;
-import com.win.marketplace.model.Produto;
 import com.win.marketplace.repository.PedidoRepository;
 import com.win.marketplace.repository.ProdutoRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,20 +38,30 @@ public class AdminChartService {
         log.info("Buscando dados de gráficos para o dashboard administrativo");
         
         try {
+            // Calcular data de início (7 meses atrás)
+            OffsetDateTime dataInicio = OffsetDateTime.now().minusMonths(7).withDayOfMonth(1);
+            
             // Gerar lista dos últimos 7 meses
             List<MesReferencia> ultimos7Meses = gerarUltimos7Meses();
             
-            // Buscar todos os pedidos
-            List<Pedido> todosPedidos = pedidoRepository.findAll();
+            // === VENDAS POR MÊS - OTIMIZADO ===
+            List<Object[]> vendasDoBanco = pedidoRepository.contarVendasPorMes(dataInicio, Pedido.StatusPedido.CANCELADO);
+            Map<String, Long> vendasMap = new HashMap<>();
             
-            // === VENDAS POR MÊS ===
+            // Mapear resultados do banco
+            for (Object[] row : vendasDoBanco) {
+                int ano = ((Number) row[0]).intValue();
+                int mes = ((Number) row[1]).intValue();
+                long quantidade = ((Number) row[2]).longValue();
+                String chave = ano + "-" + mes;
+                vendasMap.put(chave, quantidade);
+            }
+            
+            // Criar lista com todos os meses (incluindo zeros)
             List<AdminChartDataDTO.VendaMensal> vendasMensais = ultimos7Meses.stream()
                     .map(mesRef -> {
-                        long quantidade = todosPedidos.stream()
-                                .filter(p -> p.getCriadoEm() != null)
-                                .filter(p -> p.getStatus() != Pedido.StatusPedido.CANCELADO)
-                                .filter(p -> isMesmoMes(p.getCriadoEm(), mesRef))
-                                .count();
+                        String chave = mesRef.ano + "-" + mesRef.mes;
+                        long quantidade = vendasMap.getOrDefault(chave, 0L);
                         
                         return AdminChartDataDTO.VendaMensal.builder()
                                 .mes(mesRef.nomeAbreviado)
@@ -61,15 +70,24 @@ public class AdminChartService {
                     })
                     .collect(Collectors.toList());
             
-            // === RECEITAS POR MÊS ===
+            // === RECEITAS POR MÊS - OTIMIZADO ===
+            List<Object[]> receitasDoBanco = pedidoRepository.somarReceitaPorMes(dataInicio, Pedido.StatusPedido.CANCELADO);
+            Map<String, BigDecimal> receitasMap = new HashMap<>();
+            
+            // Mapear resultados do banco
+            for (Object[] row : receitasDoBanco) {
+                int ano = ((Number) row[0]).intValue();
+                int mes = ((Number) row[1]).intValue();
+                BigDecimal receita = (BigDecimal) row[2];
+                String chave = ano + "-" + mes;
+                receitasMap.put(chave, receita);
+            }
+            
+            // Criar lista com todos os meses (incluindo zeros)
             List<AdminChartDataDTO.ReceitaMensal> receitasMensais = ultimos7Meses.stream()
                     .map(mesRef -> {
-                        BigDecimal receita = todosPedidos.stream()
-                                .filter(p -> p.getCriadoEm() != null)
-                                .filter(p -> p.getStatus() != Pedido.StatusPedido.CANCELADO)
-                                .filter(p -> isMesmoMes(p.getCriadoEm(), mesRef))
-                                .map(Pedido::getTotal)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        String chave = mesRef.ano + "-" + mesRef.mes;
+                        BigDecimal receita = receitasMap.getOrDefault(chave, BigDecimal.ZERO);
                         
                         return AdminChartDataDTO.ReceitaMensal.builder()
                                 .mes(mesRef.nomeAbreviado)
@@ -78,21 +96,14 @@ public class AdminChartService {
                     })
                     .collect(Collectors.toList());
             
-            // === PRODUTOS POR CATEGORIA ===
-            List<Produto> todosProdutos = produtoRepository.findAll();
+            // === PRODUTOS POR CATEGORIA - OTIMIZADO ===
+            List<Object[]> categoriasDoBanco = produtoRepository.contarProdutosPorCategoria();
             
-            Map<String, Long> produtosPorCategoria = todosProdutos.stream()
-                    .collect(Collectors.groupingBy(
-                            p -> p.getCategoria() != null ? p.getCategoria().getNome() : "Sem Categoria",
-                            Collectors.counting()
-                    ));
-            
-            List<AdminChartDataDTO.ProdutoPorCategoria> categorias = produtosPorCategoria.entrySet().stream()
-                    .map(entry -> AdminChartDataDTO.ProdutoPorCategoria.builder()
-                            .nome(entry.getKey())
-                            .quantidade(entry.getValue())
+            List<AdminChartDataDTO.ProdutoPorCategoria> categorias = categoriasDoBanco.stream()
+                    .map(row -> AdminChartDataDTO.ProdutoPorCategoria.builder()
+                            .nome((String) row[0])
+                            .quantidade(((Number) row[1]).longValue())
                             .build())
-                    .sorted(Comparator.comparing(AdminChartDataDTO.ProdutoPorCategoria::getQuantidade).reversed())
                     .collect(Collectors.toList());
             
             AdminChartDataDTO chartData = AdminChartDataDTO.builder()
@@ -134,13 +145,6 @@ public class AdminChartService {
         }
         
         return meses;
-    }
-
-    /**
-     * Verifica se uma data pertence ao mesmo mês de referência
-     */
-    private boolean isMesmoMes(OffsetDateTime data, MesReferencia mesRef) {
-        return data.getMonthValue() == mesRef.mes && data.getYear() == mesRef.ano;
     }
 
     /**

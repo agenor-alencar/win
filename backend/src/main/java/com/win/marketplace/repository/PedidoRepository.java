@@ -76,4 +76,46 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     
     @Query("SELECT COUNT(DISTINCT p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.status IN :statuses")
     Long countByLojistaIdAndStatusIn(@Param("lojistaId") UUID lojistaId, @Param("statuses") List<Pedido.StatusPedido> statuses);
+    
+    // ========================================
+    // QUERIES OTIMIZADAS PARA DASHBOARD ADMIN
+    // ========================================
+    
+    /**
+     * Conta pedidos em um período específico
+     */
+    @Query("SELECT COUNT(p) FROM Pedido p WHERE p.criadoEm >= :inicio AND p.criadoEm <= :fim")
+    Long countPedidosPorPeriodo(@Param("inicio") OffsetDateTime inicio, @Param("fim") OffsetDateTime fim);
+    
+    /**
+     * Calcula receita total em um período específico (excluindo cancelados)
+     */
+    @Query("SELECT COALESCE(SUM(p.total), 0) FROM Pedido p WHERE p.criadoEm >= :inicio AND p.criadoEm <= :fim AND p.status <> :statusCancelado")
+    BigDecimal somarReceitaPorPeriodo(@Param("inicio") OffsetDateTime inicio, @Param("fim") OffsetDateTime fim, @Param("statusCancelado") Pedido.StatusPedido statusCancelado);
+    
+    /**
+     * Calcula receita total de todos os pedidos (excluindo cancelados)
+     */
+    @Query("SELECT COALESCE(SUM(p.total), 0) FROM Pedido p WHERE p.status <> :statusCancelado")
+    BigDecimal somarReceitaTotal(@Param("statusCancelado") Pedido.StatusPedido statusCancelado);
+    
+    /**
+     * Busca quantidade de vendas agrupadas por mês/ano (últimos N meses)
+     */
+    @Query("SELECT YEAR(p.criadoEm) as ano, MONTH(p.criadoEm) as mes, COUNT(p) as quantidade " +
+           "FROM Pedido p " +
+           "WHERE p.status <> :statusCancelado AND p.criadoEm >= :dataInicio " +
+           "GROUP BY YEAR(p.criadoEm), MONTH(p.criadoEm) " +
+           "ORDER BY ano, mes")
+    List<Object[]> contarVendasPorMes(@Param("dataInicio") OffsetDateTime dataInicio, @Param("statusCancelado") Pedido.StatusPedido statusCancelado);
+    
+    /**
+     * Busca receita agrupada por mês/ano (últimos N meses)
+     */
+    @Query("SELECT YEAR(p.criadoEm) as ano, MONTH(p.criadoEm) as mes, COALESCE(SUM(p.total), 0) as receita " +
+           "FROM Pedido p " +
+           "WHERE p.status <> :statusCancelado AND p.criadoEm >= :dataInicio " +
+           "GROUP BY YEAR(p.criadoEm), MONTH(p.criadoEm) " +
+           "ORDER BY ano, mes")
+    List<Object[]> somarReceitaPorMes(@Param("dataInicio") OffsetDateTime dataInicio, @Param("statusCancelado") Pedido.StatusPedido statusCancelado);
 }

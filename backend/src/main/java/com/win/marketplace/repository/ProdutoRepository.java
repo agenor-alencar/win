@@ -90,4 +90,14 @@ public interface ProdutoRepository extends JpaRepository<Produto, UUID> {
      */
     @Query("SELECT p FROM Produto p WHERE p.erpSku = :erpSku")
     Optional<Produto> findByErpSku(@Param("erpSku") String erpSku);
+    
+    /**
+     * Conta produtos por categoria (otimizado para gráficos do dashboard)
+     */
+    @Query("SELECT COALESCE(c.nome, 'Sem Categoria') as categoria, COUNT(p) as quantidade " +
+           "FROM Produto p " +
+           "LEFT JOIN p.categoria c " +
+           "GROUP BY c.nome " +
+           "ORDER BY quantidade DESC")
+    List<Object[]> contarProdutosPorCategoria();
 }

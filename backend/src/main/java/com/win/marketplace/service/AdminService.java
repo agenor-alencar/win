@@ -50,33 +50,15 @@ public class AdminService {
             OffsetDateTime inicioHoje = OffsetDateTime.now().with(LocalTime.MIN);
             OffsetDateTime fimHoje = OffsetDateTime.now().with(LocalTime.MAX);
             
-            List<Pedido> pedidosHoje = pedidoRepository.findAll().stream()
-                .filter(p -> p.getCriadoEm() != null 
-                    && !p.getCriadoEm().isBefore(inicioHoje) 
-                    && !p.getCriadoEm().isAfter(fimHoje))
-                .toList();
-            
-            Long countPedidosHoje = (long) pedidosHoje.size();
-            BigDecimal receitaHoje = pedidosHoje.stream()
-                .filter(p -> p.getStatus() != Pedido.StatusPedido.CANCELADO)
-                .map(Pedido::getTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            Long countPedidosHoje = pedidoRepository.countPedidosPorPeriodo(inicioHoje, fimHoje);
+            BigDecimal receitaHoje = pedidoRepository.somarReceitaPorPeriodo(inicioHoje, fimHoje, Pedido.StatusPedido.CANCELADO);
             
             // === MÉTRICAS DE ONTEM ===
             OffsetDateTime inicioOntem = OffsetDateTime.now().minusDays(1).with(LocalTime.MIN);
             OffsetDateTime fimOntem = OffsetDateTime.now().minusDays(1).with(LocalTime.MAX);
             
-            List<Pedido> pedidosOntem = pedidoRepository.findAll().stream()
-                .filter(p -> p.getCriadoEm() != null 
-                    && !p.getCriadoEm().isBefore(inicioOntem) 
-                    && !p.getCriadoEm().isAfter(fimOntem))
-                .toList();
-            
-            Long countPedidosOntem = (long) pedidosOntem.size();
-            BigDecimal receitaOntem = pedidosOntem.stream()
-                .filter(p -> p.getStatus() != Pedido.StatusPedido.CANCELADO)
-                .map(Pedido::getTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            Long countPedidosOntem = pedidoRepository.countPedidosPorPeriodo(inicioOntem, fimOntem);
+            BigDecimal receitaOntem = pedidoRepository.somarReceitaPorPeriodo(inicioOntem, fimOntem, Pedido.StatusPedido.CANCELADO);
             
             // === MÉTRICAS DO MÊS ATUAL ===
             YearMonth mesAtual = YearMonth.now();
@@ -87,17 +69,8 @@ public class AdminService {
                 .withDayOfMonth(mesAtual.lengthOfMonth())
                 .with(LocalTime.MAX);
             
-            List<Pedido> pedidosMesAtual = pedidoRepository.findAll().stream()
-                .filter(p -> p.getCriadoEm() != null 
-                    && !p.getCriadoEm().isBefore(inicioMesAtual) 
-                    && !p.getCriadoEm().isAfter(fimMesAtual))
-                .toList();
-            
-            Long countPedidosMesAtual = (long) pedidosMesAtual.size();
-            BigDecimal receitaMesAtual = pedidosMesAtual.stream()
-                .filter(p -> p.getStatus() != Pedido.StatusPedido.CANCELADO)
-                .map(Pedido::getTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            Long countPedidosMesAtual = pedidoRepository.countPedidosPorPeriodo(inicioMesAtual, fimMesAtual);
+            BigDecimal receitaMesAtual = pedidoRepository.somarReceitaPorPeriodo(inicioMesAtual, fimMesAtual, Pedido.StatusPedido.CANCELADO);
             
             // === MÉTRICAS DO MÊS ANTERIOR ===
             YearMonth mesAnterior = mesAtual.minusMonths(1);
@@ -110,23 +83,11 @@ public class AdminService {
                 .withDayOfMonth(mesAnterior.lengthOfMonth())
                 .with(LocalTime.MAX);
             
-            List<Pedido> pedidosMesAnterior = pedidoRepository.findAll().stream()
-                .filter(p -> p.getCriadoEm() != null 
-                    && !p.getCriadoEm().isBefore(inicioMesAnterior) 
-                    && !p.getCriadoEm().isAfter(fimMesAnterior))
-                .toList();
-            
-            Long countPedidosMesAnterior = (long) pedidosMesAnterior.size();
-            BigDecimal receitaMesAnterior = pedidosMesAnterior.stream()
-                .filter(p -> p.getStatus() != Pedido.StatusPedido.CANCELADO)
-                .map(Pedido::getTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            Long countPedidosMesAnterior = pedidoRepository.countPedidosPorPeriodo(inicioMesAnterior, fimMesAnterior);
+            BigDecimal receitaMesAnterior = pedidoRepository.somarReceitaPorPeriodo(inicioMesAnterior, fimMesAnterior, Pedido.StatusPedido.CANCELADO);
             
             // === RECEITA TOTAL ===
-            BigDecimal receitaTotal = pedidoRepository.findAll().stream()
-                .filter(p -> p.getStatus() != Pedido.StatusPedido.CANCELADO)
-                .map(Pedido::getTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal receitaTotal = pedidoRepository.somarReceitaTotal(Pedido.StatusPedido.CANCELADO);
             
             // Criar e retornar DTO com todas as estatísticas
             AdminDashboardStatsDTO stats = AdminDashboardStatsDTO.criar(
@@ -174,14 +135,12 @@ public class AdminService {
         log.info("Buscando estatísticas de usuários por tipo");
         
         try {
-            // Usar contagens diretas do repository ao invés de carregar todos os usuários
+            // Usar contagens diretas do repository - otimizado!
             long totalUsuarios = usuarioRepository.count();
             long totalLojas = lojistaRepository.count();
             
-            // Contar bloqueados diretamente
-            long bloqueados = usuarioRepository.findAll().stream()
-                    .filter(u -> Boolean.FALSE.equals(u.getAtivo()))
-                    .count();
+            // Contar bloqueados diretamente no banco
+            long bloqueados = usuarioRepository.countByAtivoFalse();
             
             // Por enquanto, estatísticas simplificadas
             // TODO: Criar queries específicas no repository para melhor performance
