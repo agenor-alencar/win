@@ -61,8 +61,8 @@ public class FreteService {
             Lojista lojista = lojistaRepository.findById(request.getLojistaId())
                     .orElseThrow(() -> new RuntimeException("Lojista não encontrado: " + request.getLojistaId()));
 
-            if (!lojista.getAprovado() || !lojista.getAtivo()) {
-                throw new RuntimeException("Lojista inativo ou não aprovado");
+            if (!lojista.getAtivo()) {
+                throw new RuntimeException("Lojista inativo");
             }
 
             // 2. BUSCAR ENDEREÇO DE ENTREGA (DESTINO)
@@ -110,7 +110,7 @@ public class FreteService {
                 // Tentar geocodificar em tempo real
                 String enderecoDestino = construirEnderecoCompleto(
                         enderecoEntrega.getLogradouro(), enderecoEntrega.getNumero(), 
-                        enderecoEntrega.getBairro(), enderecoEntrega.getCidade(), enderecoEntrega.getUf()
+                        enderecoEntrega.getBairro(), enderecoEntrega.getCidade(), enderecoEntrega.getEstado()
                 );
                 
                 Double[] coordenadas = geocodingService.geocodificar(enderecoEntrega.getCep(), enderecoDestino);
@@ -132,7 +132,7 @@ public class FreteService {
 
             String enderecoDestinoCompleto = construirEnderecoCompleto(
                     enderecoEntrega.getLogradouro(), enderecoEntrega.getNumero(), 
-                    enderecoEntrega.getBairro(), enderecoEntrega.getCidade(), enderecoEntrega.getUf()
+                    enderecoEntrega.getBairro(), enderecoEntrega.getCidade(), enderecoEntrega.getEstado()
             );
 
             SimulacaoFreteRequestDTO simulacaoRequest = SimulacaoFreteRequestDTO.builder()

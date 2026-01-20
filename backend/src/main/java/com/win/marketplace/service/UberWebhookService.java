@@ -179,24 +179,24 @@ public class UberWebhookService {
             }
         }
 
-        entrega.setStatusEntrega(StatusEntrega.MOTORISTA_ATRIBUIDO);
-        entrega.setDataHoraMotoristaAtribuido(OffsetDateTime.now());
+        entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_MOTORISTA);
+        // DataHora será registrada automaticamente via @UpdateTimestamp
     }
 
     private void processarMotoristaACaminhoDaLoja(Entrega entrega, Map<String, Object> data) {
         log.info("🛣️ Motorista a caminho da loja");
-        entrega.setStatusEntrega(StatusEntrega.MOTORISTA_A_CAMINHO_LOJA);
+        entrega.setStatusEntrega(StatusEntrega.MOTORISTA_A_CAMINHO_RETIRADA);
     }
 
     private void processarMotoristaChegouNaLoja(Entrega entrega, Map<String, Object> data) {
         log.info("📍 Motorista chegou na loja");
-        entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_RETIRADA);
+        entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_PREPARACAO);
     }
 
     private void processarMotoristaACaminhoDoCliente(Entrega entrega, Map<String, Object> data) {
         log.info("🚴 Motorista a caminho do cliente");
         entrega.setStatusEntrega(StatusEntrega.EM_TRANSITO);
-        entrega.setDataHoraColetaPedido(OffsetDateTime.now());
+        entrega.setDataHoraRetirada(OffsetDateTime.now());
         
         // Atualizar status do pedido também
         Pedido pedido = entrega.getPedido();
@@ -208,7 +208,7 @@ public class UberWebhookService {
 
     private void processarMotoristaChegouNoCliente(Entrega entrega, Map<String, Object> data) {
         log.info("🏠 Motorista chegou no endereço do cliente");
-        entrega.setStatusEntrega(StatusEntrega.CHEGOU_NO_DESTINO);
+        entrega.setStatusEntrega(StatusEntrega.EM_TRANSITO);
     }
 
     private void processarEntregaConcluida(Entrega entrega, Map<String, Object> data) {
@@ -230,7 +230,7 @@ public class UberWebhookService {
 
     private void processarEntregaCancelada(Entrega entrega, Map<String, Object> data) {
         log.warn("❌ Entrega cancelada pela Uber");
-        entrega.setStatusEntrega(StatusEntrega.CANCELADO);
+        entrega.setStatusEntrega(StatusEntrega.CANCELADA);
         
         // Atualizar status do pedido
         Pedido pedido = entrega.getPedido();
@@ -252,7 +252,7 @@ public class UberWebhookService {
         try {
             switch (status) {
                 case "pending" -> entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_PREPARACAO);
-                case "pickup" -> entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_RETIRADA);
+                case "pickup" -> entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_MOTORISTA);
                 case "dropoff" -> entrega.setStatusEntrega(StatusEntrega.EM_TRANSITO);
                 case "delivered" -> processarEntregaConcluida(entrega, data);
                 case "canceled" -> processarEntregaCancelada(entrega, data);
