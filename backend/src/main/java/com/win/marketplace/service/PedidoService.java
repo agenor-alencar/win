@@ -60,11 +60,27 @@ public class PedidoService {
         pedido.setDesconto(requestDTO.desconto() != null ? requestDTO.desconto() : BigDecimal.ZERO);
         pedido.setFrete(requestDTO.frete() != null ? requestDTO.frete() : BigDecimal.ZERO);
         
-        // Mapear itens
+        // Mapear itens e determinar lojista
         List<ItemPedido> itens = new ArrayList<>();
+        Lojista lojistaDoPedido = null;
+        
         for (ItemPedidoRequestDTO itemDTO : requestDTO.itens()) {
             Produto produto = produtoRepository.findById(itemDTO.produtoId())
                     .orElseThrow(() -> new RuntimeException("Produto não encontrado: " + itemDTO.produtoId()));
+            
+            // ✅ FIX: Definir lojista do pedido baseado no primeiro produto
+            if (lojistaDoPedido == null) {
+                lojistaDoPedido = produto.getLojista();
+                if (lojistaDoPedido == null) {
+                    throw new RuntimeException("Produto sem lojista associado: " + produto.getNome());
+                }
+            } else {
+                // Validar que todos os produtos são do mesmo lojista
+                if (!lojistaDoPedido.getId().equals(produto.getLojista().getId())) {
+                    throw new RuntimeException("Todos os produtos devem ser do mesmo lojista. " +
+                            "Produto '" + produto.getNome() + "' pertence a outro lojista.");
+                }
+            }
             
             ItemPedido item = new ItemPedido();
             item.setPedido(pedido);
@@ -74,6 +90,9 @@ public class PedidoService {
             
             itens.add(item);
         }
+        
+        // ✅ FIX: Definir o lojista do pedido (OBRIGATÓRIO)
+        pedido.setLojista(lojistaDoPedido);
         pedido.setItens(itens);
         
         // Calcular totais
