@@ -38,6 +38,12 @@ public class Usuario {
     @Column(name = "telefone", length = 20)
     private String telefone;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @Column(name = "ativo", nullable = false)
     private Boolean ativo = true;
 

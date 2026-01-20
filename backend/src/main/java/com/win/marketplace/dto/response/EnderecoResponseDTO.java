@@ -16,6 +16,8 @@ public record EnderecoResponseDTO(
     String estado,
     Boolean principal,
     Boolean ativo,
+    Double latitude,
+    Double longitude,
     OffsetDateTime criadoEm,
     OffsetDateTime atualizadoEm
 ) {}

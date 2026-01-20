@@ -32,6 +32,7 @@ public class LojistaService {
     private final LojistaMapper lojistaMapper;
     private final ProdutoRepository produtoRepository;
     private final PedidoRepository pedidoRepository;
+    private final GeocodingService geocodingService;
 
     public LojistaResponseDTO criarLojista(LojistaCreateRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(requestDTO.usuarioId())
@@ -53,6 +54,25 @@ public class LojistaService {
         // Valores padrão
         if (lojista.getAtivo() == null) {
             lojista.setAtivo(true);
+        }
+
+        // Geocodificar endereço se as coordenadas não foram fornecidas
+        if ((lojista.getLatitude() == null || lojista.getLongitude() == null) && 
+            lojista.getCep() != null && !lojista.getCep().isEmpty()) {
+            
+            String enderecoCompleto = String.format("%s, %s, %s, %s, %s",
+                lojista.getLogradouro(),
+                lojista.getNumero(),
+                lojista.getBairro(),
+                lojista.getCidade(),
+                lojista.getUf());
+            
+            Double[] coordenadas = geocodingService.geocodificar(lojista.getCep(), enderecoCompleto);
+            
+            if (coordenadas != null) {
+                lojista.setLatitude(coordenadas[0]);
+                lojista.setLongitude(coordenadas[1]);
+            }
         }
 
         Lojista savedLojista = lojistaRepository.save(lojista);
@@ -117,7 +137,32 @@ public class LojistaService {
             throw new RuntimeException("CNPJ já está sendo utilizado por outro lojista");
         }
 
+        // Verificar se o endereço mudou (para regeocoding)
+        boolean enderecoMudou = !lojista.getCep().equals(requestDTO.cep()) ||
+                                !lojista.getLogradouro().equals(requestDTO.logradouro()) ||
+                                !lojista.getNumero().equals(requestDTO.numero()) ||
+                                !lojista.getBairro().equals(requestDTO.bairro()) ||
+                                !lojista.getCidade().equals(requestDTO.cidade()) ||
+                                !lojista.getUf().equals(requestDTO.uf());
+
         lojistaMapper.updateEntityFromDTO(requestDTO, lojista);
+
+        // Re-geocodificar se o endereço mudou e as novas coordenadas não foram fornecidas
+        if (enderecoMudou && (requestDTO.latitude() == null || requestDTO.longitude() == null)) {
+            String enderecoCompleto = String.format("%s, %s, %s, %s, %s",
+                lojista.getLogradouro(),
+                lojista.getNumero(),
+                lojista.getBairro(),
+                lojista.getCidade(),
+                lojista.getUf());
+            
+            Double[] coordenadas = geocodingService.geocodificar(lojista.getCep(), enderecoCompleto);
+            
+            if (coordenadas != null) {
+                lojista.setLatitude(coordenadas[0]);
+                lojista.setLongitude(coordenadas[1]);
+            }
+        }
 
         Lojista savedLojista = lojistaRepository.save(lojista);
         return lojistaMapper.toResponseDTO(savedLojista);

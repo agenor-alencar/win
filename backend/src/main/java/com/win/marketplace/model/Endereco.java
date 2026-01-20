@@ -50,6 +50,12 @@ public class Endereco {
     private String estado;
 
     @Column
+    private Double latitude;
+
+    @Column
+    private Double longitude;
+
+    @Column
     private Boolean principal = false;
 
     @Column(nullable = false)

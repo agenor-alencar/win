@@ -24,7 +24,29 @@ public record RegisterRequestDTO(
     @Pattern(regexp = "\\(\\d{2}\\)\\s\\d{4,5}-\\d{4}", message = "Telefone deve estar no formato (00) 0000-0000 ou (00) 00000-0000")
     String telefone,
 
-    java.time.LocalDate dataNascimento
+    java.time.LocalDate dataNascimento,
+
+    // Campos de endereço (opcionais)
+    @Pattern(regexp = "\\d{8}", message = "CEP deve conter 8 dígitos")
+    String cep,
+
+    String logradouro,
+
+    String numero,
+
+    String complemento,
+
+    String bairro,
+
+    String cidade,
+
+    @Pattern(regexp = "[A-Z]{2}", message = "UF deve ter 2 letras maiúsculas")
+    String uf,
+
+    // Coordenadas (opcionais - geocodificadas automaticamente)
+    Double latitude,
+
+    Double longitude
 ) {
     // Validação customizada no construtor canônico
     public RegisterRequestDTO {

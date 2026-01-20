@@ -22,6 +22,7 @@ public class EnderecoService {
     private final EnderecoRepository enderecoRepository;
     private final UsuarioRepository usuarioRepository;
     private final EnderecoMapper enderecoMapper;
+    private final GeocodingService geocodingService;
 
     public EnderecoResponseDTO criarEndereco(UUID usuarioId, EnderecoRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
@@ -29,6 +30,28 @@ public class EnderecoService {
 
         Endereco endereco = enderecoMapper.toEntity(requestDTO);
         endereco.setUsuario(usuario);
+
+        // Geocodificar endereço se coordenadas não fornecidas
+        if ((requestDTO.latitude() == null || requestDTO.longitude() == null) && 
+            requestDTO.cep() != null && !requestDTO.cep().isEmpty()) {
+            
+            String enderecoCompleto = String.format("%s, %s, %s, %s, %s",
+                requestDTO.logradouro(),
+                requestDTO.numero() != null ? requestDTO.numero() : "S/N",
+                requestDTO.bairro(),
+                requestDTO.cidade(),
+                requestDTO.estado());
+            
+            Double[] coordenadas = geocodingService.geocodificar(requestDTO.cep(), enderecoCompleto);
+            
+            if (coordenadas != null) {
+                endereco.setLatitude(coordenadas[0]);
+                endereco.setLongitude(coordenadas[1]);
+            }
+        } else if (requestDTO.latitude() != null && requestDTO.longitude() != null) {
+            endereco.setLatitude(requestDTO.latitude());
+            endereco.setLongitude(requestDTO.longitude());
+        }
 
         // Se este for o primeiro endereço ou for marcado como principal,
         // desmarcar outros endereços principais
@@ -66,12 +89,37 @@ public class EnderecoService {
         Endereco endereco = enderecoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
 
+        // Verificar se o endereço mudou (para re-geocoding)
+        boolean enderecoMudou = !endereco.getCep().equals(requestDTO.cep()) ||
+                                !endereco.getLogradouro().equals(requestDTO.logradouro()) ||
+                                !String.valueOf(endereco.getNumero()).equals(String.valueOf(requestDTO.numero())) ||
+                                !endereco.getBairro().equals(requestDTO.bairro()) ||
+                                !endereco.getCidade().equals(requestDTO.cidade()) ||
+                                !endereco.getEstado().equals(requestDTO.estado());
+
         // Se está sendo marcado como principal, desmarcar outros
         if (Boolean.TRUE.equals(requestDTO.principal()) && !Boolean.TRUE.equals(endereco.getPrincipal())) {
             desmarcarEnderecosPrincipais(endereco.getUsuario().getId());
         }
 
         enderecoMapper.updateEntityFromDTO(requestDTO, endereco);
+
+        // Re-geocodificar se o endereço mudou e novas coordenadas não foram fornecidas
+        if (enderecoMudou && (requestDTO.latitude() == null || requestDTO.longitude() == null)) {
+            String enderecoCompleto = String.format("%s, %s, %s, %s, %s",
+                endereco.getLogradouro(),
+                endereco.getNumero() != null ? endereco.getNumero() : "S/N",
+                endereco.getBairro(),
+                endereco.getCidade(),
+                endereco.getEstado());
+            
+            Double[] coordenadas = geocodingService.geocodificar(endereco.getCep(), enderecoCompleto);
+            
+            if (coordenadas != null) {
+                endereco.setLatitude(coordenadas[0]);
+                endereco.setLongitude(coordenadas[1]);
+            }
+        }
 
         Endereco savedEndereco = enderecoRepository.save(endereco);
         return enderecoMapper.toResponseDTO(savedEndereco);

@@ -12,6 +12,8 @@ public record UsuarioResponseDTO(
     String cpf,
     String telefone,
     LocalDate dataNascimento,
+    Double latitude,
+    Double longitude,
     Boolean ativo,
     List<String> perfis,
     OffsetDateTime ultimoAcesso,

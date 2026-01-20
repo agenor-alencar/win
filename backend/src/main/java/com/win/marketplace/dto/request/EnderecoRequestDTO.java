@@ -33,5 +33,9 @@ public record EnderecoRequestDTO(
     @Pattern(regexp = "[A-Z]{2}", message = "Estado deve ser uma UF válida em maiúsculas")
     String estado,
 
-    Boolean principal
+    Boolean principal,
+
+    Double latitude,
+
+    Double longitude
 ) {}

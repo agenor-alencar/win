@@ -24,6 +24,8 @@ public record LojistaResponseDTO(
     String cidade,
     String uf,
     String cep,
+    Double latitude,
+    Double longitude,
     String status,
     String statusAprovacao,
     Boolean ativo,

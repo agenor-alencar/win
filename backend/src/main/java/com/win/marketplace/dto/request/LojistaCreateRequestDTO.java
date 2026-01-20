@@ -59,5 +59,9 @@ public record LojistaCreateRequestDTO(
     @Pattern(regexp = "\\d{8}", message = "CEP deve conter 8 dígitos")
     String cep,
 
+    Double latitude,
+
+    Double longitude,
+
     Boolean ativo
 ) {}

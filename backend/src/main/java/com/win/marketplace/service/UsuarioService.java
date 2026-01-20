@@ -38,6 +38,7 @@ public class UsuarioService {
     private final LojistaRepository lojistaRepository;
     private final UsuarioMapper usuarioMapper;
     private final PasswordEncoder passwordEncoder;
+    private final GeocodingService geocodingService;
 
     /**
      * Cria um novo usuário com perfil USER padrão
@@ -58,6 +59,30 @@ public class UsuarioService {
         // Criar entidade usuário
         Usuario usuario = usuarioMapper.toEntity(requestDTO);
         usuario.setSenhaHash(passwordEncoder.encode(requestDTO.senha()));
+
+        // Geocodificar endereço se fornecido e coordenadas não informadas
+        if (requestDTO.cep() != null && !requestDTO.cep().isEmpty() && 
+            requestDTO.logradouro() != null && !requestDTO.logradouro().isEmpty() &&
+            (requestDTO.latitude() == null || requestDTO.longitude() == null)) {
+            
+            String enderecoCompleto = String.format("%s, %s, %s, %s, %s",
+                requestDTO.logradouro(),
+                requestDTO.numero() != null ? requestDTO.numero() : "S/N",
+                requestDTO.bairro() != null ? requestDTO.bairro() : "",
+                requestDTO.cidade() != null ? requestDTO.cidade() : "",
+                requestDTO.uf() != null ? requestDTO.uf() : "");
+            
+            Double[] coordenadas = geocodingService.geocodificar(requestDTO.cep(), enderecoCompleto);
+            
+            if (coordenadas != null) {
+                usuario.setLatitude(coordenadas[0]);
+                usuario.setLongitude(coordenadas[1]);
+                log.info("📍 Usuário geocodificado: lat={}, lon={}", coordenadas[0], coordenadas[1]);
+            }
+        } else if (requestDTO.latitude() != null && requestDTO.longitude() != null) {
+            usuario.setLatitude(requestDTO.latitude());
+            usuario.setLongitude(requestDTO.longitude());
+        }
 
         // Salvar usuário primeiro (para gerar o ID)
         Usuario savedUsuario = usuarioRepository.save(usuario);
@@ -371,6 +396,29 @@ public class UsuarioService {
         lojista.setBairro(lojistaData.bairro());
         lojista.setCidade(lojistaData.cidade());
         lojista.setUf(lojistaData.uf());
+        
+        // Geocodificar endereço se as coordenadas não foram fornecidas
+        if (lojistaData.latitude() != null && lojistaData.longitude() != null) {
+            lojista.setLatitude(lojistaData.latitude());
+            lojista.setLongitude(lojistaData.longitude());
+        } else {
+            String enderecoCompleto = String.format("%s, %s, %s, %s, %s",
+                lojistaData.logradouro(),
+                lojistaData.numero(),
+                lojistaData.bairro(),
+                lojistaData.cidade(),
+                lojistaData.uf());
+            
+            Double[] coordenadas = geocodingService.geocodificar(lojistaData.cep(), enderecoCompleto);
+            
+            if (coordenadas != null) {
+                lojista.setLatitude(coordenadas[0]);
+                lojista.setLongitude(coordenadas[1]);
+                log.info("📍 Endereço geocodificado: lat={}, lon={}", coordenadas[0], coordenadas[1]);
+            } else {
+                log.warn("⚠️ Não foi possível geocodificar o endereço do lojista");
+            }
+        }
         
         lojista.setAtivo(true);
         

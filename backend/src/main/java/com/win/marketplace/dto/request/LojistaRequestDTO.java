@@ -56,7 +56,12 @@ public record LojistaRequestDTO(
     
     @NotBlank(message = "UF é obrigatório")
     @Pattern(regexp = "[A-Z]{2}", message = "UF deve ter exatamente 2 letras maiúsculas (ex: SP, RJ)")
-    String uf
+    String uf,
+    
+    // Campos de geolocalização (opcionais - serão geocodificados automaticamente se não fornecidos)
+    Double latitude,
+    
+    Double longitude
 ) {
     /**
      * Construtor de conveniência que normaliza os dados

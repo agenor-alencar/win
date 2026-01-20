@@ -64,6 +64,13 @@ public class Lojista {
     @Column(length = 2)
     private String uf;
 
+    // Coordenadas geográficas (opcionais, melhoram performance da Uber Direct API)
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @Column(nullable = false)
     private Boolean ativo = true;
 
