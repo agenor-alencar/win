@@ -89,7 +89,7 @@ public class FreteService {
 
             // 3. GEOCODIFICAR CEP DE DESTINO
             String cepLimpo = cepDestino.replaceAll("\\D", "");
-            Double[] coordsDestino = geocodingService.geocodificarPorCep(cepLimpo);
+            Double[] coordsDestino = geocodingService.geocodificarPorCEP(cepLimpo);
             
             if (coordsDestino == null) {
                 throw new RuntimeException("CEP inválido ou não encontrado");

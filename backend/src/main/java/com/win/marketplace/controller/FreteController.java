@@ -82,7 +82,7 @@ public class FreteController {
                     FreteResponseDTO.builder()
                             .sucesso(false)
                             .erro("Erro ao calcular estimativa: " + e.getMessage())
-                            .valorFreteTotal(15.0) // Fallback
+                            .valorFreteTotal(BigDecimal.valueOf(15.0)) // Fallback
                             .tempoEstimadoMinutos(30)
                             .modoProducao(false)
                             .build()

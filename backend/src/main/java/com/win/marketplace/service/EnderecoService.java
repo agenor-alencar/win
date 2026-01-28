@@ -65,10 +65,8 @@ public class EnderecoService {
             endereco.setPrincipal(false);
         }
 
-        // Geocodificar endereço se coordenadas não fornecidas
-        if ((requestDTO.latitude() == null || requestDTO.longitude() == null) && 
-            requestDTO.cep() != null && !requestDTO.cep().isEmpty()) {
-            
+        // Geocodificar endereço automaticamente
+        if (requestDTO.cep() != null && !requestDTO.cep().isEmpty()) {
             String enderecoCompleto = String.format("%s, %s, %s, %s, %s",
                 requestDTO.logradouro(),
                 requestDTO.numero() != null ? requestDTO.numero() : "S/N",
@@ -82,9 +80,6 @@ public class EnderecoService {
                 endereco.setLatitude(coordenadas[0]);
                 endereco.setLongitude(coordenadas[1]);
             }
-        } else if (requestDTO.latitude() != null && requestDTO.longitude() != null) {
-            endereco.setLatitude(requestDTO.latitude());
-            endereco.setLongitude(requestDTO.longitude());
         }
 
         // Se este for o primeiro endereço ou for marcado como principal,
@@ -138,8 +133,8 @@ public class EnderecoService {
 
         enderecoMapper.updateEntityFromDTO(requestDTO, endereco);
 
-        // Re-geocodificar se o endereço mudou e novas coordenadas não foram fornecidas
-        if (enderecoMudou && (requestDTO.latitude() == null || requestDTO.longitude() == null)) {
+        // Re-geocodificar se o endereço mudou
+        if (enderecoMudou) {
             String enderecoCompleto = String.format("%s, %s, %s, %s, %s",
                 endereco.getLogradouro(),
                 endereco.getNumero() != null ? endereco.getNumero() : "S/N",
