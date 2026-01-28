@@ -18,6 +18,7 @@ import { useNotification } from "../../contexts/NotificationContext";
 import { useAuth } from "../../contexts/AuthContext";
 import Header from "../../components/Header";
 import MainCarousel from "../../components/MainCarousel";
+import CEPWidget from "../../components/CEPWidget";
 import { produtoApi, type ProdutoSummary } from "@/lib/produtoApi";
 
 const categories = [
@@ -115,6 +116,13 @@ export default function Index() {
       <section className="w-full py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <MainCarousel />
+        </div>
+      </section>
+
+      {/* CEP Widget - Calcular Frete */}
+      <section className="w-full py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <CEPWidget compact={false} />
         </div>
       </section>
 

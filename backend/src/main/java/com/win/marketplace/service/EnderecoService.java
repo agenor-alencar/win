@@ -28,8 +28,42 @@ public class EnderecoService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
+        // Se for temporário, verificar se já existe um endereço temporário e atualizar
+        if (Boolean.TRUE.equals(requestDTO.temporario())) {
+            Endereco enderecoTemp = enderecoRepository.findByUsuarioIdAndTemporarioTrueAndAtivoTrue(usuarioId)
+                    .orElse(null);
+            
+            if (enderecoTemp != null) {
+                // Atualizar o endereço temporário existente
+                enderecoMapper.updateEntityFromDTO(requestDTO, enderecoTemp);
+                
+                // Re-geocodificar
+                String enderecoCompleto = String.format("%s, %s, %s, %s, %s",
+                    requestDTO.logradouro(),
+                    requestDTO.numero() != null ? requestDTO.numero() : "S/N",
+                    requestDTO.bairro(),
+                    requestDTO.cidade(),
+                    requestDTO.estado());
+                
+                Double[] coordenadas = geocodingService.geocodificar(requestDTO.cep(), enderecoCompleto);
+                if (coordenadas != null) {
+                    enderecoTemp.setLatitude(coordenadas[0]);
+                    enderecoTemp.setLongitude(coordenadas[1]);
+                }
+                
+                Endereco savedEndereco = enderecoRepository.save(enderecoTemp);
+                return enderecoMapper.toResponseDTO(savedEndereco);
+            }
+        }
+
         Endereco endereco = enderecoMapper.toEntity(requestDTO);
         endereco.setUsuario(usuario);
+        
+        // Definir temporário se informado
+        if (Boolean.TRUE.equals(requestDTO.temporario())) {
+            endereco.setTemporario(true);
+            endereco.setPrincipal(false);
+        }
 
         // Geocodificar endereço se coordenadas não fornecidas
         if ((requestDTO.latitude() == null || requestDTO.longitude() == null) && 

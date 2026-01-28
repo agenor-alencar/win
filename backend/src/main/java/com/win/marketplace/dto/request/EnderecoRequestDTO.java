@@ -35,7 +35,5 @@ public record EnderecoRequestDTO(
 
     Boolean principal,
 
-    Double latitude,
+    Boolean temporario,
 
-    Double longitude
-) {}

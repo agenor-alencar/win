@@ -16,4 +16,6 @@ public interface EnderecoRepository extends JpaRepository<Endereco, UUID> {
     List<Endereco> findByUsuarioIdAndAtivoTrue(UUID usuarioId);
     
     Optional<Endereco> findByUsuarioIdAndPrincipalTrueAndAtivoTrue(UUID usuarioId);
+    
+    Optional<Endereco> findByUsuarioIdAndTemporarioTrueAndAtivoTrue(UUID usuarioId);
 }

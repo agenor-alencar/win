@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public class EntregaService {
 
     private final EntregaRepository entregaRepository;
+    @SuppressWarnings("unused")
     private final PedidoRepository pedidoRepository;
     private final UberFlashService uberFlashService;
 
@@ -172,6 +173,9 @@ public class EntregaService {
             switch (novoStatus) {
                 case EM_TRANSITO -> entrega.setDataHoraRetirada(OffsetDateTime.now());
                 case ENTREGUE -> entrega.setDataHoraEntrega(OffsetDateTime.now());
+                default -> {
+                    // Outros status não requerem atualização de timestamp
+                }
             }
 
             entregaRepository.save(entrega);

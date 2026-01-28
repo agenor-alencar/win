@@ -41,7 +41,6 @@ import java.util.*;
 public class UberFlashService {
 
     private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
     private final GeocodingService geocodingService;
 
     @Value("${uber.client.id:}")

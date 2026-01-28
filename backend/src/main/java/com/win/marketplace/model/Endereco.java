@@ -61,6 +61,9 @@ public class Endereco {
     @Column(nullable = false)
     private Boolean ativo = true;
 
+    @Column
+    private Boolean temporario = false;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     @CreationTimestamp
     private OffsetDateTime criadoEm;

@@ -99,6 +99,11 @@ const Checkout: React.FC = () => {
   // Calcula frete quando endereço estiver completo
   useEffect(() => {
     const calcularFrete = async () => {
+      // Validar usuário logado
+      if (!user?.id) {
+        return;
+      }
+
       // Pega o primeiro item para obter lojistaId
       const primeiroItem = cartState.items[0];
       if (!primeiroItem || !(primeiroItem as any).lojistaId) {
@@ -108,40 +113,80 @@ const Checkout: React.FC = () => {
 
       const lojistaId = (primeiroItem as any).lojistaId;
 
-      // 🚀 ESTRATÉGIA 1: CEP salvo no localStorage (estimativa rápida)
-      const cepSalvo = localStorage.getItem('win_cep_cliente');
-      if (cepSalvo && !freteCalculado) {
+      // 🚀 ESTRATÉGIA 1: Carregar endereço temporário e fazer estimativa inicial
+      const enderecoTempId = localStorage.getItem('win_endereco_temp_id');
+      if (enderecoTempId && !freteCalculado && !enderecoId) {
+        setEnderecoId(enderecoTempId);
         setLoadingFrete(true);
         try {
-          const estimativa = await shippingApi.estimarFretePorCep(cepSalvo, lojistaId);
+          // Buscar dados do endereço temporário
+          const responseEndereco = await api.get(`/v1/enderecos/${enderecoTempId}`);
+          const endTemp = responseEndereco.data;
+          
+          // Calcular frete com endereço temporário
+          const pesoTotal = shippingApi.calcularPesoTotal(cartState.items);
+          const estimativa = await shippingApi.calcularFrete({
+            lojistaId: lojistaId,
+            enderecoEntregaId: enderecoTempId,
+            pesoTotalKg: pesoTotal
+          });
+          
           if (estimativa.sucesso) {
             setSimulacaoFrete(estimativa);
-            log.info('✅ Estimativa pré-calculada via CEP salvo');
+            console.log('✅ Estimativa inicial com endereço temporário');
           }
         } catch (error) {
-          console.warn('Erro ao pré-calcular frete:', error);
+          console.warn('Erro ao usar endereço temporário:', error);
         } finally {
           setLoadingFrete(false);
         }
       }
 
-      // 🎯 ESTRATÉGIA 2: Cálculo preciso quando endereço completo + endereço salvo
-      if (!address.cep || !address.logradouro || !address.numero || !address.cidade || !enderecoId) {
+      // 🎯 ESTRATÉGIA 2: Criar/atualizar endereço completo e recalcular
+      if (!address.cep || !address.logradouro || !address.numero || !address.cidade) {
         return;
       }
 
       setLoadingFrete(true);
       
       try {
-        const pesoTotal = shippingApi.calcularPesoTotal(cartState.items);
+        // Criar ou atualizar endereço completo
+        let enderecoFinalId = enderecoId;
+        
+        if (!enderecoFinalId || enderecoFinalId === localStorage.getItem('win_endereco_temp_id')) {
+          // Atualizar endereço temporário com dados completos
+          const enderecoCompleto = {
+            usuarioId: user.id,
+            cep: address.cep.replace(/\D/g, ''),
+            logradouro: address.logradouro,
+            numero: address.numero,
+            complemento: address.complemento || '',
+            bairro: address.bairro,
+            cidade: address.cidade,
+            estado: address.uf,
+            principal: false,
+            temporario: true,
+            ativo: true
+          };
 
-        // Usar novo endpoint com endereço geocodificado
+          if (enderecoFinalId) {
+            // Atualizar endereço existente
+            await api.put(`/v1/enderecos/${enderecoFinalId}`, enderecoCompleto);
+          } else {
+            // Criar novo endereço
+            const responseNovoEndereco = await api.post('/v1/enderecos', enderecoCompleto);
+            enderecoFinalId = responseNovoEndereco.data.id;
+            setEnderecoId(enderecoFinalId);
+            localStorage.setItem('win_endereco_temp_id', enderecoFinalId);
+          }
+        }
+
+        // Recalcular frete com endereço completo
+        const pesoTotal = shippingApi.calcularPesoTotal(cartState.items);
         const calculoPreciso = await shippingApi.calcularFrete({
           lojistaId: lojistaId,
-          enderecoEntregaId: enderecoId,
-          pesoTotalKg: pesoTotal,
-          cepOrigem: address.cep.replace(/\D/g, ''),
-          cepDestino: address.cep.replace(/\D/g, '')
+          enderecoEntregaId: enderecoFinalId,
+          pesoTotalKg: pesoTotal
         });
 
         if (calculoPreciso.sucesso) {
@@ -170,7 +215,7 @@ const Checkout: React.FC = () => {
     };
 
     calcularFrete();
-  }, [address.cep, address.logradouro, address.numero, address.cidade, enderecoId, isPrimeiraCompra, cartState.items]);
+  }, [address.cep, address.logradouro, address.numero, address.cidade, address.uf, user, isPrimeiraCompra, cartState.items, freteCalculado, enderecoId, success, showError]);
 
   const subtotal = cartState.total;
   
@@ -262,6 +307,12 @@ const Checkout: React.FC = () => {
         },
         desconto: 0.00,
         frete: parseFloat(shipping.toFixed(2)),
+        // Passar quoteId da Uber para garantir o preço cotado
+        quoteId: simulacaoFrete?.quoteId || null,
+        // Passar valores detalhados do frete
+        valorFreteReal: simulacaoFrete?.valorFreteTotal || shipping,
+        valorCorridaUber: simulacaoFrete?.valorCorridaUber || 0,
+        taxaWin: simulacaoFrete?.taxaWin || 0,
         itens: cartState.items.map((item) => ({
           produtoId: item.id,
           quantidade: item.quantity,
