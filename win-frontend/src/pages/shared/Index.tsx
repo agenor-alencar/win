@@ -118,9 +118,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* CEP Widget - Agora flutuante no canto superior */}
-      <CEPWidget />
-
       {/* Categories */}
       <section className="py-12 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
