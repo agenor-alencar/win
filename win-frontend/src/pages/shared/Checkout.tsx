@@ -116,7 +116,6 @@ const Checkout: React.FC = () => {
       // 🚀 ESTRATÉGIA 1: Carregar endereço temporário e fazer estimativa inicial
       const enderecoTempId = localStorage.getItem('win_endereco_temp_id');
       if (enderecoTempId && !freteCalculado && !enderecoId) {
-        setEnderecoId(enderecoTempId);
         setLoadingFrete(true);
         try {
           // Buscar dados do endereço temporário
@@ -124,11 +123,15 @@ const Checkout: React.FC = () => {
           const endTemp = responseEndereco.data;
           
           // ✅ VALIDAÇÃO CRÍTICA: Verificar se endereço foi geocodificado
-          if (!endTemp.latitude || !endTemp.longitude) {
+          if (!endTemp || !endTemp.latitude || !endTemp.longitude) {
             console.warn('⚠️ Endereço temporário sem coordenadas, aguardando endereço completo');
+            localStorage.removeItem('win_endereco_temp_id'); // Limpar ID inválido
             setLoadingFrete(false);
             return;
           }
+          
+          // Endereço válido - salvar ID
+          setEnderecoId(enderecoTempId);
           
           console.log('✅ Endereço temporário com coordenadas:', {
             lat: endTemp.latitude,
@@ -150,8 +153,16 @@ const Checkout: React.FC = () => {
           } else {
             console.warn('⚠️ Erro na estimativa:', estimativa.erro);
           }
-        } catch (error) {
-          console.warn('Erro ao usar endereço temporário:', error);
+        } catch (error: any) {
+          console.error('❌ Erro ao buscar endereço temporário:', error);
+          // Limpar endereço temporário inválido
+          localStorage.removeItem('win_endereco_temp_id');
+          setEnderecoId('');
+          
+          // Mostrar mensagem amigável
+          if (error.response?.status === 500 || error.response?.status === 404) {
+            console.log('🔄 Endereço temporário inválido. Preencha o endereço completo para calcular o frete.');
+          }
         } finally {
           setLoadingFrete(false);
         }
