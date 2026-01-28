@@ -18,14 +18,14 @@ spring:
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 180000  # 3 minutos (reduzido de 5 minutos)
-      max-lifetime: 300000  # 5 minutos (MUITO mais agressivo - bem abaixo do timeout do PostgreSQL)
-      keepalive-time: 120000  # 2 minutos (keepalive mais frequente)
+      connection-timeout: 30000  # 30s para obter conexão do pool
+      idle-timeout: 600000  # 10 minutos - tempo que conexão ociosa fica no pool
+      max-lifetime: 1800000  # 30 minutos - tempo máximo de vida da conexão
+      keepalive-time: 300000  # 5 minutos - ping de keepalive
       connection-test-query: SELECT 1  # Query para testar conexões
-      validation-timeout: 3000  # Timeout de validação em ms
-      leak-detection-threshold: 60000  # Detectar vazamento de conexões após 60s
-      auto-commit: true  # Garantir autocommit
+      validation-timeout: 5000  # 5s timeout de validação
+      leak-detection-threshold: 60000  # Detectar vazamento após 60s
+      auto-commit: true
       pool-name: HikariPool-WinMarketplace
   
   jpa:
