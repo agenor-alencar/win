@@ -120,7 +120,7 @@ const Checkout: React.FC = () => {
         setLoadingFrete(true);
         try {
           // Buscar dados do endereço temporário
-          const responseEndereco = await api.get(`/v1/enderecos/${enderecoTempId}`);
+          const responseEndereco = await api.get(`/api/v1/enderecos/${enderecoTempId}`);
           const endTemp = responseEndereco.data;
           
           // Calcular frete com endereço temporário
@@ -171,10 +171,10 @@ const Checkout: React.FC = () => {
 
           if (enderecoFinalId) {
             // Atualizar endereço existente
-            await api.put(`/v1/enderecos/${enderecoFinalId}`, enderecoCompleto);
+            await api.put(`/api/v1/enderecos/${enderecoFinalId}`, enderecoCompleto);
           } else {
             // Criar novo endereço
-            const responseNovoEndereco = await api.post('/v1/enderecos', enderecoCompleto);
+            const responseNovoEndereco = await api.post('/api/v1/enderecos', enderecoCompleto);
             enderecoFinalId = responseNovoEndereco.data.id;
             setEnderecoId(enderecoFinalId);
             localStorage.setItem('win_endereco_temp_id', enderecoFinalId);
