@@ -1,40 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { MapPin, Truck, CheckCircle, Loader2, X } from "lucide-react";
+import { MapPin, Loader2, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/contexts/NotificationContext";
-import { shippingApi } from "@/lib/api/shippingApi";
 import { api } from "@/lib/Api";
 
 interface CEPWidgetProps {
   lojistaId?: string;
-  compact?: boolean;
 }
 
-const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId, compact = false }) => {
+const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId }) => {
   const { user } = useAuth();
   const { success, error: showError } = useNotification();
   
   const [cep, setCep] = useState("");
   const [loading, setLoading] = useState(false);
-  const [freteEstimado, setFreteEstimado] = useState<number | null>(null);
-  const [tempoEstimado, setTempoEstimado] = useState<number | null>(null);
   const [enderecoSalvo, setEnderecoSalvo] = useState(false);
-  const [mostrarWidget, setMostrarWidget] = useState(true);
+  const [mostrarForm, setMostrarForm] = useState(false);
 
   // Carregar CEP salvo
   useEffect(() => {
     const cepSalvo = localStorage.getItem('win_cep_cliente');
     if (cepSalvo) {
-      setCep(cepSalvo);
+      setCep(formatarCep(cepSalvo));
       setEnderecoSalvo(true);
     }
   }, []);
 
   const formatarCep = (valor: string) => {
     const numeros = valor.replace(/\D/g, "");
-    if (numeros.length <= 5) {
-      return numeros;
-    }
+    if (numeros.length <= 5) return numeros;
     return `${numeros.slice(0, 5)}-${numeros.slice(5, 8)}`;
   };
 
@@ -44,7 +38,7 @@ const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId, compact = false }) => 
     setEnderecoSalvo(false);
   };
 
-  const salvarCepECalcularFrete = async () => {
+  const salvarCep = async () => {
     const cepLimpo = cep.replace(/\D/g, "");
     
     if (cepLimpo.length !== 8) {
@@ -55,6 +49,8 @@ const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId, compact = false }) => 
     setLoading(true);
 
     try {
+      console.log("🔍 Validando CEP:", cepLimpo);
+
       // 1. Buscar dados do CEP
       const responseCep = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
       const dadosCep = await responseCep.json();
@@ -65,6 +61,8 @@ const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId, compact = false }) => 
         return;
       }
 
+      console.log("✅ CEP válido:", dadosCep);
+
       // 2. Salvar CEP no localStorage
       localStorage.setItem('win_cep_cliente', cepLimpo);
 
@@ -72,175 +70,128 @@ const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId, compact = false }) => 
       if (user) {
         try {
           const enderecoTemp = {
-            usuarioId: user.id,
             cep: cepLimpo,
             logradouro: dadosCep.logradouro || "",
             numero: "S/N",
-            complemento: "Endereço temporário (será completado no checkout)",
+            complemento: "",
             bairro: dadosCep.bairro || "",
             cidade: dadosCep.localidade || "",
             estado: dadosCep.uf || "",
             principal: false,
-            ativo: true,
             temporario: true
           };
 
-          // Criar endereço temporário
-          const responseEndereco = await api.post('/v1/enderecos', enderecoTemp);
-          localStorage.setItem('win_endereco_temp_id', responseEndereco.data.id);
-          
-          console.log('✅ Endereço temporário criado:', responseEndereco.data.id);
-        } catch (error) {
-          console.warn('Não foi possível criar endereço temporário:', error);
-          // Continua mesmo sem criar endereço (cálculo por CEP ainda funciona)
-        }
-      }
+          console.log("💾 Salvando endereço temporário:", enderecoTemp);
 
-      // 4. Calcular estimativa de frete (se tiver lojistaId)
-      if (lojistaId) {
-        try {
-          const estimativa = await shippingApi.estimarFretePorCep(cepLimpo, lojistaId, 1.0);
+          const response = await api.post("/api/v1/enderecos", enderecoTemp);
           
-          if (estimativa.sucesso) {
-            setFreteEstimado(estimativa.valorFreteTotal);
-            setTempoEstimado(estimativa.tempoEstimadoMinutos);
-            setEnderecoSalvo(true);
-            
-            success(
-              "CEP Salvo! 📍",
-              `Frete estimado: R$ ${estimativa.valorFreteTotal.toFixed(2)} em ~${estimativa.tempoEstimadoMinutos}min`
-            );
-          } else {
-            // Mesmo sem frete, salva o CEP
-            setEnderecoSalvo(true);
-            success("CEP Salvo!", "Complete seu endereço no checkout para calcular o frete");
+          if (response.data?.id) {
+            localStorage.setItem('win_endereco_temp_id', response.data.id);
+            console.log("✅ Endereço temporário salvo:", response.data.id);
           }
         } catch (error) {
-          console.warn('Erro ao estimar frete:', error);
-          setEnderecoSalvo(true);
-          success("CEP Salvo!", "Complete seu endereço no checkout");
+          console.error("⚠️ Erro ao salvar endereço temporário:", error);
+          // Não bloqueia o fluxo - o CEP foi salvo no localStorage
         }
-      } else {
-        setEnderecoSalvo(true);
-        success("CEP Salvo!", `${dadosCep.localidade}/${dadosCep.uf}. Complete no checkout.`);
       }
 
+      setEnderecoSalvo(true);
+      setMostrarForm(false);
+      success(
+        "CEP salvo!", 
+        `${dadosCep.localidade}/${dadosCep.uf}. O frete será calculado no checkout.`
+      );
+
     } catch (error) {
-      console.error('Erro ao processar CEP:', error);
-      showError("Erro", "Não foi possível processar o CEP");
+      console.error("❌ Erro ao processar CEP:", error);
+      showError("Erro", "Não foi possível validar o CEP. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      salvarCepECalcularFrete();
+    if (e.key === "Enter") {
+      salvarCep();
     }
   };
 
-  if (!mostrarWidget) {
-    return null;
-  }
-
-  // Versão compacta (para header/navbar)
-  if (compact) {
-    return (
-      <div className="flex items-center gap-2">
-        <MapPin className="h-4 w-4 text-orange-500" />
-        <input
-          type="text"
-          placeholder="Digite seu CEP"
-          value={cep}
-          onChange={handleCepChange}
-          onKeyPress={handleKeyPress}
-          maxLength={9}
-          className="w-32 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-        />
-        <button
-          onClick={salvarCepECalcularFrete}
-          disabled={loading || cep.replace(/\D/g, "").length !== 8}
-          className="px-3 py-1 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "OK"}
-        </button>
-        {enderecoSalvo && (
-          <CheckCircle className="h-4 w-4 text-green-500" />
-        )}
-      </div>
-    );
-  }
-
-  // Versão completa (para home/banner)
+  // Widget minimalista no canto superior direito
   return (
-    <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white relative">
-      <button
-        onClick={() => setMostrarWidget(false)}
-        className="absolute top-2 right-2 text-white/80 hover:text-white"
-        title="Fechar widget"
-        aria-label="Fechar widget de CEP"
-      >
-        <X className="h-5 w-5" />
-      </button>
+    <div className="fixed top-20 right-4 z-40">
+      {!mostrarForm && (
+        <button
+          onClick={() => setMostrarForm(true)}
+          className="bg-white shadow-lg rounded-full p-3 hover:shadow-xl transition-all flex items-center gap-2 group"
+          title="Informar seu CEP"
+        >
+          <MapPin className="h-5 w-5 text-orange-500" />
+          {enderecoSalvo ? (
+            <>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-sm font-medium text-gray-700 max-w-0 overflow-hidden group-hover:max-w-xs transition-all">
+                CEP: {cep}
+              </span>
+            </>
+          ) : (
+            <span className="text-sm font-medium text-gray-700 max-w-0 overflow-hidden group-hover:max-w-xs transition-all">
+              Informe seu CEP
+            </span>
+          )}
+        </button>
+      )}
 
-      <div className="flex flex-col md:flex-row items-center gap-4">
-        {/* Ícone e texto */}
-        <div className="flex items-center gap-3">
-          <div className="bg-white/20 p-3 rounded-full">
-            <Truck className="h-8 w-8" />
-          </div>
-          <div className="text-left">
-            <h3 className="font-bold text-lg">
-              📍 Calcule o Frete para sua Região
-            </h3>
-            <p className="text-sm text-white/90">
-              Digite seu CEP e descubra quanto custa a entrega
-            </p>
-          </div>
-        </div>
-
-        {/* Input CEP */}
-        <div className="flex-1 flex items-center gap-2 bg-white rounded-lg p-2 min-w-[300px]">
-          <MapPin className="h-5 w-5 text-orange-500 ml-2" />
-          <input
-            type="text"
-            placeholder="00000-000"
-            value={cep}
-            onChange={handleCepChange}
-            onKeyPress={handleKeyPress}
-            maxLength={9}
-            className="flex-1 px-2 py-2 text-gray-800 focus:outline-none"
-          />
-          <button
-            onClick={salvarCepECalcularFrete}
-            disabled={loading || cep.replace(/\D/g, "").length !== 8}
-            className="px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Calculando...
-              </>
-            ) : (
-              <>
-                <Truck className="h-4 w-4" />
-                Calcular Frete
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Resultado */}
-        {enderecoSalvo && freteEstimado && (
-          <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-300" />
-            <div className="text-left">
-              <p className="font-bold text-lg">R$ {freteEstimado.toFixed(2)}</p>
-              <p className="text-xs text-white/90">em ~{tempoEstimado}min</p>
+      {mostrarForm && (
+        <div className="bg-white shadow-xl rounded-lg p-4 w-80">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-orange-500" />
+              <h3 className="font-semibold text-gray-800">Seu CEP</h3>
             </div>
+            <button
+              onClick={() => setMostrarForm(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
           </div>
-        )}
-      </div>
+
+          <p className="text-sm text-gray-600 mb-3">
+            Informe seu CEP para calcular o frete no checkout
+          </p>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="00000-000"
+              value={cep}
+              onChange={handleCepChange}
+              onKeyPress={handleKeyPress}
+              maxLength={9}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              autoFocus
+            />
+            <button
+              onClick={salvarCep}
+              disabled={loading || cep.replace(/\D/g, "").length !== 8}
+              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Salvar"
+              )}
+            </button>
+          </div>
+
+          {enderecoSalvo && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
+              <CheckCircle className="h-4 w-4" />
+              <span>CEP salvo com sucesso!</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
