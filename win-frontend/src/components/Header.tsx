@@ -18,6 +18,7 @@ import { useCart } from "../contexts/CartContext";
 import { useSearch } from "../contexts/SearchContext";
 import { useAuth } from "../contexts/AuthContext";
 import UserNavbar from "./UserNavbar";
+import CEPWidget from "./CEPWidget";
 import { categoryApi, type Category } from "@/lib/CategoryApi";
 import { CategoryIcon } from "@/lib/categoryIcons";
 
@@ -84,9 +85,12 @@ export default function Header({ showCategories = true }: HeaderProps) {
                 <Phone className="h-3 w-3 mr-1" />
                 (61) 99533-4141
               </div>
-              <div className="flex items-center">
-                <Truck className="h-3 w-3 mr-1" />
-                Frete grátis na primeira compra
+              <div className="flex items-center gap-3">
+                <div className="flex items-center">
+                  <Truck className="h-3 w-3 mr-1" />
+                  Frete grátis na primeira compra
+                </div>
+                <CEPWidget />
               </div>
             </div>
             <div className="flex items-center space-x-4">

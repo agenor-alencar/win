@@ -18,7 +18,6 @@ import { useNotification } from "../../contexts/NotificationContext";
 import { useAuth } from "../../contexts/AuthContext";
 import Header from "../../components/Header";
 import MainCarousel from "../../components/MainCarousel";
-import CEPWidget from "../../components/CEPWidget";
 import { produtoApi, type ProdutoSummary } from "@/lib/produtoApi";
 
 const categories = [

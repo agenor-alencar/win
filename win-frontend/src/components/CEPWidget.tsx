@@ -86,8 +86,19 @@ const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId }) => {
           const response = await api.post("/api/v1/enderecos", enderecoTemp);
           
           if (response.data?.id) {
-            localStorage.setItem('win_endereco_temp_id', response.data.id);
-            console.log("✅ Endereço temporário salvo:", response.data.id);
+            const enderecoSalvo = response.data;
+            localStorage.setItem('win_endereco_temp_id', enderecoSalvo.id);
+            console.log("✅ Endereço temporário salvo:", enderecoSalvo.id);
+            
+            // ✅ VALIDAÇÃO: Verificar se foi geocodificado
+            if (enderecoSalvo.latitude && enderecoSalvo.longitude) {
+              console.log("✅ Endereço geocodificado:", {
+                lat: enderecoSalvo.latitude,
+                lon: enderecoSalvo.longitude
+              });
+            } else {
+              console.warn("⚠️ Endereço salvo mas ainda sem coordenadas (geocodificação pendente)");
+            }
           }
         } catch (error) {
           console.error("⚠️ Erro ao salvar endereço temporário:", error);
@@ -116,48 +127,42 @@ const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId }) => {
     }
   };
 
-  // Widget minimalista no canto superior direito
+  // Widget compacto inline para o Header
   return (
-    <div className="fixed top-20 right-4 z-40">
-      {!mostrarForm && (
+    <div className="relative">
+      {!mostrarForm ? (
         <button
           onClick={() => setMostrarForm(true)}
-          className="bg-white shadow-lg rounded-full p-3 hover:shadow-xl transition-all flex items-center gap-2 group"
+          className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-md transition-all text-xs font-medium text-orange-700"
           title="Informar seu CEP"
         >
-          <MapPin className="h-5 w-5 text-orange-500" />
+          <MapPin className="h-3.5 w-3.5" />
           {enderecoSalvo ? (
             <>
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm font-medium text-gray-700 max-w-0 overflow-hidden group-hover:max-w-xs transition-all">
-                CEP: {cep}
-              </span>
+              <span>CEP: {cep}</span>
+              <CheckCircle className="h-3.5 w-3.5 text-green-600" />
             </>
           ) : (
-            <span className="text-sm font-medium text-gray-700 max-w-0 overflow-hidden group-hover:max-w-xs transition-all">
-              Informe seu CEP
-            </span>
+            <span>Informar CEP</span>
           )}
         </button>
-      )}
-
-      {mostrarForm && (
-        <div className="bg-white shadow-xl rounded-lg p-4 w-80">
+      ) : (
+        <div className="absolute top-full left-0 mt-2 bg-white shadow-xl rounded-lg p-4 w-80 z-50 border border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-orange-500" />
-              <h3 className="font-semibold text-gray-800">Seu CEP</h3>
+              <MapPin className="h-4 w-4 text-orange-500" />
+              <h3 className="font-semibold text-gray-800 text-sm">Informar CEP</h3>
             </div>
             <button
               onClick={() => setMostrarForm(false)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 text-lg leading-none"
             >
               ✕
             </button>
           </div>
 
-          <p className="text-sm text-gray-600 mb-3">
-            Informe seu CEP para calcular o frete no checkout
+          <p className="text-xs text-gray-600 mb-3">
+            Digite seu CEP para calcular o frete no checkout
           </p>
 
           <div className="flex gap-2">
@@ -168,13 +173,13 @@ const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId }) => {
               onChange={handleCepChange}
               onKeyPress={handleKeyPress}
               maxLength={9}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
               autoFocus
             />
             <button
               onClick={salvarCep}
               disabled={loading || cep.replace(/\D/g, "").length !== 8}
-              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-medium"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -185,9 +190,9 @@ const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId }) => {
           </div>
 
           {enderecoSalvo && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
-              <CheckCircle className="h-4 w-4" />
-              <span>CEP salvo com sucesso!</span>
+            <div className="mt-3 flex items-center gap-2 text-xs text-green-600 bg-green-50 px-2 py-1.5 rounded">
+              <CheckCircle className="h-3.5 w-3.5" />
+              <span>CEP salvo! Será usado no checkout.</span>
             </div>
           )}
         </div>

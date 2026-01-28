@@ -123,6 +123,19 @@ const Checkout: React.FC = () => {
           const responseEndereco = await api.get(`/api/v1/enderecos/${enderecoTempId}`);
           const endTemp = responseEndereco.data;
           
+          // ✅ VALIDAÇÃO CRÍTICA: Verificar se endereço foi geocodificado
+          if (!endTemp.latitude || !endTemp.longitude) {
+            console.warn('⚠️ Endereço temporário sem coordenadas, aguardando endereço completo');
+            setLoadingFrete(false);
+            return;
+          }
+          
+          console.log('✅ Endereço temporário com coordenadas:', {
+            lat: endTemp.latitude,
+            lon: endTemp.longitude,
+            cep: endTemp.cep
+          });
+          
           // Calcular frete com endereço temporário
           const pesoTotal = shippingApi.calcularPesoTotal(cartState.items);
           const estimativa = await shippingApi.calcularFrete({
@@ -134,6 +147,8 @@ const Checkout: React.FC = () => {
           if (estimativa.sucesso) {
             setSimulacaoFrete(estimativa);
             console.log('✅ Estimativa inicial com endereço temporário');
+          } else {
+            console.warn('⚠️ Erro na estimativa:', estimativa.erro);
           }
         } catch (error) {
           console.warn('Erro ao usar endereço temporário:', error);
