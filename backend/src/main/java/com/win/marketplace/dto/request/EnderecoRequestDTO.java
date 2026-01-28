@@ -35,5 +35,7 @@ public record EnderecoRequestDTO(
 
     Boolean principal,
 
-    Boolean temporario,
+    Boolean temporario
+) {
+}
 
