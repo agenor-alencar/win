@@ -47,6 +47,16 @@ public class CategoriaController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Listar todas as categorias - Endpoint raiz (público)
+     * Mesmo que /list/all, para compatibilidade com frontend
+     */
+    @GetMapping
+    public ResponseEntity<List<CategoriaResponseDTO>> listarTodasCategorias() {
+        List<CategoriaResponseDTO> categorias = categoriaService.listarCategorias();
+        return ResponseEntity.ok(categorias);
+    }
+
     @GetMapping("/list/all")
     public ResponseEntity<List<CategoriaResponseDTO>> listarCategorias() {
         List<CategoriaResponseDTO> categorias = categoriaService.listarCategorias();

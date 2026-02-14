@@ -26,6 +26,7 @@ public class PagamentoService {
     private final PedidoRepository pedidoRepository;
     private final PagamentoMapper pagamentoMapper;
     private final AbacatePayService abacatePayService;
+    private final PagarMeService pagarMeService;
 
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
@@ -233,6 +234,170 @@ public class PagamentoService {
             }
         } catch (Exception e) {
             log.error("❌ Erro ao processar webhook Abacate Pay: {}", e.getMessage(), e);
+            throw new RuntimeException("Erro ao processar webhook: " + e.getMessage());
+        }
+    }
+
+    // ========================================================================
+    // INTEGRAÇÃO PAGAR.ME (STONE)
+    // ========================================================================
+
+    /**
+     * Cria cobrança PIX via Pagar.me
+     * 
+     * @param pedidoId ID do pedido
+     * @param clienteNome Nome do cliente
+     * @param clienteEmail Email do cliente
+     * @param clienteCpf CPF do cliente
+     * @return Map com QR Code e informações da cobrança
+     */
+    public Map<String, Object> criarPagamentoPixPagarMe(
+            UUID pedidoId,
+            String clienteNome,
+            String clienteEmail,
+            String clienteCpf
+    ) {
+        log.info("=== INICIANDO CRIAÇÃO DE COBRANÇA PIX PAGAR.ME ===");
+        log.info("Pedido ID: {}", pedidoId);
+        log.info("Cliente: {}, Email: {}", clienteNome, clienteEmail);
+        
+        if (!pagarMeService.isEnabled()) {
+            throw new IllegalStateException(
+                "Pagar.me não está habilitado. Configure PAGARME_ENABLED=true no .env"
+            );
+        }
+
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+
+        log.info("Pedido encontrado - Número: {}, Total: R$ {}", 
+            pedido.getNumeroPedido(), pedido.getTotal());
+
+        // Converter valor para centavos
+        Integer valorCentavos = pedido.getTotal().multiply(new java.math.BigDecimal("100")).intValue();
+        
+        // Descrição do pedido
+        StringBuilder descricao = new StringBuilder("Pedido #" + pedido.getNumeroPedido());
+        if (!pedido.getItens().isEmpty()) {
+            descricao.append(" - ");
+            descricao.append(pedido.getItens().size()).append(" item(ns)");
+        }
+
+        // Criar cobrança no Pagar.me
+        Map<String, Object> cobranca = pagarMeService.criarCobrancaPix(
+            pedidoId.toString(),
+            valorCentavos,
+            clienteNome,
+            clienteEmail,
+            clienteCpf,
+            descricao.toString()
+        );
+
+        log.info("✅ Cobrança PIX Pagar.me criada - ID: {}", cobranca.get("id"));
+
+        // Salvar pagamento no banco
+        Pagamento pagamento = new Pagamento();
+        pagamento.setPedido(pedido);
+        pagamento.setMetodoPagamento("PIX_PAGARME");
+        pagamento.setValor(pedido.getTotal());
+        pagamento.setStatus(Pagamento.StatusPagamento.PENDENTE);
+        pagamento.setTransacaoId((String) cobranca.get("id"));
+        pagamentoRepository.save(pagamento);
+
+        log.info("Pagamento registrado no banco - ID: {}", pagamento.getId());
+
+        // Retornar informações da cobrança
+        Map<String, Object> resultado = new HashMap<>();
+        resultado.put("orderId", cobranca.get("id"));
+        resultado.put("qrCode", cobranca.get("qr_code"));
+        resultado.put("qrCodeUrl", cobranca.get("qr_code_url"));
+        resultado.put("status", cobranca.get("status"));
+        resultado.put("amount", cobranca.get("amount"));
+        resultado.put("expiresAt", cobranca.get("expires_at"));
+        resultado.put("transactionId", cobranca.get("transaction_id"));
+
+        return resultado;
+    }
+
+    /**
+     * Busca ordem no Pagar.me pelo ID
+     * 
+     * @param orderId ID da ordem
+     * @return Dados da ordem
+     */
+    public Map<String, Object> buscarOrdemPagarMe(String orderId) {
+        return pagarMeService.buscarOrdem(orderId);
+    }
+
+    /**
+     * Cancela ordem no Pagar.me
+     * 
+     * @param orderId ID da ordem
+     * @return Dados da ordem cancelada
+     */
+    public Map<String, Object> cancelarOrdemPagarMe(String orderId) {
+        Map<String, Object> ordem = pagarMeService.cancelarOrdem(orderId);
+        
+        // Atualizar status no banco
+        pagamentoRepository.findByTransacaoId(orderId)
+            .ifPresent(pagamento -> {
+                pagamento.setStatus(Pagamento.StatusPagamento.CANCELADO);
+                pagamentoRepository.save(pagamento);
+                log.info("✅ Status do pagamento atualizado para CANCELADO - ID: {}", 
+                    pagamento.getId());
+            });
+        
+        return ordem;
+    }
+
+    /**
+     * Atualiza status do pagamento via webhook do Pagar.me
+     * 
+     * @param payload Dados do webhook
+     */
+    public void processarWebhookPagarMe(Map<String, Object> payload) {
+        try {
+            String event = (String) payload.get("type");
+            log.info("💳 Webhook Pagar.me recebido - Evento: {}", event);
+
+            // Eventos comuns: order.paid, order.payment_failed, order.canceled
+            if (event != null && event.contains("order")) {
+                Map<String, Object> data = (Map<String, Object>) payload.get("data");
+                
+                if (data != null) {
+                    String orderId = (String) data.get("id");
+                    String status = (String) data.get("status");
+                    
+                    log.info("Ordem atualizada - ID: {}, Status: {}", orderId, status);
+                    
+                    // Atualizar status no banco
+                    pagamentoRepository.findByTransacaoId(orderId)
+                        .ifPresent(pagamento -> {
+                            String statusInterno = pagarMeService.traduzirStatus(status);
+                            try {
+                                pagamento.setStatus(Pagamento.StatusPagamento.valueOf(statusInterno));
+                                pagamentoRepository.save(pagamento);
+                                log.info("✅ Status do pagamento atualizado - ID: {}, Status: {}", 
+                                    pagamento.getId(), pagamento.getStatus());
+                                
+                                // Se o pagamento foi aprovado, atualizar status do pedido
+                                if ("APROVADO".equals(statusInterno)) {
+                                    Pedido pedido = pagamento.getPedido();
+                                    if (pedido != null) {
+                                        pedido.setStatusPagamento(Pedido.StatusPagamento.APROVADO);
+                                         pedidoRepository.save(pedido);
+                                        log.info("✅ Status do pedido atualizado para APROVADO - Pedido: {}", 
+                                            pedido.getNumeroPedido());
+                                    }
+                                }
+                            } catch (IllegalArgumentException e) {
+                                log.error("Status interno inválido: {}", statusInterno);
+                            }
+                        });
+                }
+            }
+        } catch (Exception e) {
+            log.error("❌ Erro ao processar webhook Pagar.me: {}", e.getMessage(), e);
             throw new RuntimeException("Erro ao processar webhook: " + e.getMessage());
         }
     }

@@ -129,6 +129,13 @@ uber:
   webhook:
     secret: ${UBER_WEBHOOK_SECRET:}  # Secret para validação HMAC de webhooks
 
+# Pagar.me (Stone) Configuration
+pagarme:
+  api-key: ${PAGARME_API_KEY:}
+  public-key: ${PAGARME_PUBLIC_KEY:}
+  environment: ${PAGARME_ENVIRONMENT:test}  # test ou live
+  enabled: ${PAGARME_ENABLED:false}
+
 logging:
   level:
     root: WARN  # Reduzido para produção

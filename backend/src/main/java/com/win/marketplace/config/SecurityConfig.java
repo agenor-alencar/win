@@ -4,6 +4,7 @@ import com.win.marketplace.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -103,10 +104,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll() // Todas as rotas de autenticação
                 .requestMatchers("/api/v1/password-reset/**").permitAll() // Reset de senha público
                 .requestMatchers("/api/v1/dev/**").permitAll() // Dev Tools (gerador de hash)
-                .requestMatchers("/api/v1/produtos/**").permitAll() // Permitir listagem pública de produtos
-                .requestMatchers("/api/v1/categoria/**").permitAll() // Permitir listagem pública de categorias
-                .requestMatchers("/api/v1/lojistas/**").permitAll() // Permitir consulta pública de lojistas
-                .requestMatchers("/api/v1/banners/**").permitAll() // Permitir listagem pública de banners
+                .requestMatchers(HttpMethod.GET, "/api/v1/produtos/**").permitAll() // Apenas GET em produtos é público
+                .requestMatchers(HttpMethod.GET, "/api/v1/categoria/**").permitAll() // Apenas GET em categorias é público
+                .requestMatchers(HttpMethod.GET, "/api/v1/lojistas/**").permitAll() // Apenas GET em lojistas é público
+                .requestMatchers(HttpMethod.GET, "/api/v1/banners/**").permitAll() // Apenas GET em banners é público
                 .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
                 .requestMatchers("/api/v1/entregas/**").permitAll() // Permitir simulação de frete
                 .requestMatchers("/api/v1/webhooks/**").permitAll() // Todos os webhooks públicos

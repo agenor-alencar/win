@@ -13,7 +13,7 @@ public record RegisterRequestDTO(
     String email,
 
     @NotBlank(message = "CPF é obrigatório")
-    @Pattern(regexp = "\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}", message = "CPF deve estar no formato 000.000.000-00")
+    @Pattern(regexp = "\\d{3}\\.?\\d{3}\\.?\\d{3}-?\\d{2}", message = "CPF inválido")
     String cpf,
 
     @NotBlank(message = "Senha é obrigatória")
@@ -21,7 +21,7 @@ public record RegisterRequestDTO(
     @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$", message = "Senha deve conter ao menos uma letra minúscula, uma maiúscula e um número")
     String senha,
 
-    @Pattern(regexp = "\\(\\d{2}\\)\\s\\d{4,5}-\\d{4}", message = "Telefone deve estar no formato (00) 0000-0000 ou (00) 00000-0000")
+    @Pattern(regexp = "\\(?\\d{2}\\)?\\s?\\d{4,5}-?\\d{4}", message = "Telefone inválido")
     String telefone,
 
     java.time.LocalDate dataNascimento,

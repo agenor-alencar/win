@@ -193,9 +193,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       // Preparar dados para o backend
       const registrationData: any = {
-        nome: `${userData.nome} ${userData.sobrenome}`.trim(), // Concatenar nome e sobrenome
+        nome: userData.nome, // Backend espera nome e sobrenome separados
+        sobrenome: userData.sobrenome,
         email: userData.email,
-        cpf: userData.cpf, // Manter formatação do CPF (000.000.000-00)
+        cpf: userData.cpf, // Backend aceita formatado ou não formatado
         senha: userData.senha,
       };
 

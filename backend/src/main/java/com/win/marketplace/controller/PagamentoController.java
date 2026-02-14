@@ -185,7 +185,137 @@ public class PagamentoController {
     }
 
     // ========================================
-    // 📋 GESTÃO DE PAGAMENTOS
+    // � PAGAR.ME (STONE) - Checkout PIX
+    // ========================================
+
+    /**
+     * Cria pagamento PIX via Pagar.me
+     */
+    @PostMapping("/pagarme/pix/{pedidoId}")
+    public ResponseEntity<?> criarPagamentoPixPagarMe(
+        @PathVariable UUID pedidoId,
+        @RequestBody Map<String, String> pixData
+    ) {
+        try {
+            String nome = pixData.get("nome");
+            String email = pixData.get("email");
+            String cpf = pixData.get("cpf");
+            
+            Map<String, Object> pixInfo = pagamentoService.criarPagamentoPixPagarMe(
+                pedidoId, nome, email, cpf
+            );
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Pagamento PIX Pagar.me criado com sucesso!");
+            response.put("billing", pixInfo);
+            response.put("pedidoId", pedidoId.toString());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalStateException e) {
+            // Pagar.me não configurado
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "PAGARME_NAO_CONFIGURADO");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
+            
+        } catch (RuntimeException e) {
+            // Pedido não encontrado ou erro na API
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "ERRO_PROCESSAMENTO");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            
+        } catch (Exception e) {
+            // Erro genérico
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "ERRO_INTERNO");
+            error.put("message", "Erro inesperado ao processar PIX: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * Busca ordem no Pagar.me
+     */
+    @GetMapping("/pagarme/ordem/{orderId}")
+    public ResponseEntity<?> buscarOrdemPagarMe(@PathVariable String orderId) {
+        try {
+            Map<String, Object> ordem = pagamentoService.buscarOrdemPagarMe(orderId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("order", ordem);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "ORDEM_NAO_ENCONTRADA");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+    }
+
+    /**
+     * Cancela ordem no Pagar.me
+     */
+    @DeleteMapping("/pagarme/ordem/{orderId}")
+    public ResponseEntity<?> cancelarOrdemPagarMe(@PathVariable String orderId) {
+        try {
+            Map<String, Object> ordem = pagamentoService.cancelarOrdemPagarMe(orderId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Ordem cancelada com sucesso");
+            response.put("order", ordem);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "ERRO_CANCELAMENTO");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    /**
+     * Webhook do Pagar.me
+     */
+    @PostMapping("/webhooks/pagarme")
+    public ResponseEntity<Map<String, String>> receberWebhookPagarMe(
+        @RequestBody Map<String, Object> payload,
+        @RequestHeader(value = "X-Hub-Signature", required = false) String signature
+    ) {
+        try {
+            // TODO: Implementar validação de assinatura
+            // pagarMeService.validarWebhook(payload, signature);
+            
+            pagamentoService.processarWebhookPagarMe(payload);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Webhook processado com sucesso");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("status", "error");
+            error.put("message", e.getMessage());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // ========================================
+    // �📋 GESTÃO DE PAGAMENTOS
     // ========================================
 
     @GetMapping
