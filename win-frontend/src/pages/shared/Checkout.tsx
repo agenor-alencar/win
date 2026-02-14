@@ -119,7 +119,7 @@ const Checkout: React.FC = () => {
         setLoadingFrete(true);
         try {
           // Buscar dados do endereço temporário
-          const responseEndereco = await api.get(`/api/v1/enderecos/${enderecoTempId}`);
+          const responseEndereco = await api.get(`/v1/enderecos/${enderecoTempId}`);
           const endTemp = responseEndereco.data;
           
           // ✅ VALIDAÇÃO CRÍTICA: Verificar se endereço foi geocodificado
@@ -197,10 +197,10 @@ const Checkout: React.FC = () => {
 
           if (enderecoFinalId) {
             // Atualizar endereço existente
-            await api.put(`/api/v1/enderecos/${enderecoFinalId}`, enderecoCompleto);
+            await api.put(`/v1/enderecos/${enderecoFinalId}`, enderecoCompleto);
           } else {
             // Criar novo endereço
-            const responseNovoEndereco = await api.post('/api/v1/enderecos', enderecoCompleto);
+            const responseNovoEndereco = await api.post('/v1/enderecos', enderecoCompleto);
             enderecoFinalId = responseNovoEndereco.data.id;
             setEnderecoId(enderecoFinalId);
             localStorage.setItem('win_endereco_temp_id', enderecoFinalId);
@@ -349,7 +349,7 @@ const Checkout: React.FC = () => {
       console.log("📦 Criando pedido com dados:", JSON.stringify(pedidoData, null, 2));
 
       // Criar pedido no backend
-      const pedidoResponse = await api.post("/api/v1/pedidos", pedidoData);
+      const pedidoResponse = await api.post("/v1/pedidos", pedidoData);
       const pedido = pedidoResponse.data;
       
       console.log("✅ Pedido criado:", pedido);
@@ -395,7 +395,7 @@ const Checkout: React.FC = () => {
 
       } else if (paymentMethod === "credit_card") {
         // Criar checkout de cartão
-        const cartaoResponse = await api.post("/api/v1/pagamentos/mercadopago/cartao", null, {
+        const cartaoResponse = await api.post("/v1/pagamentos/mercadopago/cartao", null, {
           params: {
             pedidoId: pedido.id
           }
@@ -426,7 +426,7 @@ const Checkout: React.FC = () => {
           informacoesCartao: null,
         };
 
-        await api.post("/api/v1/pagamentos/processar", pagamentoData);
+        await api.post("/v1/pagamentos/processar", pagamentoData);
 
         success(
           "Pedido criado!",

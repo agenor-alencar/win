@@ -83,7 +83,7 @@ const CEPWidget: React.FC<CEPWidgetProps> = ({ lojistaId }) => {
 
           console.log("💾 Salvando endereço temporário:", enderecoTemp);
 
-          const response = await api.post("/api/v1/enderecos", enderecoTemp);
+          const response = await api.post("/v1/enderecos", enderecoTemp);
           
           if (response.data?.id) {
             const enderecoSalvo = response.data;
