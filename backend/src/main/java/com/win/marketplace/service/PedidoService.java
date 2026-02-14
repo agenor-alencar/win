@@ -88,8 +88,15 @@ public class PedidoService {
             ItemPedido item = new ItemPedido();
             item.setPedido(pedido);
             item.setProduto(produto);
+            item.setLojista(produto.getLojista());
+            item.setNomeProduto(produto.getNome());
             item.setQuantidade(itemDTO.quantidade());
             item.setPrecoUnitario(itemDTO.precoUnitario());
+            
+            // Calcular subtotal e preco total do item
+            BigDecimal subtotal = itemDTO.precoUnitario().multiply(BigDecimal.valueOf(itemDTO.quantidade()));
+            item.setSubtotal(subtotal);
+            item.setPrecoTotal(subtotal);
             
             itens.add(item);
         }
