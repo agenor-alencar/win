@@ -200,7 +200,7 @@ const Checkout: React.FC = () => {
             await api.put(`/v1/enderecos/${enderecoFinalId}`, enderecoCompleto);
           } else {
             // Criar novo endereço
-            const responseNovoEndereco = await api.post('/v1/enderecos', enderecoCompleto);
+            const responseNovoEndereco = await api.post(`/v1/enderecos/usuario/${user.id}`, enderecoCompleto);
             enderecoFinalId = responseNovoEndereco.data.id;
             setEnderecoId(enderecoFinalId);
             localStorage.setItem('win_endereco_temp_id', enderecoFinalId);

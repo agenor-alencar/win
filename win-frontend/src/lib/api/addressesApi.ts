@@ -27,18 +27,18 @@ export interface CreateAddressRequest {
 
 class AddressesApi {
   /**
-   * Busca todos os endereços do usuário autenticado
+   * Busca todos os endereços do usuário
    */
-  async getMyAddresses(): Promise<Address[]> {
-    const response = await api.get('/v1/enderecos/meus');
+  async getMyAddresses(userId: string): Promise<Address[]> {
+    const response = await api.get(`/v1/enderecos/usuario/${userId}`);
     return response.data;
   }
 
   /**
    * Cria um novo endereço
    */
-  async createAddress(data: CreateAddressRequest): Promise<Address> {
-    const response = await api.post('/v1/enderecos', data);
+  async createAddress(userId: string, data: CreateAddressRequest): Promise<Address> {
+    const response = await api.post(`/v1/enderecos/usuario/${userId}`, data);
     return response.data;
   }
 
@@ -65,12 +65,13 @@ class AddressesApi {
   }
 
   /**
-   * Busca endereço por CEP (via ViaCEP)
+   * Busca endereço por CEP (via ViaCEP) - NÃO IMPLEMENTADO NO BACKEND
+   * Use diretamente a API ViaCEP: https://viacep.com.br/ws/{cep}/json/
    */
-  async getAddressByCep(cep: string): Promise<Partial<Address>> {
-    const response = await api.get(`/v1/enderecos/cep/${cep}`);
-    return response.data;
-  }
+  // async getAddressByCep(cep: string): Promise<Partial<Address>> {
+  //   const response = await api.get(`/v1/enderecos/cep/${cep}`);
+  //   return response.data;
+  // }
 }
 
 export const addressesApi = new AddressesApi();
