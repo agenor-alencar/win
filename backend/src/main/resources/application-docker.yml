@@ -29,6 +29,19 @@ spring:
     baseline-on-migrate: true
     validate-on-migrate: true
 
+# DigitalOcean Spaces Configuration (opcional)
+# Para habilitar, configure as variáveis de ambiente:
+# SPACES_ACCESS_KEY e SPACES_SECRET_KEY
+spaces:
+  access:
+    key: ${SPACES_ACCESS_KEY:}
+  secret:
+    key: ${SPACES_SECRET_KEY:}
+  bucket:
+    name: ${SPACES_BUCKET_NAME:win-marketplace-storage}
+  endpoint: ${SPACES_ENDPOINT:https://sfo3.digitaloceanspaces.com}
+  region: ${SPACES_REGION:sfo3}
+
 server:
   port: 8080
   compression:

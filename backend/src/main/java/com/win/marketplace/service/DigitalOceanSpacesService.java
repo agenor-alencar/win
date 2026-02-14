@@ -2,6 +2,7 @@ package com.win.marketplace.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -20,15 +21,26 @@ import java.util.UUID;
 /**
  * Serviço para upload de arquivos no DigitalOcean Spaces
  * Utiliza AWS S3 SDK compatível com DigitalOcean Spaces
+ * 
+ * Este serviço só será ativado se as credenciais do DigitalOcean Spaces estiverem configuradas.
+ * Para habilitar, defina as variáveis de ambiente:
+ * - SPACES_ACCESS_KEY
+ * - SPACES_SECRET_KEY
  */
 @Slf4j
 @Service
+@ConditionalOnProperty(
+    prefix = "spaces.access",
+    name = "key",
+    havingValue = "",
+    matchIfMissing = false
+)
 public class DigitalOceanSpacesService {
 
-    @Value("${spaces.access.key}")
+    @Value("${spaces.access.key:}")
     private String accessKey;
 
-    @Value("${spaces.secret.key}")
+    @Value("${spaces.secret.key:}")
     private String secretKey;
 
     @Value("${spaces.bucket.name:win-marketplace-storage}")
@@ -44,9 +56,18 @@ public class DigitalOceanSpacesService {
 
     /**
      * Inicializa o cliente S3 com as credenciais do DigitalOcean Spaces
+     * Só executa se as credenciais estiverem configuradas
      */
     @PostConstruct
     public void initializeS3Client() {
+        // Verificar se as credenciais foram fornecidas
+        if (accessKey == null || accessKey.trim().isEmpty() || 
+            secretKey == null || secretKey.trim().isEmpty()) {
+            log.warn("⚠️  DigitalOcean Spaces não configurado - credenciais ausentes");
+            log.warn("   Para habilitar, configure: SPACES_ACCESS_KEY e SPACES_SECRET_KEY");
+            return;
+        }
+
         log.info("Inicializando DigitalOcean Spaces client...");
         log.info("Endpoint: {}", endpoint);
         log.info("Bucket: {}", bucketName);
@@ -61,9 +82,9 @@ public class DigitalOceanSpacesService {
                     .credentialsProvider(StaticCredentialsProvider.create(credentials))
                     .build();
 
-            log.info("DigitalOcean Spaces client inicializado com sucesso!");
+            log.info("✅ DigitalOcean Spaces client inicializado com sucesso!");
         } catch (Exception e) {
-            log.error("Erro ao inicializar DigitalOcean Spaces client", e);
+            log.error("❌ Erro ao inicializar DigitalOcean Spaces client", e);
             throw new RuntimeException("Falha ao conectar com DigitalOcean Spaces", e);
         }
     }

@@ -125,10 +125,24 @@ export const ErpProductSearch: React.FC<ErpProductSearchProps> = ({
       {/* Produto encontrado */}
       {foundProduct && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4">
+            {/* Imagem do produto (se disponível) */}
+            {foundProduct.imagemUrl && (
+              <div className="flex-shrink-0">
+                <img
+                  src={foundProduct.imagemUrl}
+                  alt={foundProduct.nome}
+                  className="w-24 h-24 object-cover rounded-lg border-2 border-green-300"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            
             <div className="flex-1">
               <h3 className="font-semibold text-green-900 mb-2">
-                Produto encontrado no ERP
+                ✓ Produto encontrado no ERP
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm text-green-800">
                 <div>
@@ -192,7 +206,7 @@ export const ErpProductSearch: React.FC<ErpProductSearchProps> = ({
       <div className="text-sm text-gray-600">
         <p>
           💡 <strong>Dica:</strong> Ao importar do ERP, os dados do produto
-          (nome, descrição, preço, estoque) serão preenchidos automaticamente e o
+          (nome, descrição, preço, estoque, imagens) serão preenchidos automaticamente e o
           estoque será sincronizado periodicamente.
         </p>
       </div>

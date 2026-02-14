@@ -4,7 +4,16 @@
 
 Sistema completo de integração com múltiplos ERPs implementado seguindo o padrão **Factory + Strategy** para injeção dinâmica de dependências. Permite que cada lojista configure seu próprio ERP (NavSoft, Tiny, API customizada ou manual) com sincronização automática de estoque em tempo quase real.
 
-## 🏗️ Arquitetura Implementada
+### ✨ Funcionalidades Principais
+
+- ✅ **Importação completa de produtos** do ERP (nome, descrição, preço, estoque, código de barras, peso, **imagens**)
+- ✅ **Sincronização automática de estoque** em tempo real (configurável por lojista)
+- ✅ **Múltiplos ERPs suportados** (NavSoft, Tiny, API Customizada, Manual)
+- ✅ **Multi-tenancy** - cada lojista tem seu próprio ERP
+- ✅ **Segurança** - credenciais criptografadas com AES-256
+- ✅ **Tolerância a falhas** - erro em um lojista não afeta outros
+
+---
 
 ### 1. **Modelo de Dados (Multi-Tenancy)**
 

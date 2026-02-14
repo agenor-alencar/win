@@ -37,6 +37,23 @@ Novo no projeto? Comece por aqui:
 | **[Email - SendGrid Detalhado](configuration/email-sendgrid-detailed.md)** | Guia completo passo a passo | 📖 Referência |
 | **[Email - Gmail](configuration/email-gmail.md)** | Configuração Gmail para dev | 🧪 Dev apenas |
 
+### 🔗 Integração ERP
+
+| Documento | Descrição | Para Quem |
+|-----------|-----------|-----------|
+| **[🎯 Como Usar Integração ERP](COMO_USAR_INTEGRACAO_ERP.md)** | Guia completo para lojistas criarem produtos usando dados do ERP | 👥 Lojistas |
+| **[🔑 Obter Chave API NavSoft](COMO_OBTER_CHAVE_API_NAVSOFT.md)** | Passo a passo para gerar token de API no NavSoft | 🔧 NavSoft |
+| **[🔑 Obter Token API Tiny](COMO_OBTER_TOKEN_API_TINY.md)** | Passo a passo para gerar token de API no Tiny | 🔧 Tiny |
+| **[📖 Documentação Técnica ERP](INTEGRACAO_MULTI_ERP.md)** | Arquitetura e detalhes técnicos da integração | 👨‍💻 Devs |
+| **[🎨 Integração ERP Frontend](INTEGRACAO_ERP_PRODUTO_FORM.md)** | Como a integração funciona no formulário de produtos | 👨‍💻 Devs |
+
+**Recursos:**
+- ✅ Importa automaticamente: nome, preço, estoque, descrição, **imagens**, código de barras, peso
+- ✅ Sincronização automática de estoque (configurável)
+- ✅ Suporta múltiplos ERPs: NavSoft, Tiny, API Customizada, Manual
+- ✅ Credenciais criptografadas (AES-256)
+- ✅ Multi-tenancy (cada lojista seu próprio ERP)
+
 ### 🔐 Segurança
 
 | Documento | Descrição |
@@ -93,6 +110,17 @@ Novo no projeto? Comece por aqui:
 - [Estrutura do projeto](architecture/project-structure.md)
 - [Especificações técnicas](architecture/specifications.md)
 
+### "Como integrar com ERP?"
+- **Lojista:** [Guia de Uso ERP](COMO_USAR_INTEGRACAO_ERP.md) ⭐ Comece aqui
+- **NavSoft:** [Obter chave API](COMO_OBTER_CHAVE_API_NAVSOFT.md)
+- **Tiny:** [Obter token API](COMO_OBTER_TOKEN_API_TINY.md)
+- **Desenvolvedor:** [Documentação técnica](INTEGRACAO_MULTI_ERP.md)
+
+### "Quero importar produtos do ERP automaticamente"
+1. Configure seu ERP → [Guia de Uso](COMO_USAR_INTEGRACAO_ERP.md#1%EF%B8%8F%E2%83%A3-configurar-o-erp-primeira-vez)
+2. Obtenha token → [NavSoft](COMO_OBTER_CHAVE_API_NAVSOFT.md) / [Tiny](COMO_OBTER_TOKEN_API_TINY.md)
+3. Crie produtos → Digite SKU e importe tudo automaticamente!
+
 ---
 
 ## 🛠️ Scripts Automatizados
@@ -128,6 +156,13 @@ docs/
 │   ├── email-sendgrid-detailed.md
 │   └── email-gmail.md      # Gmail (dev)
 │
+├── integration/            # 🔗 Integrações ERP
+│   ├── COMO_USAR_INTEGRACAO_ERP.md           # Guia para lojistas
+│   ├── COMO_OBTER_CHAVE_API_NAVSOFT.md       # Setup NavSoft
+│   ├── COMO_OBTER_TOKEN_API_TINY.md          # Setup Tiny
+│   ├── INTEGRACAO_MULTI_ERP.md               # Arquitetura técnica
+│   └── INTEGRACAO_ERP_PRODUTO_FORM.md        # Frontend
+│
 ├── deployment/             # 🐳 Deploy
 │   ├── docker.md           # Docker Compose
 │   └── local-development.md
@@ -162,6 +197,14 @@ docs/
 
 **Tempo total:** ~1 hora
 
+### 🔗 Integração ERP (Lojistas)
+1. [Guia de Uso ERP](COMO_USAR_INTEGRACAO_ERP.md) - Como funciona
+2. [Obter Token NavSoft](COMO_OBTER_CHAVE_API_NAVSOFT.md) OU [Tiny](COMO_OBTER_TOKEN_API_TINY.md)
+3. Configurar no Win → Importar produtos automaticamente!
+
+**Tempo total:** ~20 minutos  
+**Benefício:** ⚡ Cadastro 10x mais rápido com dados do ERP
+
 ---
 
 ## 💡 Convenções
@@ -187,6 +230,13 @@ docs/
 
 ### Porta ocupada
 → Ver [Docker - Portas](deployment/docker.md#portas-alternativas)
+
+### Problemas com integração ERP
+→ Ver [Guia ERP - Solução de Problemas](COMO_USAR_INTEGRACAO_ERP.md#-solução-de-problemas)
+
+### Não consigo obter token do ERP
+- **NavSoft:** [Guia de obtenção](COMO_OBTER_CHAVE_API_NAVSOFT.md#-problemas-comuns)
+- **Tiny:** [Guia de obtenção](COMO_OBTER_TOKEN_API_TINY.md#-problemas-comuns)
 
 ---
 
@@ -223,12 +273,13 @@ Ao adicionar nova documentação:
 
 | Versão | Data | Mudanças |
 |--------|------|----------|
+| 1.1.0 | 13/02/2026 | ✨ Adicionada documentação completa de integração ERP (NavSoft, Tiny) |
 | 1.0.0 | 24/10/2025 | Reestruturação completa da documentação |
 | 0.2.0 | 24/10/2025 | Adicionado gerador de hash de senha |
 | 0.1.0 | - | Documentação inicial |
 
 ---
 
-**Última atualização:** 24 de outubro de 2025  
+**Última atualização:** 13 de fevereiro de 2026  
 **Mantido por:** Equipe WIN Marketplace  
 **Status:** ✅ Ativo e mantido

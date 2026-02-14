@@ -36,8 +36,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         // Rotas públicas que não precisam de autenticação JWT
         String requestPath = request.getRequestURI();
-        if (requestPath.startsWith("/actuator/") || 
-            requestPath.startsWith("/api/v1/webhooks/")) {
+        if (requestPath.equals("/") ||
+            requestPath.equals("/index.html") ||
+            requestPath.equals("/favicon.ico") ||
+            requestPath.startsWith("/actuator/") || 
+            requestPath.startsWith("/api/v1/webhooks/") ||
+            requestPath.startsWith("/api/v1/auth/") ||
+            requestPath.startsWith("/api/v1/dev/") ||
+            requestPath.startsWith("/api/v1/password-reset/") ||
+            requestPath.startsWith("/api/v1/produtos") ||
+            requestPath.startsWith("/api/v1/categoria") ||
+            requestPath.startsWith("/api/v1/lojistas") ||
+            requestPath.startsWith("/api/v1/banners") ||
+            requestPath.startsWith("/api/v1/external/") ||
+            requestPath.startsWith("/api/v1/entregas/")) {
             filterChain.doFilter(request, response);
             return;
         }

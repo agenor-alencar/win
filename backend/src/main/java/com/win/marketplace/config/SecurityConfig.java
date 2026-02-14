@@ -99,16 +99,17 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Endpoints públicos (não requerem autenticação)
-                .requestMatchers("/api/v1/auth/login", "/api/v1/auth/login/**", "/api/v1/auth/register").permitAll()
+                .requestMatchers("/", "/index.html", "/favicon.ico").permitAll() // Raiz e recursos estáticos
+                .requestMatchers("/api/v1/auth/**").permitAll() // Todas as rotas de autenticação
                 .requestMatchers("/api/v1/password-reset/**").permitAll() // Reset de senha público
                 .requestMatchers("/api/v1/dev/**").permitAll() // Dev Tools (gerador de hash)
                 .requestMatchers("/api/v1/produtos/**").permitAll() // Permitir listagem pública de produtos
                 .requestMatchers("/api/v1/categoria/**").permitAll() // Permitir listagem pública de categorias
                 .requestMatchers("/api/v1/lojistas/**").permitAll() // Permitir consulta pública de lojistas
-                .requestMatchers("/api/v1/banners").permitAll() // Permitir listagem pública de banners
+                .requestMatchers("/api/v1/banners/**").permitAll() // Permitir listagem pública de banners
                 .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
                 .requestMatchers("/api/v1/entregas/**").permitAll() // Permitir simulação de frete
-                .requestMatchers("/api/v1/webhooks/uber").permitAll() // Webhook da Uber Direct
+                .requestMatchers("/api/v1/webhooks/**").permitAll() // Todos os webhooks públicos
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger público
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/**").permitAll()

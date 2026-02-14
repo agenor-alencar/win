@@ -91,8 +91,8 @@ services:
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       
       # S3/Spaces Configuration (mapeia para app.storage.s3.*)
-      AWS_ACCESS_KEY_ID: ${SPACES_ACCESS_KEY}
-      AWS_SECRET_ACCESS_KEY: ${SPACES_SECRET_KEY}
+      AWS_ACCESS_KEY_ID: ${SPACES_ACCESS_KEY:-}
+      AWS_SECRET_ACCESS_KEY: ${SPACES_SECRET_KEY:-}
       AWS_REGION: ${SPACES_REGION:-sfo3}
       S3_BUCKET_NAME: ${SPACES_BUCKET_NAME:-win-marketplace-storage}
       S3_ENDPOINT: ${SPACES_ENDPOINT:-https://sfo3.digitaloceanspaces.com}
@@ -101,8 +101,8 @@ services:
       # ========================================
       # DigitalOcean Spaces Configuration (mantido para compatibilidade)
       # ========================================
-      SPACES_ACCESS_KEY: ${SPACES_ACCESS_KEY}
-      SPACES_SECRET_KEY: ${SPACES_SECRET_KEY}
+      SPACES_ACCESS_KEY: ${SPACES_ACCESS_KEY:-}
+      SPACES_SECRET_KEY: ${SPACES_SECRET_KEY:-}
       SPACES_BUCKET_NAME: ${SPACES_BUCKET_NAME:-win-marketplace-storage}
       SPACES_ENDPOINT: ${SPACES_ENDPOINT:-https://sfo3.digitaloceanspaces.com}
       SPACES_REGION: ${SPACES_REGION:-sfo3}

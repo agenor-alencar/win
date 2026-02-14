@@ -27,6 +27,7 @@ public class ProdutoErpService {
     private final ProdutoRepository produtoRepository;
     private final LojistaErpConfigService erpConfigService;
     private final ErpClientFactory erpClientFactory;
+    private final ImagemProdutoService imagemProdutoService;
     
     /**
      * Busca produto no ERP por SKU (preview antes de vincular)
@@ -182,6 +183,24 @@ public class ProdutoErpService {
         }
         if (erpDados.getAtivo() != null) {
             produto.setAtivo(erpDados.getAtivo());
+        }
+        
+        // ✅ IMPORTA IMAGEM DO ERP (se disponível)
+        if (erpDados.getImagemUrl() != null && !erpDados.getImagemUrl().isBlank()) {
+            try {
+                log.info("Importando imagem do ERP para produto {} - URL: {}", produto.getId(), erpDados.getImagemUrl());
+                imagemProdutoService.adicionarImagemComUrl(
+                    produto.getId(),
+                    erpDados.getImagemUrl(),
+                    "Imagem importada do ERP (" + erpDados.getSku() + ")",
+                    1 // Primeira imagem
+                );
+                log.info("Imagem do ERP importada com sucesso para produto {}", produto.getId());
+            } catch (Exception e) {
+                log.warn("Erro ao importar imagem do ERP para produto {} - Continuando sem a imagem: {}", 
+                    produto.getId(), e.getMessage());
+                // Não falha a operação se a imagem não puder ser importada
+            }
         }
     }
 }
