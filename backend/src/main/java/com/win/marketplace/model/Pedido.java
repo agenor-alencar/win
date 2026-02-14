@@ -24,7 +24,7 @@ public class Pedido {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(name = "numero_pedido", length = 20, unique = true, nullable = false)
+    @Column(name = "numero", length = 50, unique = true, nullable = false)
     private String numeroPedido;
 
     @ManyToOne(fetch = FetchType.LAZY)
