@@ -83,6 +83,18 @@ services:
       # Crie uma aplicação > Credenciais > Access Token (Produção ou Teste)
       MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-}
       
+      # ========================================
+      # Pagar.me (Stone) Configuration
+      # ========================================
+      # Obtenha suas credenciais em: https://dashboard.pagar.me/
+      # API Dashboard > Configurações > Chaves de API
+      # Para teste, use as chaves de teste (sk_test_...)
+      # Para produção, use as chaves de produção (sk_live_...)
+      PAGARME_API_KEY: ${PAGARME_API_KEY:-}
+      PAGARME_PUBLIC_KEY: ${PAGARME_PUBLIC_KEY:-}
+      PAGARME_ENABLED: ${PAGARME_ENABLED:-false}
+      PAGARME_ENVIRONMENT: ${PAGARME_ENVIRONMENT:-test}
+      
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       
       # ========================================

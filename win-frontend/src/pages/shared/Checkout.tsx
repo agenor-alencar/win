@@ -70,6 +70,7 @@ const Checkout: React.FC = () => {
   });
 
   const [pixData, setPixData] = useState({
+    nome: user?.nome || "",
     cpf: "",
     email: user?.email || "",
   });
@@ -311,8 +312,8 @@ const Checkout: React.FC = () => {
       }
     }
 
-    if (paymentMethod === "pix" && !pixData.cpf) {
-      showError("CPF necessário", "Informe seu CPF para pagamento via PIX");
+    if (paymentMethod === "pix" && (!pixData.nome || !pixData.cpf)) {
+      showError("CPF e Nome necessários", "Informe seu nome completo e CPF para pagamento via PIX");
       return;
     }
 
@@ -354,21 +355,23 @@ const Checkout: React.FC = () => {
       
       console.log("✅ Pedido criado:", pedido);
 
-      // Processar pagamento via Abacate Pay
+      // Processar pagamento via Pagar.me (Stone)
       if (paymentMethod === "pix") {
-        console.log("🥑 Iniciando pagamento PIX via Abacate Pay para pedido:", pedido.id);
+        console.log("💳 Iniciando pagamento PIX via Pagar.me para pedido:", pedido.id);
+        console.log("👤 Nome:", pixData.nome);
         console.log("📧 Email:", pixData.email);
         
-        // Criar cobrança PIX no Abacate Pay
+        // Criar cobrança PIX no Pagar.me
         const pixResponse = await api.post(
-          `/api/v1/pagamentos/abacatepay/pix/${pedido.id}`,
+          `/v1/pagamentos/pagarme/pix/${pedido.id}`,
           {
+            nome: pixData.nome,
             cpf: pixData.cpf.replace(/\D/g, ""),
             email: pixData.email,
           }
         );
 
-        console.log("✅ Resposta do backend Abacate Pay:", pixResponse.data);
+        console.log("✅ Resposta do backend Pagar.me:", pixResponse.data);
 
         // Backend retorna a cobrança
         const { billing } = pixResponse.data;
@@ -755,6 +758,20 @@ const Checkout: React.FC = () => {
                           </ul>
                         </div>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nome Completo
+                      </label>
+                      <input
+                        type="text"
+                        value={pixData.nome}
+                        onChange={(e) => setPixData({ ...pixData, nome: e.target.value })}
+                        placeholder="Nome completo do pagador"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
+                        required
+                      />
                     </div>
 
                     <div>
