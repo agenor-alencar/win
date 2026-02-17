@@ -28,7 +28,7 @@ public class Pagamento {
     @JoinColumn(name = "pedido_id", nullable = false, unique = true)
     private Pedido pedido;
 
-    @Column(name = "metodo_pagamento", length = 50, nullable = false)
+    @Column(name = "metodo", length = 50, nullable = false)
     private String metodoPagamento; // VARCHAR, não enum
 
     @Column(precision = 10, scale = 2, nullable = false)
