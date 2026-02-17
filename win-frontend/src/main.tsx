@@ -116,7 +116,7 @@ const App = () => (
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/meus-favoritos" element={<Favorites />} />
-                  <Route path="/pagamento/pix" element={<PaymentPix />} />
+                  <Route path="/pagamento/pix/:pedidoId" element={<PaymentPix />} />
                   <Route path="/payment/success" element={<PaymentSuccess />} />
                   <Route path="/pedido/sucesso" element={<PaymentSuccess />} />
                   <Route path="/payment/failure" element={<PaymentFailure />} />

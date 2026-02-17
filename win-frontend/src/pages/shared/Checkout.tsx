@@ -386,17 +386,22 @@ const Checkout: React.FC = () => {
         console.log("🎫 Checkout URL recebido:", billing.checkoutUrl);
         console.log("🆔 Billing ID:", billing.billingId);
         
-        // Armazenar dados da cobrança para renderizar o componente Abacate Pay
-        setCheckoutUrl(billing.checkoutUrl);
-        setBillingId(billing.billingId);
-        setBillingAmount(billing.amount || Math.round(total * 100)); // Converter para centavos
-        setPedidoId(pedido.id);
-        
         // Limpar carrinho
         clearCart();
         
-        console.log("✅ Pedido finalizado, aguardando pagamento");
-        success("Pedido criado! Clique no botão abaixo para pagar.");
+        console.log("✅ Pedido finalizado, redirecionando para pagamento...");
+        success("Pedido criado!", "Redirecionando para o pagamento...");
+        
+        // Redirecionar para página de pagamento PIX
+        setTimeout(() => {
+          navigate(`/pagamento/pix/${pedido.id}`, {
+            state: {
+              pedidoId: pedido.id,
+              billing: billing,
+              total: total
+            }
+          });
+        }, 1000);
 
       } else if (paymentMethod === "credit_card") {
         // Criar checkout de cartão

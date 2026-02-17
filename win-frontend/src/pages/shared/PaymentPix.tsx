@@ -1,29 +1,94 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { CheckCircle, Copy, Clock, AlertCircle, ArrowLeft, Shield } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { CheckCircle, Copy, Clock, AlertCircle, ArrowLeft, Shield, Loader2 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
+import api from "../../services/api";
+
+interface PaymentData {
+  billing: {
+    qrCode: string;
+    qrCodeUrl: string;
+    billingId: string;
+    amount: number;
+  };
+  pedido: {
+    id: string;
+    total: number;
+    status: string;
+  };
+}
 
 const PaymentPix: React.FC = () => {
   const { pedidoId } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
   const { success, error } = useNotification();
+  
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutos em segundos
+  const [loading, setLoading] = useState(true);
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [checkingPayment, setCheckingPayment] = useState(false);
 
-  // Receber dados do pagamento PIX do state
-  const pixData = location.state?.pixData;
-  const pedido = location.state?.pedido;
-  const total = location.state?.total;
-
+  // Buscar dados do pagamento
   useEffect(() => {
-    if (!pixData || !pedidoId) {
-      error("Erro", "Dados do pagamento não encontrados");
-      navigate("/");
-      return;
-    }
+    const fetchPaymentData = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get(`/v1/pagamentos/pedido/${pedidoId}/pix`);
+        setPaymentData(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Erro ao carregar dados do pagamento:", err);
+        error("Erro", "Não foi possível carregar os dados do pagamento");
+        setLoading(false);
+        setTimeout(() => navigate("/orders"), 2000);
+      }
+    };
 
-    // Timer de expiração
+    if (pedidoId) {
+      fetchPaymentData();
+    } else {
+      error("Erro", "Pedido não encontrado");
+      navigate("/");
+    }
+  }, [pedidoId, navigate, error]);
+
+  // Polling para verificar status do pagamento
+  useEffect(() => {
+    if (!paymentData?.billing?.billingId) return;
+
+    const checkPaymentStatus = async () => {
+      try {
+        setCheckingPayment(true);
+        const response = await api.get(`/v1/pagamentos/${paymentData.billing.billingId}/status`);
+        const { status } = response.data;
+        
+        console.log("📊 Status do pagamento:", status);
+        
+        if (status === "paid" || status === "aprovado" || status === "approved") {
+          success("💰 Pagamento confirmado!", "Redirecionando para detalhes do pedido...");
+          setTimeout(() => {
+            navigate(`/orders/${pedidoId}`);
+          }, 2000);
+        }
+      } catch (err) {
+        console.error("Erro ao verificar status:", err);
+      } finally {
+        setCheckingPayment(false);
+      }
+    };
+
+    // Verificar imediatamente
+    checkPaymentStatus();
+
+    // Polling a cada 5 segundos
+    const pollingInterval = setInterval(checkPaymentStatus, 5000);
+
+    return () => clearInterval(pollingInterval);
+  }, [paymentData, pedidoId, navigate, success]);
+
+  // Timer de expiração
+  useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -35,7 +100,7 @@ const PaymentPix: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [pixData, pedidoId, navigate, error]);
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -44,15 +109,26 @@ const PaymentPix: React.FC = () => {
   };
 
   const handleCopyCode = () => {
-    if (pixData?.qrCode) {
-      navigator.clipboard.writeText(pixData.qrCode);
+    if (paymentData?.billing?.qrCode) {
+      navigator.clipboard.writeText(paymentData.billing.qrCode);
       setCopied(true);
       success("✅ Código copiado!", "Cole no app do seu banco para pagar");
       setTimeout(() => setCopied(false), 3000);
     }
   };
 
-  if (!pixData) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-[#3DBEAB] animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">Carregando dados do pagamento...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!paymentData) {
     return null;
   }
 
@@ -92,13 +168,19 @@ const PaymentPix: React.FC = () => {
               </div>
 
               {/* QR Code Display */}
-              {pixData.qrCodeBase64 ? (
-                <div className="bg-white p-4 rounded-xl border-4 border-[#3DBEAB] mb-6">
+              {paymentData.billing.qrCodeUrl ? (
+                <div className="bg-white p-4 rounded-xl border-4 border-[#3DBEAB] mb-6 relative">
                   <img
-                    src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                    src={paymentData.billing.qrCodeUrl}
                     alt="QR Code PIX"
                     className="w-full h-auto"
                   />
+                  {checkingPayment && (
+                    <div className="absolute top-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Verificando...
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="bg-gray-100 p-8 rounded-xl mb-6 flex items-center justify-center">
@@ -146,7 +228,7 @@ const PaymentPix: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center text-2xl font-bold text-[#3DBEAB]">
                   <span>Total</span>
-                  <span>R$ {total?.toFixed(2)}</span>
+                  <span>R$ {((paymentData.billing.amount || paymentData.pedido.total) / 100).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -160,7 +242,7 @@ const PaymentPix: React.FC = () => {
               <div className="space-y-3">
                 <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
                   <code className="text-xs font-mono text-gray-700 break-all block">
-                    {pixData.qrCode}
+                    {paymentData.billing.qrCode}
                   </code>
                 </div>
                 <button
@@ -217,7 +299,7 @@ const PaymentPix: React.FC = () => {
                 <Shield className="w-6 h-6" />
                 <div className="text-center">
                   <p className="font-semibold">Pagamento 100% Seguro</p>
-                  <p className="text-sm text-gray-600">Protegido pelo Mercado Pago</p>
+                  <p className="text-sm text-gray-600">Protegido pela Pagar.me</p>
                 </div>
               </div>
             </div>

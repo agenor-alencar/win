@@ -1,6 +1,7 @@
 package com.win.marketplace.repository;
 
 import com.win.marketplace.model.Pagamento;
+import com.win.marketplace.model.Pedido;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +16,8 @@ import java.util.UUID;
 public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
     
     Optional<Pagamento> findByPedidoId(UUID pedidoId);
+    
+    Optional<Pagamento> findTopByPedidoOrderByDataCriacaoDesc(Pedido pedido);
     
     List<Pagamento> findByStatus(Pagamento.StatusPagamento status);
     

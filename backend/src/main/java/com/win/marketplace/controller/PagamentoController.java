@@ -326,6 +326,53 @@ public class PagamentoController {
         }
     }
 
+    /**
+     * Busca dados do pagamento PIX pelo ID do pedido (para página de pagamento)
+     */
+    @GetMapping("/pedido/{pedidoId}/pix")
+    public ResponseEntity<?> buscarPagamentoPix(@PathVariable UUID pedidoId) {
+        try {
+            Map<String, Object> pagamentoData = pagamentoService.buscarDadosPagamentoPix(pedidoId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("billing", pagamentoData.get("billing"));
+            response.put("pedido", pagamentoData.get("pedido"));
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "PAGAMENTO_NAO_ENCONTRADO");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+    }
+
+    /**
+     * Verifica status do pagamento PIX no Pagar.me
+     */
+    @GetMapping("/{orderId}/status")
+    public ResponseEntity<?> verificarStatusPagamento(@PathVariable String orderId) {
+        try {
+            String status = pagamentoService.verificarStatusPagamentoPix(orderId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("status", status);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "ERRO_VERIFICACAO");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
     // ========================================
     // �📋 GESTÃO DE PAGAMENTOS
     // ========================================

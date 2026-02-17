@@ -371,6 +371,117 @@ public class PagamentoService {
     }
 
     /**
+     * Busca dados do pagamento PIX para exibição na página de pagamento
+     * 
+     * @param pedidoId ID do pedido
+     * @return Map com billing (dados PIX) e pedido (dados do pedido)
+     */
+    public Map<String, Object> buscarDadosPagamentoPix(UUID pedidoId) {
+        // Buscar pedido
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+            .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+        
+        // Buscar pagamento mais recente do pedido
+        Pagamento pagamento = pagamentoRepository.findTopByPedidoOrderByDataCriacaoDesc(pedido)
+            .orElseThrow(() -> new RuntimeException("Pagamento não encontrado para este pedido"));
+        
+        // Se tiver transactionId, buscar dados atualizados no Pagar.me
+        Map<String, Object> billing = new HashMap<>();
+        if (pagamento.getTransacaoId() != null && !pagamento.getTransacaoId().isEmpty()) {
+            try {
+                Map<String, Object> ordem = pagarMeService.buscarOrdem(pagamento.getTransacaoId());
+                
+                // Extrair dados do PIX da resposta do Pagar.me
+                Map<String, Object> charges = (Map<String, Object>) ordem.get("charges");
+                if (charges != null) {
+                    List<Map<String, Object>> chargeList = (List<Map<String, Object>>) charges.get("data");
+                    if (chargeList != null && !chargeList.isEmpty()) {
+                        Map<String, Object> charge = chargeList.get(0);
+                        Map<String, Object> lastTransaction = (Map<String, Object>) charge.get("last_transaction");
+                        
+                        if (lastTransaction != null) {
+                            billing.put("qrCode", lastTransaction.get("qr_code"));
+                            billing.put("qrCodeUrl", lastTransaction.get("qr_code_url"));
+                            billing.put("billingId", pagamento.getTransacaoId());
+                            billing.put("amount", pagamento.getValor().multiply(new java.math.BigDecimal(100)).intValue());
+                            billing.put("status", pagamento.getStatus().toString().toLowerCase());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Erro ao buscar dados atualizados no Pagar.me: {}", e.getMessage());
+                // Continuar com dados do banco
+            }
+        }
+        
+        // Se não conseguiu buscar do Pagar.me, usar dados do banco
+        if (billing.isEmpty()) {
+            billing.put("billingId", pagamento.getTransacaoId());
+            billing.put("amount", pagamento.getValor().multiply(new java.math.BigDecimal(100)).intValue());
+            billing.put("status", pagamento.getStatus().toString().toLowerCase());
+        }
+        
+        // Dados do pedido
+        Map<String, Object> pedidoData = new HashMap<>();
+        pedidoData.put("id", pedido.getId().toString());
+        pedidoData.put("total", pedido.getValorTotal().doubleValue());
+        pedidoData.put("status", pedido.getStatusPagamento().toString());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("billing", billing);
+        response.put("pedido", pedidoData);
+        
+        return response;
+    }
+
+    /**
+     * Verifica status do pagamento PIX no Pagar.me
+     * 
+     * @param orderId ID da ordem no Pagar.me
+     * @return Status do pagamento (pending, paid, canceled, etc)
+     */
+    public String verificarStatusPagamentoPix(String orderId) {
+        try {
+            Map<String, Object> ordem = pagarMeService.buscarOrdem(orderId);
+            String status = (String) ordem.get("status");
+            
+            // Atualizar status no banco se necessário
+            pagamentoRepository.findByTransacaoId(orderId)
+                .ifPresent(pagamento -> {
+                    String statusInterno = pagarMeService.traduzirStatus(status);
+                    try {
+                        Pagamento.StatusPagamento statusEnum = Pagamento.StatusPagamento.valueOf(statusInterno);
+                        if (pagamento.getStatus() != statusEnum) {
+                            pagamento.setStatus(statusEnum);
+                            pagamentoRepository.save(pagamento);
+                            log.info("✅ Status do pagamento atualizado via polling - ID: {}, Status: {}", 
+                                pagamento.getId(), statusEnum);
+                            
+                            // Se aprovado, atualizar pedido
+                            if ("APROVADO".equals(statusInterno)) {
+                                Pedido pedido = pagamento.getPedido();
+                                if (pedido != null) {
+                                    pedido.setStatusPagamento(Pedido.StatusPagamento.APROVADO);
+                                    pedidoRepository.save(pedido);
+                                    log.info("✅ Status do pedido atualizado para APROVADO - Pedido: {}", 
+                                        pedido.getNumeroPedido());
+                                }
+                            }
+                        }
+                    } catch (IllegalArgumentException e) {
+                        log.warn("Status interno inválido: {}", statusInterno);
+                    }
+                });
+            
+            return status;
+            
+        } catch (Exception e) {
+            log.error("Erro ao verificar status no Pagar.me: {}", e.getMessage());
+            throw new RuntimeException("Erro ao verificar status do pagamento: " + e.getMessage());
+        }
+    }
+
+    /**
      * Atualiza status do pagamento via webhook do Pagar.me
      * 
      * @param payload Dados do webhook
