@@ -145,6 +145,9 @@ public class PagarMeService {
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
                 
+                // LOG: Resposta completa da API
+                log.info("📦 Resposta completa do Pagar.me: {}", responseBody);
+                
                 // Extrair dados do PIX
                 Map<String, Object> resultado = new HashMap<>();
                 resultado.put("id", responseBody.get("id"));
@@ -152,13 +155,31 @@ public class PagarMeService {
                 resultado.put("status", responseBody.get("status"));
                 resultado.put("amount", responseBody.get("amount"));
                 
+                // Verificar se há erros na resposta
+                if ("failed".equals(responseBody.get("status"))) {
+                    List<Map<String, Object>> charges = (List<Map<String, Object>>) responseBody.get("charges");
+                    if (charges != null && !charges.isEmpty()) {
+                        Map<String, Object> charge = charges.get(0);
+                        Map<String, Object> lastTransaction = (Map<String, Object>) charge.get("last_transaction");
+                        if (lastTransaction != null) {
+                            log.error("❌ Cobrança falhou! Detalhes da transação: {}", lastTransaction);
+                            Object gatewayResponse = lastTransaction.get("gateway_response");
+                            if (gatewayResponse != null) {
+                                log.error("❌ Gateway Response: {}", gatewayResponse);
+                            }
+                        }
+                    }
+                }
+                
                 // Extrair informações do PIX
                 List<Map<String, Object>> charges = (List<Map<String, Object>>) responseBody.get("charges");
                 if (charges != null && !charges.isEmpty()) {
                     Map<String, Object> charge = charges.get(0);
+                    log.info("📋 Charge data: {}", charge);
                     Map<String, Object> lastTransaction = (Map<String, Object>) charge.get("last_transaction");
                     
                     if (lastTransaction != null) {
+                        log.info("📋 Last transaction data: {}", lastTransaction);
                         resultado.put("qr_code", lastTransaction.get("qr_code"));
                         resultado.put("qr_code_url", lastTransaction.get("qr_code_url"));
                         resultado.put("expires_at", lastTransaction.get("expires_at"));
