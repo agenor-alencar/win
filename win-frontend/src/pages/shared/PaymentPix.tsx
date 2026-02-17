@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Copy, Clock, AlertCircle, ArrowLeft, Shield, Loader2 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
-import api from "../../services/api";
+import api from "../../../shared/api";
 
 interface PaymentData {
   billing: {
