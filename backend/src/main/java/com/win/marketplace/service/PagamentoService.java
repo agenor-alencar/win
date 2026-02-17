@@ -382,7 +382,7 @@ public class PagamentoService {
             .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
         
         // Buscar pagamento mais recente do pedido
-        Pagamento pagamento = pagamentoRepository.findTopByPedidoOrderByDataCriacaoDesc(pedido)
+        Pagamento pagamento = pagamentoRepository.findTopByPedidoOrderByCriadoEmDesc(pedido)
             .orElseThrow(() -> new RuntimeException("Pagamento não encontrado para este pedido"));
         
         // Se tiver transactionId, buscar dados atualizados no Pagar.me
