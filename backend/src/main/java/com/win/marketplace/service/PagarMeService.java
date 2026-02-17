@@ -406,4 +406,113 @@ public class PagarMeService {
         info.put("hasPublicKey", publicKey != null && !publicKey.isBlank());
         return info;
     }
+
+    /**
+     * Cria um recipient (recebedor) no Pagar.me
+     * 
+     * @param nome Nome completo ou razão social
+     * @param documento CPF ou CNPJ (apenas números)
+     * @param email Email do recebedor
+     * @param tipo "individual" (CPF) ou "company" (CNPJ)
+     * @param dadosBancarios Map com: bank_code, agencia, agencia_dv, conta, conta_dv, type, holder_name, holder_document
+     * @return Map contendo o ID do recipient criado
+     */
+    public Map<String, Object> criarRecipient(
+        String nome,
+        String documento,
+        String email,
+        String tipo,
+        Map<String, String> dadosBancarios
+    ) {
+        if (!enabled) {
+            throw new RuntimeException("Gateway Pagar.me não está habilitado");
+        }
+
+        try {
+            String endpoint = BASE_URL + "/recipients";
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("name", nome);
+            requestBody.put("email", email);
+            requestBody.put("document", documento.replaceAll("[^0-9]", ""));
+            requestBody.put("type", tipo); // "individual" ou "company"
+            requestBody.put("default_bank_account", dadosBancarios);
+
+            // Configurações de transferência
+            Map<String, Object> transferSettings = new HashMap<>();
+            transferSettings.put("transfer_enabled", true);
+            transferSettings.put("transfer_interval", "daily"); // diário
+            transferSettings.put("transfer_day", 0); // D+0 (pode ser ajustado)
+            requestBody.put("transfer_settings", transferSettings);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBasicAuth(apiKey, "");
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+            log.info("🏦 Criando recipient no Pagar.me - Nome: {}, Documento: {}", nome, documento);
+
+            ResponseEntity<Map> response = restTemplate.exchange(
+                endpoint,
+                HttpMethod.POST,
+                request,
+                Map.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Map<String, Object> responseBody = response.getBody();
+                String recipientId = (String) responseBody.get("id");
+                
+                log.info("✅ Recipient criado com sucesso - ID: {}", recipientId);
+                
+                Map<String, Object> resultado = new HashMap<>();
+                resultado.put("id", recipientId);
+                resultado.put("status", responseBody.get("status"));
+                resultado.put("name", responseBody.get("name"));
+                return resultado;
+            }
+
+            throw new RuntimeException("Erro ao criar recipient no Pagar.me");
+
+        } catch (Exception e) {
+            log.error("❌ Erro ao criar recipient: {}", e.getMessage(), e);
+            throw new RuntimeException("Falha ao criar recipient: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Busca um recipient pelo ID
+     */
+    public Map<String, Object> buscarRecipient(String recipientId) {
+        if (!enabled) {
+            throw new RuntimeException("Gateway Pagar.me não está habilitado");
+        }
+
+        try {
+            String endpoint = BASE_URL + "/recipients/" + recipientId;
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBasicAuth(apiKey, "");
+
+            HttpEntity<?> request = new HttpEntity<>(headers);
+
+            ResponseEntity<Map> response = restTemplate.exchange(
+                endpoint,
+                HttpMethod.GET,
+                request,
+                Map.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            }
+
+            throw new RuntimeException("Recipient não encontrado");
+
+        } catch (Exception e) {
+            log.error("❌ Erro ao buscar recipient: {}", e.getMessage(), e);
+            throw new RuntimeException("Erro ao consultar recipient: " + e.getMessage());
+        }
+    }
 }
