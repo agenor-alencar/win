@@ -307,6 +307,9 @@ public class PagamentoService {
         log.info("Pagamento registrado no banco - ID: {}", pagamento.getId());
 
         // Retornar informações da cobrança
+        log.info("🔍 Montando resposta com dados da cobrança...");
+        log.info("🔍 Dados recebidos do Pagar.me: {}", cobranca);
+        
         Map<String, Object> resultado = new HashMap<>();
         resultado.put("orderId", cobranca.get("id"));
         resultado.put("qrCode", cobranca.get("qr_code"));
@@ -316,6 +319,11 @@ public class PagamentoService {
         resultado.put("expiresAt", cobranca.get("expires_at"));
         resultado.put("transactionId", cobranca.get("transaction_id"));
 
+        log.info("✅ Resposta montada com sucesso: qrCode={}, qrCodeUrl={}", 
+            resultado.get("qrCode") != null ? "presente" : "ausente",
+            resultado.get("qrCodeUrl") != null ? "presente" : "ausente"
+        );
+        
         return resultado;
     }
 
