@@ -208,10 +208,10 @@ public class PagamentoController {
             
             // Transformar resposta para formato esperado pelo frontend
             Map<String, Object> billing = new HashMap<>();
-            billing.put("checkoutUrl", pixInfo.get("qr_code_url")); // URL da imagem do QR Code
+            billing.put("checkoutUrl", pixInfo.get("qrCodeUrl")); // URL da imagem do QR Code
             billing.put("billingId", pixInfo.get("orderId")); // ID da ordem no Pagar.me
-            billing.put("qrCode", pixInfo.get("qr_code")); // Código PIX (copia e cola)
-            billing.put("qrCodeUrl", pixInfo.get("qr_code_url")); // URL da imagem
+            billing.put("qrCode", pixInfo.get("qrCode")); // Código PIX (copia e cola)
+            billing.put("qrCodeUrl", pixInfo.get("qrCodeUrl")); // URL da imagem
             billing.put("amount", pixInfo.get("amount")); // Valor em centavos
             billing.put("expiresAt", pixInfo.get("expiresAt")); // Data de expiração
             billing.put("status", pixInfo.get("status")); // Status do pagamento
