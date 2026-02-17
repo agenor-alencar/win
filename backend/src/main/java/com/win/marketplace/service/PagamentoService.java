@@ -255,7 +255,8 @@ public class PagamentoService {
             UUID pedidoId,
             String clienteNome,
             String clienteEmail,
-            String clienteCpf
+            String clienteCpf,
+            String clienteTelefone
     ) {
         log.info("=== INICIANDO CRIAÇÃO DE COBRANÇA PIX PAGAR.ME ===");
         log.info("Pedido ID: {}", pedidoId);
@@ -272,6 +273,16 @@ public class PagamentoService {
 
         log.info("Pedido encontrado - Número: {}, Total: R$ {}", 
             pedido.getNumeroPedido(), pedido.getTotal());
+
+        // Se telefone não foi fornecido, buscar do usuário
+        if (clienteTelefone == null || clienteTelefone.isBlank()) {
+            if (pedido.getUsuario() != null && pedido.getUsuario().getTelefone() != null) {
+                clienteTelefone = pedido.getUsuario().getTelefone();
+                log.info("📞 Telefone obtido do usuário: {}", clienteTelefone);
+            } else {
+                log.warn("⚠️ Telefone não fornecido e usuário não tem telefone cadastrado!");
+            }
+        }
 
         // Converter valor para centavos
         Integer valorCentavos = pedido.getTotal().multiply(new java.math.BigDecimal("100")).intValue();
@@ -290,6 +301,7 @@ public class PagamentoService {
             clienteNome,
             clienteEmail,
             clienteCpf,
+            clienteTelefone,
             descricao.toString()
         );
 

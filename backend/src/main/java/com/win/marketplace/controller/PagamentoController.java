@@ -200,9 +200,10 @@ public class PagamentoController {
             String nome = pixData.get("nome");
             String email = pixData.get("email");
             String cpf = pixData.get("cpf");
+            String telefone = pixData.get("telefone");
             
             Map<String, Object> pixInfo = pagamentoService.criarPagamentoPixPagarMe(
-                pedidoId, nome, email, cpf
+                pedidoId, nome, email, cpf, telefone
             );
             
             Map<String, Object> response = new HashMap<>();

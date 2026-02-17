@@ -67,6 +67,7 @@ public class PagarMeService {
         String clienteNome,
         String clienteEmail,
         String clienteCpf,
+        String clienteTelefone,
         String descricao
     ) {
         if (!enabled) {
@@ -101,6 +102,26 @@ public class PagarMeService {
             if (clienteCpf != null && !clienteCpf.isBlank()) {
                 customer.put("document", clienteCpf.replaceAll("[^0-9]", ""));
                 customer.put("document_type", "CPF");
+            }
+            
+            // Telefone (obrigatório para PIX)
+            if (clienteTelefone != null && !clienteTelefone.isBlank()) {
+                String telefoneNumeros = clienteTelefone.replaceAll("[^0-9]", "");
+                Map<String, Object> phones = new HashMap<>();
+                Map<String, String> mobilePhone = new HashMap<>();
+                
+                // Formato: (DD) 9XXXX-XXXX -> 11 dígitos ou (DD) XXXX-XXXX -> 10 dígitos
+                if (telefoneNumeros.length() >= 10) {
+                    mobilePhone.put("country_code", "55");
+                    mobilePhone.put("area_code", telefoneNumeros.substring(0, 2));
+                    mobilePhone.put("number", telefoneNumeros.substring(2));
+                    phones.put("mobile_phone", mobilePhone);
+                    customer.put("phones", phones);
+                } else {
+                    log.warn("⚠️ Telefone inválido: {}. PIX pode falhar.", clienteTelefone);
+                }
+            } else {
+                log.warn("⚠️ Telefone não fornecido. Alguns gateways podem rejeitar.");
             }
             
             requestBody.put("customer", customer);
