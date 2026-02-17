@@ -17,7 +17,7 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
     
     Optional<Pagamento> findByPedidoId(UUID pedidoId);
     
-    Optional<Pagamento> findTopByPedidoOrderByDataCriacaoDesc(Pedido pedido);
+    Optional<Pagamento> findTopByPedidoOrderByCriadoEmDesc(Pedido pedido);
     
     List<Pagamento> findByStatus(Pagamento.StatusPagamento status);
     
