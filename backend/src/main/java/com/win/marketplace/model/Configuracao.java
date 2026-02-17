@@ -42,6 +42,10 @@ public class Configuracao {
     @Column(name = "dias_repasse", nullable = false)
     private Integer diasRepasse = 2; // D+2
 
+    // ID do recebedor (recipient) do marketplace no Pagar.me para split de pagamento
+    @Column(name = "pagarme_recipient_id_marketplace", length = 100)
+    private String pagarmeRecipientIdMarketplace;
+
     // === CONFIGURAÇÕES GERAIS ===
     
     @Column(name = "taxa_entrega_padrao", nullable = false, precision = 10, scale = 2)

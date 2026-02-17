@@ -51,7 +51,7 @@ public class PagarMeService {
     }
 
     /**
-     * Cria uma cobrança PIX via Pagar.me
+     * Cria uma cobrança PIX via Pagar.me com split de pagamento
      * 
      * @param pedidoId ID único do pedido
      * @param valorCentavos Valor em centavos (ex: 1000 = R$ 10.00)
@@ -59,6 +59,10 @@ public class PagarMeService {
      * @param clienteEmail Email do cliente
      * @param clienteCpf CPF do cliente (apenas números)
      * @param descricao Descrição do pagamento
+     * @param recipientIdMarketplace ID do recipient do marketplace (conta principal)
+     * @param recipientIdLojista ID do recipient do lojista
+     * @param valorFretecentavos Valor do frete em centavos
+     * @param percentualComissao Percentual de comissão do marketplace (ex: 12.00 = 12%)
      * @return Map contendo: id, qr_code, qr_code_url, status, expires_at
      */
     public Map<String, Object> criarCobrancaPix(
@@ -68,7 +72,11 @@ public class PagarMeService {
         String clienteEmail,
         String clienteCpf,
         String clienteTelefone,
-        String descricao
+        String descricao,
+        String recipientIdMarketplace,
+        String recipientIdLojista,
+        Integer valorFreteCentavos,
+        BigDecimal percentualComissao
     ) {
         if (!enabled) {
             log.warn("⚠️ Pagar.me está DESABILITADO. Configure PAGARME_ENABLED=true");
@@ -136,6 +144,49 @@ public class PagarMeService {
             Map<String, Object> pix = new HashMap<>();
             pix.put("expires_in", 3600); // 1 hora
             payment.put("pix", pix);
+            
+            // === SPLIT DE PAGAMENTO ===
+            // Divide o valor entre marketplace e lojista
+            if (recipientIdMarketplace != null && recipientIdLojista != null) {
+                List<Map<String, Object>> splits = new ArrayList<>();
+                
+                // Calcular valores do split
+                int valorProdutosCentavos = valorCentavos - valorFreteCentavos;
+                
+                // Split 1: Marketplace recebe comissão dos produtos + frete integral
+                int comissaoCentavos = (int) Math.round(valorProdutosCentavos * percentualComissao.doubleValue() / 100);
+                int splitMarketplace = comissaoCentavos + valorFreteCentavos;
+                
+                Map<String, Object> splitMarket = new HashMap<>();
+                splitMarket.put("recipient_id", recipientIdMarketplace);
+                splitMarket.put("amount", splitMarketplace);
+                splitMarket.put("type", "flat"); // valor fixo
+                splitMarket.put("options", Map.of(
+                    "liable", true,      // responsável por chargeback
+                    "charge_processing_fee", true  // paga taxa de processamento
+                ));
+                splits.add(splitMarket);
+                
+                // Split 2: Lojista recebe o restante (produtos - comissão)
+                int splitLojista = valorProdutosCentavos - comissaoCentavos;
+                
+                Map<String, Object> splitLoj = new HashMap<>();
+                splitLoj.put("recipient_id", recipientIdLojista);
+                splitLoj.put("amount", splitLojista);
+                splitLoj.put("type", "flat");
+                splitLoj.put("options", Map.of(
+                    "liable", false,     // não responsável por chargeback
+                    "charge_processing_fee", false  // não paga taxa
+                ));
+                splits.add(splitLoj);
+                
+                payment.put("split", splits);
+                
+                log.info("💰 Split configurado - Marketplace: R$ {} ({}% + frete), Lojista: R$ {}",
+                    splitMarketplace / 100.0, percentualComissao, splitLojista / 100.0);
+            } else {
+                log.warn("⚠️ Split NÃO configurado - Recipients não informados");
+            }
             
             payments.add(payment);
             requestBody.put("payments", payments);

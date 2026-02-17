@@ -5,8 +5,13 @@ import com.win.marketplace.dto.response.PagamentoResponseDTO;
 import com.win.marketplace.dto.mapper.PagamentoMapper;
 import com.win.marketplace.model.Pagamento;
 import com.win.marketplace.model.Pedido;
+import com.win.marketplace.model.Configuracao;
+import com.win.marketplace.model.Lojista;
+import com.win.marketplace.model.ItemPedido;
 import com.win.marketplace.repository.PagamentoRepository;
 import com.win.marketplace.repository.PedidoRepository;
+import com.win.marketplace.repository.ConfiguracaoRepository;
+import com.win.marketplace.repository.LojistaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +29,8 @@ public class PagamentoService {
 
     private final PagamentoRepository pagamentoRepository;
     private final PedidoRepository pedidoRepository;
+    private final ConfiguracaoRepository configuracaoRepository;
+    private final LojistaRepository lojistaRepository;
     private final PagamentoMapper pagamentoMapper;
     private final AbacatePayService abacatePayService;
     private final PagarMeService pagarMeService;
@@ -294,7 +301,41 @@ public class PagamentoService {
             descricao.append(pedido.getItens().size()).append(" item(ns)");
         }
 
-        // Criar cobrança no Pagar.me
+        // Buscar configurações do sistema para split de pagamento
+        Configuracao config = configuracaoRepository.findAll().stream()
+            .findFirst()
+            .orElse(null);
+        
+        String recipientIdMarketplace = null;
+        String recipientIdLojista = null;
+        BigDecimal percentualComissao = new BigDecimal("12.00"); // Padrão 12% se não configurado
+        
+        if (config != null && config.getPagarmeRecipientIdMarketplace() != null) {
+            recipientIdMarketplace = config.getPagarmeRecipientIdMarketplace();
+            percentualComissao = config.getTaxaComissaoWin();
+            log.info("📊 Configuração: Marketplace recipient={}, Comissão={}%", 
+                recipientIdMarketplace, percentualComissao);
+        } else {
+            log.warn("⚠️ Configuração de split não encontrada. Split será desabilitado.");
+        }
+        
+        // Buscar lojista do primeiro item do pedido (assumindo pedidos de um único lojista)
+        if (!pedido.getItens().isEmpty()) {
+            ItemPedido primeiroItem = pedido.getItens().get(0);
+            if (primeiroItem.getProduto() != null && primeiroItem.getProduto().getLojista() != null) {
+                Lojista lojista = primeiroItem.getProduto().getLojista();
+                recipientIdLojista = lojista.getPagarmeRecipientId();
+                log.info("🏪 Lojista: {} - Recipient ID: {}", 
+                    lojista.getNomeFantasia(), 
+                    recipientIdLojista != null ? recipientIdLojista : "NÃO CONFIGURADO");
+            }
+        }
+        
+        // Calcular valor do frete
+        BigDecimal valorFrete = pedido.getValorFrete() != null ? pedido.getValorFrete() : BigDecimal.ZERO;
+        Integer valorFreteCentavos = valorFrete.multiply(new BigDecimal("100")).intValue();
+
+        // Criar cobrança no Pagar.me com split
         Map<String, Object> cobranca = pagarMeService.criarCobrancaPix(
             pedidoId.toString(),
             valorCentavos,
@@ -302,7 +343,11 @@ public class PagamentoService {
             clienteEmail,
             clienteCpf,
             clienteTelefone,
-            descricao.toString()
+            descricao.toString(),
+            recipientIdMarketplace,
+            recipientIdLojista,
+            valorFreteCentavos,
+            percentualComissao
         );
 
         log.info("✅ Cobrança PIX Pagar.me criada - ID: {}", cobranca.get("id"));

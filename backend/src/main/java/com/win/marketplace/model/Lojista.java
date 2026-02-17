@@ -74,6 +74,10 @@ public class Lojista {
     @Column(nullable = false)
     private Boolean ativo = true;
 
+    // ID do recebedor (recipient) no Pagar.me para split de pagamento
+    @Column(name = "pagarme_recipient_id", length = 100)
+    private String pagarmeRecipientId;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     @CreationTimestamp
     private OffsetDateTime criadoEm;
