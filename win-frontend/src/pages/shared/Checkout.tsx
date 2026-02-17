@@ -72,6 +72,7 @@ const Checkout: React.FC = () => {
   const [pixData, setPixData] = useState({
     nome: user?.nome || "",
     cpf: "",
+    telefone: "",
     email: user?.email || "",
   });
 
@@ -312,8 +313,8 @@ const Checkout: React.FC = () => {
       }
     }
 
-    if (paymentMethod === "pix" && (!pixData.nome || !pixData.cpf)) {
-      showError("CPF e Nome necessários", "Informe seu nome completo e CPF para pagamento via PIX");
+    if (paymentMethod === "pix" && (!pixData.nome || !pixData.cpf || !pixData.telefone)) {
+      showError("Dados incompletos", "Informe seu nome completo, CPF e telefone para pagamento via PIX");
       return;
     }
 
@@ -367,6 +368,7 @@ const Checkout: React.FC = () => {
           {
             nome: pixData.nome,
             cpf: pixData.cpf.replace(/\D/g, ""),
+            telefone: pixData.telefone.replace(/\D/g, ""),
             email: pixData.email,
           }
         );
@@ -795,6 +797,36 @@ const Checkout: React.FC = () => {
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
                         required
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Telefone/Celular
+                      </label>
+                      <input
+                        type="text"
+                        value={pixData.telefone}
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/\D/g, "");
+                          if (value.length <= 11) {
+                            if (value.length === 11) {
+                              value = value.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+                            } else if (value.length === 10) {
+                              value = value.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+                            } else {
+                              value = value.replace(/(\d{2})(\d)/, "($1) $2");
+                            }
+                          }
+                          setPixData({ ...pixData, telefone: value });
+                        }}
+                        placeholder="(85) 99999-9999"
+                        maxLength={15}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
+                        required
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Obrigatório para pagamentos PIX
+                      </p>
                     </div>
 
                     <div>
