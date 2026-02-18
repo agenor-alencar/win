@@ -431,19 +431,42 @@ public class PagarMeService {
         try {
             String endpoint = BASE_URL + "/recipients";
 
+            // Mapear dados bancários para o formato do Pagar.me
+            Map<String, Object> bankAccount = new HashMap<>();
+            bankAccount.put("holder_name", dadosBancarios.get("holder_name"));
+            bankAccount.put("holder_document", dadosBancarios.get("holder_document").replaceAll("[^0-9]", ""));
+            bankAccount.put("holder_type", tipo); // "individual" ou "company"
+            bankAccount.put("bank", dadosBancarios.get("bank_code")); // Código do banco
+            bankAccount.put("branch_number", dadosBancarios.get("agencia")); // Agência
+            bankAccount.put("branch_check_digit", dadosBancarios.get("agencia_dv")); // DV da agência
+            bankAccount.put("account_number", dadosBancarios.get("conta")); // Número da conta
+            bankAccount.put("account_check_digit", dadosBancarios.get("conta_dv")); // DV da conta
+            
+            // Mapear tipo de conta: conta_corrente -> checking, conta_poupanca -> savings
+            String accountType = dadosBancarios.get("type");
+            if ("conta_poupanca".equals(accountType)) {
+                bankAccount.put("type", "savings");
+            } else {
+                bankAccount.put("type", "checking");
+            }
+
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("name", nome);
             requestBody.put("email", email);
             requestBody.put("document", documento.replaceAll("[^0-9]", ""));
             requestBody.put("type", tipo); // "individual" ou "company"
-            requestBody.put("default_bank_account", dadosBancarios);
+            requestBody.put("payment_mode", "bank_transfer");
+            requestBody.put("default_bank_account", bankAccount);
 
             // Configurações de transferência
             Map<String, Object> transferSettings = new HashMap<>();
             transferSettings.put("transfer_enabled", true);
-            transferSettings.put("transfer_interval", "daily"); // diário
-            transferSettings.put("transfer_day", 0); // D+0 (pode ser ajustado)
+            transferSettings.put("transfer_interval", "Daily");
+            transferSettings.put("transfer_day", 0); // D+0
             requestBody.put("transfer_settings", transferSettings);
+
+            // Configurações de antecipação automática (desabilitada)
+            requestBody.put("automatic_anticipation_settings", new HashMap<>());
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -451,7 +474,8 @@ public class PagarMeService {
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-            log.info("🏦 Criando recipient no Pagar.me - Nome: {}, Documento: {}", nome, documento);
+            log.info("🏦 Criando recipient no Pagar.me - Nome: {}, Documento: {}, Banco: {}", 
+                nome, documento, dadosBancarios.get("bank_code"));
 
             ResponseEntity<Map> response = restTemplate.exchange(
                 endpoint,
