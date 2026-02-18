@@ -216,6 +216,11 @@ const AdminRecipients: React.FC = () => {
       agencia: "",
       agenciaDv: "",
       conta: "",
+      contaDv: "",
+      accountType: "conta_corrente",
+      holderName: "",
+      holderDocument: "",
+    });
     setBankSearch("");
     setFilteredBanks(BANCOS_BRASIL);
   };
@@ -250,11 +255,6 @@ const AdminRecipients: React.FC = () => {
     if (numericValue.length >= 3) {
       setCreateForm({ ...createForm, bankCode: numericValue });
     }
-      contaDv: "",
-      accountType: "conta_corrente",
-      holderName: "",
-      holderDocument: "",
-    });
   };
 
   const columns: Column[] = [
@@ -535,7 +535,41 @@ const AdminRecipients: React.FC = () => {
                     type="email"
                     value={createForm.email}
                     onChange={(e) =>
-                     className="relative">
+                      setCreateForm({ ...createForm, email: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="recipient-tipo" className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo
+                  </label>
+                  <select
+                    id="recipient-tipo"
+                    value={createForm.tipo}
+                    onChange={(e) =>
+                      setCreateForm({
+                        ...createForm,
+                        tipo: e.target.value as "individual" | "company",
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="individual">Pessoa Física</option>
+                    <option value="company">Pessoa Jurídica</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Bank Info */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">
+                Dados Bancários
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Banco
                   </label>
@@ -591,41 +625,7 @@ const AdminRecipients: React.FC = () => {
                     <p className="mt-1 text-xs text-gray-500">
                       Código selecionado: <span className="font-mono font-medium">{createForm.bankCode}</span>
                     </p>
-                  )}value={createForm.tipo}
-                    onChange={(e) =>
-                      setCreateForm({
-                        ...createForm,
-                        tipo: e.target.value as "individual" | "company",
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="individual">Pessoa Física</option>
-                    <option value="company">Pessoa Jurídica</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Bank Info */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-3">
-                Dados Bancários
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Código do Banco
-                  </label>
-                  <input
-                    type="text"
-                    value={createForm.bankCode}
-                    onChange={(e) =>
-                      setCreateForm({ ...createForm, bankCode: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ex: 001 (Banco do Brasil)"
-                  />
+                  )}
                 </div>
                 <div>
                   <label htmlFor="recipient-account-type" className="block text-sm font-medium text-gray-700 mb-1">
