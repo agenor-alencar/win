@@ -10,6 +10,7 @@ import {
   ClipboardDocumentListIcon,
   MapPinIcon,
   BanknotesIcon,
+  CreditCardIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   ChevronLeftIcon,
@@ -33,6 +34,7 @@ const navigation = [
   { name: "Pedidos", href: "/admin/orders", icon: ClipboardDocumentListIcon },
   { name: "Entregas", href: "/admin/deliveries", icon: MapPinIcon },
   { name: "Finanças", href: "/admin/finances", icon: BanknotesIcon },
+  { name: "Recipients", href: "/admin/recipients", icon: CreditCardIcon },
   { name: "Configurações", href: "/admin/settings", icon: Cog6ToothIcon },
 ];
 
