@@ -11,9 +11,44 @@ import {
   LinkIcon,
   TrashIcon,
   BanknotesIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { recipientApi, type Lojista, type DadosBancarios } from "@/lib/RecipientApi";
 import { useNotification } from "@/contexts/NotificationContext";
+
+// Lista dos principais bancos do Brasil
+const BANCOS_BRASIL = [
+  { codigo: "001", nome: "Banco do Brasil" },
+  { codigo: "033", nome: "Banco Santander" },
+  { codigo: "104", nome: "Caixa Econômica Federal" },
+  { codigo: "237", nome: "Bradesco" },
+  { codigo: "341", nome: "Itaú Unibanco" },
+  { codigo: "077", nome: "Banco Inter" },
+  { codigo: "260", nome: "Nubank" },
+  { codigo: "212", nome: "Banco Original" },
+  { codigo: "041", nome: "Banrisul" },
+  { codigo: "422", nome: "Banco Safra" },
+  { codigo: "070", nome: "BRB - Banco de Brasília" },
+  { codigo: "136", nome: "Unicred" },
+  { codigo: "748", nome: "Sicredi" },
+  { codigo: "756", nome: "Sicoob" },
+  { codigo: "623", nome: "Banco PAN" },
+  { codigo: "655", nome: "Banco Votorantim" },
+  { codigo: "637", nome: "Banco Sofisa" },
+  { codigo: "336", nome: "Banco C6" },
+  { codigo: "290", nome: "Pagseguro Internet" },
+  { codigo: "323", nome: "Mercado Pago" },
+  { codigo: "380", nome: "PicPay" },
+  { codigo: "403", nome: "Cora" },
+  { codigo: "197", nome: "Stone Pagamentos" },
+  { codigo: "332", nome: "Acesso Soluções de Pagamento" },
+  { codigo: "218", nome: "Banco BS2" },
+  { codigo: "389", nome: "Banco Mercantil do Brasil" },
+  { codigo: "633", nome: "Banco Rendimento" },
+  { codigo: "747", nome: "Banco Rabobank" },
+  { codigo: "399", nome: "Kirton Bank" },
+  { codigo: "654", nome: "Banco A.J. Renner" },
+].sort((a, b) => a.nome.localeCompare(b.nome));
 
 const AdminRecipients: React.FC = () => {
   const { success, error } = useNotification();
@@ -45,6 +80,11 @@ const AdminRecipients: React.FC = () => {
     holderName: "",
     holderDocument: "",
   });
+
+  // Bank autocomplete states
+  const [bankSearch, setBankSearch] = useState("");
+  const [showBankDropdown, setShowBankDropdown] = useState(false);
+  const [filteredBanks, setFilteredBanks] = useState(BANCOS_BRASIL);
 
   // Form states for link recipient
   const [linkForm, setLinkForm] = useState({
@@ -176,6 +216,40 @@ const AdminRecipients: React.FC = () => {
       agencia: "",
       agenciaDv: "",
       conta: "",
+    setBankSearch("");
+    setFilteredBanks(BANCOS_BRASIL);
+  };
+
+  // Filter banks based on search
+  useEffect(() => {
+    if (bankSearch.trim() === "") {
+      setFilteredBanks(BANCOS_BRASIL);
+    } else {
+      const searchLower = bankSearch.toLowerCase();
+      const filtered = BANCOS_BRASIL.filter(
+        (bank) =>
+          bank.nome.toLowerCase().includes(searchLower) ||
+          bank.codigo.includes(searchLower)
+      );
+      setFilteredBanks(filtered);
+    }
+  }, [bankSearch]);
+
+  const handleBankSelect = (codigo: string, nome: string) => {
+    setCreateForm({ ...createForm, bankCode: codigo });
+    setBankSearch(`${codigo} - ${nome}`);
+    setShowBankDropdown(false);
+  };
+
+  const handleBankSearchChange = (value: string) => {
+    setBankSearch(value);
+    setShowBankDropdown(true);
+    
+    // Se o usuário digitar apenas números, considerar como código
+    const numericValue = value.replace(/\D/g, "");
+    if (numericValue.length >= 3) {
+      setCreateForm({ ...createForm, bankCode: numericValue });
+    }
       contaDv: "",
       accountType: "conta_corrente",
       holderName: "",
@@ -461,19 +535,63 @@ const AdminRecipients: React.FC = () => {
                     type="email"
                     value={createForm.email}
                     onChange={(e) =>
-                      setCreateForm({ ...createForm, email: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="recipient-tipo" className="block text-sm font-medium text-gray-700 mb-1">
-                    Tipo
+                     className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Banco
                   </label>
-                  <select
-                    id="recipient-tipo"
-                    value={createForm.tipo}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={bankSearch}
+                      onChange={(e) => handleBankSearchChange(e.target.value)}
+                      onFocus={() => setShowBankDropdown(true)}
+                      className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Digite o nome ou código do banco"
+                      autoComplete="off"
+                    />
+                    <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                  
+                  {/* Dropdown de bancos */}
+                  {showBankDropdown && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setShowBankDropdown(false)}
+                      />
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {filteredBanks.length > 0 ? (
+                          filteredBanks.map((bank) => (
+                            <button
+                              key={bank.codigo}
+                              type="button"
+                              onClick={() => handleBankSelect(bank.codigo, bank.nome)}
+                              className="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-b-0"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-sm text-gray-900">
+                                  {bank.nome}
+                                </span>
+                                <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                  {bank.codigo}
+                                </span>
+                              </div>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                            Nenhum banco encontrado
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  
+                  {createForm.bankCode && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Código selecionado: <span className="font-mono font-medium">{createForm.bankCode}</span>
+                    </p>
+                  )}value={createForm.tipo}
                     onChange={(e) =>
                       setCreateForm({
                         ...createForm,
