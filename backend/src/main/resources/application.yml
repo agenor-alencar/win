@@ -19,9 +19,9 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 5
       connection-timeout: 30000  # 30s para obter conexão do pool
-      idle-timeout: 300000  # 5 minutos - tempo que conexão ociosa fica no pool
-      max-lifetime: 600000  # 10 minutos - tempo máximo de vida da conexão (menor que timeout do PostgreSQL)
-      keepalive-time: 120000  # 2 minutos - ping de keepalive para manter conexões vivas
+      idle-timeout: 120000  # 2 minutos - tempo que conexão ociosa fica no pool
+      max-lifetime: 240000  # 4 minutos - tempo máximo de vida da conexão (menor que idle timeout do PostgreSQL)
+      keepalive-time: 60000  # 1 minuto - ping de keepalive para manter conexões vivas
       connection-test-query: SELECT 1  # Query para testar conexões
       validation-timeout: 5000  # 5s timeout de validação
       leak-detection-threshold: 60000  # Detectar vazamento após 60s
