@@ -437,10 +437,11 @@ public class PagamentoService {
                 Map<String, Object> ordem = pagarMeService.buscarOrdem(pagamento.getTransacaoId());
                 
                 // Extrair dados do PIX da resposta do Pagar.me
-                Map<String, Object> charges = (Map<String, Object>) ordem.get("charges");
-                if (charges != null) {
-                    List<Map<String, Object>> chargeList = (List<Map<String, Object>>) charges.get("data");
-                    if (chargeList != null && !chargeList.isEmpty()) {
+                // A resposta tem charges como array direto, não charges.data
+                Object chargesObj = ordem.get("charges");
+                if (chargesObj instanceof List) {
+                    List<Map<String, Object>> chargeList = (List<Map<String, Object>>) chargesObj;
+                    if (!chargeList.isEmpty()) {
                         Map<String, Object> charge = chargeList.get(0);
                         Map<String, Object> lastTransaction = (Map<String, Object>) charge.get("last_transaction");
                         
@@ -450,6 +451,10 @@ public class PagamentoService {
                             billing.put("billingId", pagamento.getTransacaoId());
                             billing.put("amount", pagamento.getValor().multiply(new java.math.BigDecimal(100)).intValue());
                             billing.put("status", pagamento.getStatus().toString().toLowerCase());
+                            
+                            log.info("📋 Dados PIX carregados - qrCode: {}, qrCodeUrl: {}", 
+                                lastTransaction.get("qr_code") != null ? "presente" : "ausente",
+                                lastTransaction.get("qr_code_url") != null ? "presente" : "ausente");
                         }
                     }
                 }
