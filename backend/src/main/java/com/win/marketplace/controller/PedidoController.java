@@ -5,6 +5,7 @@ import com.win.marketplace.dto.response.PedidoResponseDTO;
 import com.win.marketplace.model.Pedido;
 import com.win.marketplace.service.PedidoService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +24,7 @@ import java.util.UUID;
  * - Atualizar status/operações: ADMIN ou LOJISTA
  * - Motorista: Pode ver pedidos atribuídos a ele e atualizar status de entrega
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/pedidos")
 public class PedidoController {
@@ -52,7 +54,9 @@ public class PedidoController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<PedidoResponseDTO>> listarPedidosPorUsuario(
             @PathVariable UUID usuarioId) {
+        log.info("GET /api/v1/pedidos/usuario/{} - Buscando pedidos do usuário", usuarioId);
         List<PedidoResponseDTO> pedidos = pedidoService.listarPedidosPorUsuario(usuarioId);
+        log.info("Encontrados {} pedidos para o usuário {}", pedidos.size(), usuarioId);
         return ResponseEntity.ok(pedidos);
     }
 

@@ -16,6 +16,18 @@ import java.util.UUID;
 @Repository
 public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     
+    /**
+     * Busca pedidos do usuário com join fetch de itens, produtos e imagens
+     * Evita problema de LazyInitializationException ao mapear para DTO
+     */
+    @Query("SELECT DISTINCT p FROM Pedido p " +
+           "LEFT JOIN FETCH p.itens i " +
+           "LEFT JOIN FETCH i.produto prod " +
+           "LEFT JOIN FETCH prod.imagens " +
+           "WHERE p.usuario.id = :usuarioId " +
+           "ORDER BY p.criadoEm DESC")
+    List<Pedido> findByUsuarioIdWithDetails(@Param("usuarioId") UUID usuarioId);
+    
     List<Pedido> findByUsuarioId(UUID usuarioId);
     
     List<Pedido> findByMotoristaId(UUID motoristaId);

@@ -114,7 +114,8 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public List<PedidoResponseDTO> listarPedidosPorUsuario(UUID usuarioId) {
-        List<Pedido> pedidos = pedidoRepository.findByUsuarioId(usuarioId);
+        // Usa query com join fetch para evitar LazyInitializationException
+        List<Pedido> pedidos = pedidoRepository.findByUsuarioIdWithDetails(usuarioId);
         return pedidoMapper.toResponseDTOList(pedidos);
     }
 

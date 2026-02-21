@@ -24,12 +24,14 @@
 - **Doc**: `_DOCS/CORRECAO_QRCODE_PIX.md`
 - **Data**: 21/02/2026
 
-### 4. ✅ Página de Pedidos - TypeError
-- **Problema**: Página não carregava devido a campos incompatíveis
+### 4. ✅ Página de Pedidos - TypeError + LazyInitializationException
+- **Problema 1**: Campos incompatíveis entre backend e frontend
+- **Problema 2**: LazyInitializationException ao acessar imagens dos produtos
 - **Solução**:
   - Backend: Adicionado `produtoImagem` no ItemPedidoResponseDTO
   - Frontend: Corrigidos nomes de campos (criadoEm, total, produtoNome, etc)
-- **Doc**: `_DOCS/CORRECAO_PAGINA_PEDIDOS.md`
+  - **Join Fetch**: Query otimizada carrega itens, produtos e imagens em uma única query
+- **Doc**: `_DOCS/CORRECAO_PAGINA_PEDIDOS.md` + `_DOCS/CORRECAO_FINAL_JOIN_FETCH.md`
 - **Data**: 21/02/2026
 
 ## Arquivos Modificados
@@ -39,10 +41,12 @@
 backend/src/main/java/com/win/marketplace/
 ├── security/JwtAuthenticationFilter.java
 ├── config/SecurityConfig.java
-├── controller/PedidoController.java
+├── controller/PedidoController.java (+ logging)
 ├── service/PagamentoService.java
-├── dto/response/ItemPedidoResponseDTO.java
-└── dto/mapper/ItemPedidoMapper.java
+├── service/PedidoService.java (usa join fetch)
+├── repository/PedidoRepository.java (+ findByUsuarioIdWithDetails)
+├── dto/response/ItemPedidoResponseDTO.java (+ produtoImagem)
+└── dto/mapper/ItemPedidoMapper.java (+ getPrimeiraImagemProduto)
 ```
 
 ### Frontend (React/TypeScript)
@@ -55,17 +59,19 @@ win-frontend/src/
 
 ## Scripts de Deploy
 
-1. `scripts/corrigir_lojistas_forbidden.sh` - Corrige acesso a lojistas
-2. `scripts/corrigir_fluxo_pagamento.sh` - Corrige fluxo de pagamento
+1. `scripts/corrigir_lojistas_forbidden.sh` - Corrige acesso a loji (primeira versão)
+4. `scripts/corrigir_join_fetch.sh` - Corrige LazyInitializationException (FINAL)
+5. `scripts/corrigir_fluxo_pagamento.sh` - Corrige fluxo de pagamento
 3. `scripts/corrigir_pagina_pedidos.sh` - Corrige página de pedidos
 4. `scripts/deploy_completo_pagamento.sh` - Deploy completo de tudo
 
 ## Testes Realizados
 
-### Local (Windows)
-- ✅ Compilação backend: BUILD SUCCESS (3x)
+### Local (Windows)4x)
 - ✅ Compilação frontend: BUILD SUCCESS (2x)
 - ✅ QR code PIX exibindo corretamente
+- ✅ Página de pedidos com join fetch otimizado
+- ✅ JAR gerado: marketplace-0.0.1-SNAPSHOT.jante
 - ✅ Página de pedidos sem TypeError
 
 ### Produção (VPS)
@@ -109,7 +115,8 @@ chmod +x scripts/deploy_completo_pagamento.sh
 3. **Teste de Pedidos**:
    - Acessar /orders após login
    - Verificar se pedidos são listados
-   - Verificar se imagens dos produtos aparecem
+   - Verificar se imagens dos produtos a
+   - **Verificar logs**: Deve aparecer "Encontrados X pedidos para o usuário"parecem
    - Verificar se valores estão corretos
 
 ## Impacto em Produção
@@ -169,10 +176,13 @@ Para problemas:
 
 **Status Final**: 🟢 Pronto para Deploy em Produção
 
-**Última Atualização**: 21/02/2026 - 17:35
+**Última Atualização**: 21/02/2026 - 17:52
+
+**Correção Crítica**: Join Fetch para LazyInitializationException 🔥
 
 **Próximos Passos**:
 1. Fazer backup completo do VPS
-2. Executar deploy em horário de baixo tráfego
+2. Executar `./scripts/corrigir_join_fetch.sh` em horário de baixo tráfego
 3. Validar todos os fluxos
-4. Monitorar por 24h
+4. Monitorar logs: `docker-compose logs -f backend | grep pedidos`
+5. Verificar performance por 24h
