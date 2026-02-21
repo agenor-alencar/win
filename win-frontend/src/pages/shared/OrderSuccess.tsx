@@ -460,13 +460,23 @@ const OrderSuccess: React.FC = () => {
                       Aguardando confirmação de pagamento
                     </p>
                     <p className="text-sm text-yellow-800">
-                      Assim que confirmarmos o pagamento, iniciaremos o processamento do seu pedido.
+                      {order.pagamento?.status === "APROVADO" 
+                        ? "Seu pagamento foi aprovado e estamos processando seu pedido."
+                        : "Finalize o pagamento para iniciarmos o processamento do seu pedido."}
                     </p>
                   </div>
                 </div>
                 {order.pagamento?.status !== "APROVADO" && (
                   <Button
-                    onClick={() => navigate(`/payment/${order.id}`)}
+                    onClick={() => {
+                      // Redireciona para a página de pagamento PIX
+                      if (order.pagamento?.formaPagamento?.toUpperCase().includes("PIX")) {
+                        navigate(`/pagamento/pix/${order.id}`);
+                      } else {
+                        // Para outros métodos, podemos redirecionar para o checkout
+                        navigate(`/checkout`);
+                      }
+                    }}
                     className="bg-yellow-600 hover:bg-yellow-700 text-white whitespace-nowrap shadow-sm"
                   >
                     <CreditCard className="h-4 w-4 mr-2" />
