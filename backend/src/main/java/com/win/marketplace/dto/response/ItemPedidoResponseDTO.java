@@ -8,6 +8,7 @@ public record ItemPedidoResponseDTO(
     UUID pedidoId,
     UUID produtoId,
     String produtoNome,
+    String produtoImagem,
     UUID variacaoProdutoId,
     String variacaoProdutoNome,
     Integer quantidade,

@@ -26,10 +26,24 @@ public interface ItemPedidoMapper {
     @Mapping(source = "pedido.id", target = "pedidoId")
     @Mapping(source = "produto.id", target = "produtoId")
     @Mapping(source = "produto.nome", target = "produtoNome")
+    @Mapping(target = "produtoImagem", expression = "java(getPrimeiraImagemProduto(itemPedido))")
     @Mapping(source = "variacao.id", target = "variacaoProdutoId")
     ItemPedidoResponseDTO toResponseDTO(ItemPedido itemPedido);
 
     List<ItemPedidoResponseDTO> toResponseDTOList(List<ItemPedido> itens);
+
+    /**
+     * Obtém a URL da primeira imagem do produto
+     */
+    default String getPrimeiraImagemProduto(ItemPedido itemPedido) {
+        if (itemPedido.getProduto() != null && itemPedido.getProduto().getImagens() != null) {
+            return itemPedido.getProduto().getImagens().stream()
+                .findFirst()
+                .map(imagem -> imagem.getUrl())
+                .orElse(null);
+        }
+        return null;
+    }
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "pedido", ignore = true)

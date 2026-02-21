@@ -71,19 +71,19 @@ export default function UserOrders() {
     try {
       const data = await ordersApi.getMyOrders(user.id);
       
-      // Mapear dados da API para o formato esperado
+      // Mapear dados da API para o formato esperado pelo componente
       const mappedOrders = data.map(order => ({
         id: order.id,
         orderNumber: order.numeroPedido,
-        date: order.dataCriacao,
+        date: order.criadoEm,
         status: order.status.toLowerCase() as Order["status"],
-        total: order.valorTotal,
+        total: order.total,
         items: order.itens.map(item => ({
           id: item.id,
-          name: item.nome,
-          image: item.imagem || "/placeholder.svg",
+          name: item.produtoNome,
+          image: item.produtoImagem || "/placeholder.svg",
           quantity: item.quantidade,
-          price: item.preco,
+          price: item.precoUnitario,
         })),
       }));
       

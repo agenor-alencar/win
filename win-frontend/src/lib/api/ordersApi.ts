@@ -3,19 +3,19 @@ import { api } from '../Api';
 export interface OrderItem {
   id: string;
   produtoId: string;
-  nome: string;
-  imagem: string;
+  produtoNome: string;
+  produtoImagem: string;
   quantidade: number;
-  preco: number;
+  precoUnitario: number;
   subtotal: number;
 }
 
 export interface Order {
   id: string;
   numeroPedido: string;
-  dataCriacao: string;
+  criadoEm: string;
   status: 'PENDENTE' | 'PROCESSANDO' | 'ENVIADO' | 'ENTREGUE' | 'CANCELADO';
-  valorTotal: number;
+  total: number;
   itens: OrderItem[];
   endereco?: {
     cep: string;
