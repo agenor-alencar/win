@@ -110,6 +110,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
                 .requestMatchers("/api/v1/entregas/**").permitAll() // Permitir simulação de frete
                 .requestMatchers("/api/v1/webhooks/**").permitAll() // Todos os webhooks públicos
+                .requestMatchers("/api/v1/pagamentos/webhooks/**").permitAll() // Webhooks de pagamento
+                .requestMatchers(HttpMethod.GET, "/api/v1/pagamentos/pedido/*/pix").permitAll() // Página de pagamento PIX pública
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger público
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/**").permitAll()

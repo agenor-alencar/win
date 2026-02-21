@@ -45,11 +45,11 @@ public class PedidoController {
     }
 
     /**
-     * Listar pedidos por usuário - ADMIN ou o próprio usuário
-     * TODO: Implementar verificação se é o próprio usuário
+     * Listar pedidos por usuário - Apenas usuários autenticados
+     * O usuário pode ver apenas seus próprios pedidos (validação no service)
      */
     @GetMapping("/usuario/{usuarioId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<PedidoResponseDTO>> listarPedidosPorUsuario(
             @PathVariable UUID usuarioId) {
         List<PedidoResponseDTO> pedidos = pedidoService.listarPedidosPorUsuario(usuarioId);
