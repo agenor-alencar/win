@@ -452,16 +452,27 @@ const OrderSuccess: React.FC = () => {
           {/* Informação Adicional */}
           {order.status === "PENDENTE" && (
             <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-yellow-900 mb-1">
-                    Aguardando confirmação de pagamento
-                  </p>
-                  <p className="text-sm text-yellow-800">
-                    Assim que confirmarmos o pagamento, iniciaremos o processamento do seu pedido.
-                  </p>
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex gap-3 flex-1">
+                  <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-yellow-900 mb-1">
+                      Aguardando confirmação de pagamento
+                    </p>
+                    <p className="text-sm text-yellow-800">
+                      Assim que confirmarmos o pagamento, iniciaremos o processamento do seu pedido.
+                    </p>
+                  </div>
                 </div>
+                {order.pagamento?.status !== "APROVADO" && (
+                  <Button
+                    onClick={() => navigate(`/payment/${order.id}`)}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white whitespace-nowrap shadow-sm"
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Efetuar Pagamento
+                  </Button>
+                )}
               </div>
             </div>
           )}
