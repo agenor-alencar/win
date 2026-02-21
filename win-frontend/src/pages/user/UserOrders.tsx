@@ -71,12 +71,21 @@ export default function UserOrders() {
     try {
       const data = await ordersApi.getMyOrders(user.id);
       
+      // Mapeamento de status PT-BR para EN
+      const statusMap: Record<string, Order["status"]> = {
+        PENDENTE: "pending",
+        PROCESSANDO: "processing",
+        ENVIADO: "shipped",
+        ENTREGUE: "delivered",
+        CANCELADO: "cancelled",
+      };
+      
       // Mapear dados da API para o formato esperado pelo componente
       const mappedOrders = data.map(order => ({
         id: order.id,
         orderNumber: order.numeroPedido,
         date: order.criadoEm,
-        status: order.status.toLowerCase() as Order["status"],
+        status: statusMap[order.status] || "pending",
         total: order.total,
         items: order.itens.map(item => ({
           id: item.id,
