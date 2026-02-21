@@ -582,4 +582,168 @@ public class PagamentoService {
             throw new RuntimeException("Erro ao processar webhook: " + e.getMessage());
         }
     }
+
+    /**
+     * Recria ou obtém pagamento PIX de um pedido existente
+     * Valida produtos, preços e estoque antes de criar novo pagamento
+     * 
+     * @param pedidoId ID do pedido
+     * @param dadosCliente Dados do cliente (nome, email, cpf, telefone)
+     * @return Map com billing, pedido e avisos sobre alterações
+     */
+    public Map<String, Object> obterOuRecriarPagamentoPix(
+        UUID pedidoId, 
+        Map<String, String> dadosCliente
+    ) {
+        log.info("🔄 Obtendo ou recriando pagamento PIX para pedido {}", pedidoId);
+        
+        // 1. Buscar pedido
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+            .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+        
+        // 2. Validar produtos do pedido
+        Map<String, Object> validacao = validarProdutosPedido(pedido);
+        boolean temAlteracoes = (boolean) validacao.getOrDefault("temAlteracoes", false);
+        List<Map<String, Object>> avisos = (List<Map<String, Object>>) validacao.get("avisos");
+        
+        // 3. Se houver produtos indisponíveis, retornar erro
+        List<Map<String, Object>> indisponiveis = avisos.stream()
+            .filter(a -> "PRODUTO_INDISPONIVEL".equals(a.get("tipo")))
+            .toList();
+        
+        if (!indisponiveis.isEmpty()) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "PRODUTOS_INDISPONIVEIS");
+            error.put("message", "Alguns produtos não estão mais disponíveis");
+            error.put("produtosIndisponiveis", indisponiveis);
+            return error;
+        }
+        
+        // 4. Tentar buscar pagamento PIX existente e ainda válido
+        Optional<Pagamento> pagamentoExistente = pagamentoRepository.findTopByPedidoOrderByCriadoEmDesc(pedido);
+        
+        if (pagamentoExistente.isPresent()) {
+            Pagamento pag = pagamentoExistente.get();
+            
+            // Verificar se o pagamento PIX ainda é válido (menos de 25 minutos)
+            if (pag.getTransacaoId() != null && 
+                pag.getCriadoEm() != null &&
+                java.time.Duration.between(pag.getCriadoEm(), java.time.LocalDateTime.now()).toMinutes() < 25) {
+                
+                log.info("✅ Pagamento PIX existente ainda válido");
+                
+                try {
+                    Map<String, Object> dadosPix = buscarDadosPagamentoPix(pedidoId);
+                    dadosPix.put("avisos", avisos);
+                    dadosPix.put("temAlteracoes", temAlteracoes);
+                    return dadosPix;
+                } catch (Exception e) {
+                    log.warn("⚠️ Erro ao buscar pagamento existente, criando novo: {}", e.getMessage());
+                }
+            } else {
+                log.info("⏱️ Pagamento PIX expirado ou inválido, criando novo");
+            }
+        }
+        
+        // 5. Criar novo pagamento PIX
+        log.info("🆕 Criando novo pagamento PIX");
+        
+        String nome = dadosCliente.getOrDefault("nome", pedido.getUsuario() != null ? pedido.getUsuario().getNome() : "Cliente");
+        String email = dadosCliente.getOrDefault("email", pedido.getUsuario() != null ? pedido.getUsuario().getEmail() : "");
+        String cpf = dadosCliente.get("cpf");
+        String telefone = dadosCliente.get("telefone");
+        
+        Map<String, Object> novoPix = criarPagamentoPixPagarMe(pedidoId, nome, email, cpf, telefone);
+        
+        // 6. Preparar resposta
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("billing", novoPix);
+        response.put("pedido", Map.of(
+            "id", pedido.getId().toString(),
+            "total", pedido.getTotal().doubleValue(),
+            "status", pedido.getStatusPagamento().toString()
+        ));
+        response.put("avisos", avisos);
+        response.put("temAlteracoes", temAlteracoes);
+        response.put("novoPagamento", true);
+        
+        log.info("✅ Novo pagamento PIX criado com sucesso");
+        
+        return response;
+    }
+    
+    /**
+     * Valida produtos do pedido verificando disponibilidade, preço e estoque
+     */
+    private Map<String, Object> validarProdutosPedido(Pedido pedido) {
+        List<Map<String, Object>> avisos = new ArrayList<>();
+        boolean temAlteracoes = false;
+        
+        for (ItemPedido item : pedido.getItens()) {
+            if (item.getProduto() == null) {
+                avisos.add(Map.of(
+                    "tipo", "PRODUTO_INDISPONIVEL",
+                    "mensagem", "Produto não encontrado no sistema",
+                    "produtoNome", item.getNomeProduto() != null ? item.getNomeProduto() : "Desconhecido"
+                ));
+                temAlteracoes = true;
+                continue;
+            }
+            
+            var produto = item.getProduto();
+            
+            // Verificar se produto está ativo
+            if (!produto.getAtivo()) {
+                avisos.add(Map.of(
+                    "tipo", "PRODUTO_INDISPONIVEL",
+                    "mensagem", "Produto não está mais disponível",
+                    "produtoNome", produto.getNome()
+                ));
+                temAlteracoes = true;
+                continue;
+            }
+            
+            // Verificar estoque
+            if (produto.getEstoque() < item.getQuantidade()) {
+                if (produto.getEstoque() == 0) {
+                    avisos.add(Map.of(
+                        "tipo", "PRODUTO_INDISPONIVEL",
+                        "mensagem", "Produto sem estoque",
+                        "produtoNome", produto.getNome()
+                    ));
+                } else {
+                    avisos.add(Map.of(
+                        "tipo", "ESTOQUE_ALTERADO",
+                        "mensagem", String.format("Estoque reduzido para %d unidade(s)", produto.getEstoque()),
+                        "produtoNome", produto.getNome(),
+                        "estoqueDisponivel", produto.getEstoque(),
+                        "quantidadePedido", item.getQuantidade()
+                    ));
+                }
+                temAlteracoes = true;
+            }
+            
+            // Verificar alteração de preço
+            if (produto.getPreco().compareTo(item.getPrecoUnitario()) != 0) {
+                avisos.add(Map.of(
+                    "tipo", "PRECO_ALTERADO",
+                    "mensagem", String.format("Preço atualizado de R$ %.2f para R$ %.2f", 
+                        item.getPrecoUnitario().doubleValue(),
+                        produto.getPreco().doubleValue()),
+                    "produtoNome", produto.getNome(),
+                    "precoAnterior", item.getPrecoUnitario().doubleValue(),
+                    "precoAtual", produto.getPreco().doubleValue()
+                ));
+                temAlteracoes = true;
+            }
+        }
+        
+        Map<String, Object> resultado = new HashMap<>();
+        resultado.put("avisos", avisos);
+        resultado.put("temAlteracoes", temAlteracoes);
+        
+        return resultado;
+    }
 }

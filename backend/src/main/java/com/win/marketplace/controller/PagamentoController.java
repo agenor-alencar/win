@@ -351,6 +351,43 @@ public class PagamentoController {
     }
 
     /**
+     * Obtém ou recria pagamento PIX com validação de produtos
+     * Se o pagamento existir e for válido, retorna ele
+     * Se expirou ou não existe, cria um novo automaticamente
+     * Valida produtos, preços e estoque antes de criar
+     */
+    @PostMapping("/pedido/{pedidoId}/pix/obter-ou-recriar")
+    public ResponseEntity<?> obterOuRecriarPagamentoPix(
+        @PathVariable UUID pedidoId,
+        @RequestBody Map<String, String> dadosCliente
+    ) {
+        try {
+            Map<String, Object> resultado = pagamentoService.obterOuRecriarPagamentoPix(pedidoId, dadosCliente);
+            
+            // Se tem produtos indisponíveis, retornar 400
+            if (resultado.containsKey("error") && "PRODUTOS_INDISPONIVEIS".equals(resultado.get("error"))) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado);
+            }
+            
+            return ResponseEntity.ok(resultado);
+            
+        } catch (RuntimeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "ERRO_PROCESSAMENTO");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "ERRO_INTERNO");
+            error.put("message", "Erro inesperado ao processar pagamento: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
      * Verifica status do pagamento PIX no Pagar.me
      */
     @GetMapping("/{orderId}/status")

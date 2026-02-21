@@ -3,13 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { 
   CheckCircle, Package, Truck, MapPin, Calendar, 
   CreditCard, FileText, ArrowLeft, Download, 
-  Clock, XCircle, AlertCircle
+  Clock, XCircle, AlertCircle, Loader2
 } from "lucide-react";
 import Header from "@/components/Header";
 import { ordersApi } from "@/lib/api/ordersApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useNotification } from "@/contexts/NotificationContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/Api";
 
 interface OrderDetails {
   id: string;
@@ -52,9 +55,12 @@ interface OrderDetails {
 const OrderSuccess: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
+  const { error: showError, success: showSuccess, warning: showWarning } = useNotification();
+  const { user } = useAuth();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [processandoPagamento, setProcessandoPagamento] = useState(false);
 
   // Configuração de status
   const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -106,6 +112,100 @@ const OrderSuccess: React.FC = () => {
 
     fetchOrder();
   }, [orderId]);
+
+  const handleEfetuarPagamento = async () => {
+    if (!order?.id) return;
+    
+    setProcessandoPagamento(true);
+    
+    try {
+      // Verifica se é pagamento PIX
+      if (order.pagamento?.formaPagamento?.toUpperCase().includes("PIX")) {
+        // Prepara dados do cliente para validação
+        const dadosCliente = {
+          nome: user?.nome || "Cliente",
+          email: user?.email || "",
+          cpf: "", // CPF não está disponível no contexto, mas backend pode buscar do pedido
+          telefone: user?.telefone || ""
+        };
+
+        // Chama novo endpoint que valida produtos e recria PIX se necessário
+        const response = await api.post(
+          `/v1/pagamentos/pedido/${order.id}/pix/obter-ou-recriar`,
+          dadosCliente
+        );
+        
+        if (response.data?.success) {
+          const avisos = response.data.avisos || [];
+          
+          // Verifica se há produtos indisponíveis
+          const produtosIndisponiveis = avisos.filter(
+            (aviso: any) => aviso.tipo === "PRODUTO_INDISPONIVEL"
+          );
+          
+          if (produtosIndisponiveis.length > 0) {
+            // Bloqueia pagamento se produtos não estão disponíveis
+            const mensagens = produtosIndisponiveis
+              .map((aviso: any) => `- ${aviso.produtoNome}: ${aviso.mensagem}`)
+              .join("\n");
+            
+            showError(
+              "Produtos Indisponíveis",
+              `Os seguintes produtos não estão mais disponíveis:\n${mensagens}`
+            );
+            return;
+          }
+          
+          // Exibe avisos sobre alterações de preço/estoque (não bloqueantes)
+          const alteracoes = avisos.filter(
+            (aviso: any) => aviso.tipo === "PRECO_ALTERADO" || aviso.tipo === "ESTOQUE_ALTERADO"
+          );
+          
+          if (alteracoes.length > 0) {
+            const mensagens = alteracoes
+              .map((aviso: any) => `${aviso.produtoNome}: ${aviso.mensagem}`)
+              .join("\n");
+            
+            showWarning(
+              "Alterações nos Produtos",
+              `Alguns produtos tiveram alterações:\n${mensagens}\n\nVocê pode prosseguir com o pagamento.`
+            );
+            
+            // Pequeno delay para o usuário ler o aviso
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+          
+          // Redireciona para a página de pagamento PIX
+          navigate(`/pagamento/pix/${order.id}`);
+        }
+      } else {
+        // Para outros métodos, redireciona para checkout
+        navigate(`/checkout`);
+      }
+    } catch (error: any) {
+      console.error("Erro ao processar pagamento:", error);
+      
+      // Tratamento específico de erros
+      if (error.response?.status === 404) {
+        showError(
+          "Pedido não encontrado",
+          "O pedido não foi encontrado no sistema."
+        );
+      } else if (error.response?.data?.error === "PRODUTOS_INDISPONIVEIS") {
+        showError(
+          "Produtos Indisponíveis",
+          error.response.data.message || "Alguns produtos não estão mais disponíveis."
+        );
+      } else {
+        showError(
+          "Erro ao Processar Pagamento",
+          error.response?.data?.message || "Não foi possível processar o pagamento. Tente novamente."
+        );
+      }
+    } finally {
+      setProcessandoPagamento(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -468,19 +568,21 @@ const OrderSuccess: React.FC = () => {
                 </div>
                 {order.pagamento?.status !== "APROVADO" && (
                   <Button
-                    onClick={() => {
-                      // Redireciona para a página de pagamento PIX
-                      if (order.pagamento?.formaPagamento?.toUpperCase().includes("PIX")) {
-                        navigate(`/pagamento/pix/${order.id}`);
-                      } else {
-                        // Para outros métodos, podemos redirecionar para o checkout
-                        navigate(`/checkout`);
-                      }
-                    }}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white whitespace-nowrap shadow-sm"
+                    onClick={handleEfetuarPagamento}
+                    disabled={processandoPagamento}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white whitespace-nowrap shadow-sm disabled:opacity-50"
                   >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Efetuar Pagamento
+                    {processandoPagamento ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Efetuar Pagamento
+                      </>
+                    )}
                   </Button>
                 )}
               </div>
