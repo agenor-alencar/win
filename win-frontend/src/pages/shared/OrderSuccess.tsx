@@ -6,7 +6,7 @@ import {
   Clock, XCircle, AlertCircle, Loader2
 } from "lucide-react";
 import Header from "@/components/Header";
-import { ordersApi } from "@/lib/api/ordersApi";
+import { ordersApi, Order } from "@/lib/api/ordersApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,50 +14,12 @@ import { useNotification } from "@/contexts/NotificationContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/Api";
 
-interface OrderDetails {
-  id: string;
-  numeroPedido: string;
-  status: string;
-  subtotal: number;
-  desconto: number;
-  frete: number;
-  total: number;
-  criadoEm: string;
-  confirmadoEm?: string;
-  entregueEm?: string;
-  enderecoEntrega?: {
-    logradouro: string;
-    numero: string;
-    complemento?: string;
-    bairro: string;
-    cidade: string;
-    estado: string;
-    cep: string;
-  };
-  pagamento?: {
-    formaPagamento: string;
-    status: string;
-  };
-  itens: Array<{
-    id: string;
-    produtoNome: string;
-    produtoImagem: string;
-    quantidade: number;
-    precoUnitario: number;
-    subtotal: number;
-  }>;
-  notaFiscal?: {
-    numeroNota: string;
-    urlPdf: string;
-  };
-}
-
 const OrderSuccess: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { error: showError, success: showSuccess, warning: showWarning } = useNotification();
   const { user } = useAuth();
-  const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processandoPagamento, setProcessandoPagamento] = useState(false);
@@ -116,11 +78,16 @@ const OrderSuccess: React.FC = () => {
   const handleEfetuarPagamento = async () => {
     if (!order?.id) return;
     
+    console.log("🔵 Iniciando processo de pagamento para pedido:", order.id);
+    console.log("🔵 Forma de pagamento:", order.pagamento?.formaPagamento);
+    
     setProcessandoPagamento(true);
     
     try {
       // Verifica se é pagamento PIX
       if (order.pagamento?.formaPagamento?.toUpperCase().includes("PIX")) {
+        console.log("✅ Pagamento identificado como PIX");
+        
         // Prepara dados do cliente para validação
         const dadosCliente = {
           nome: user?.nome || "Cliente",
@@ -129,11 +96,16 @@ const OrderSuccess: React.FC = () => {
           telefone: user?.telefone || ""
         };
 
+        console.log("📤 Chamando endpoint de validação e recriação de PIX...");
+        console.log("📤 Dados do cliente:", dadosCliente);
+
         // Chama novo endpoint que valida produtos e recria PIX se necessário
         const response = await api.post(
           `/v1/pagamentos/pedido/${order.id}/pix/obter-ou-recriar`,
           dadosCliente
         );
+        
+        console.log("✅ Resposta do backend:", response.data);
         
         if (response.data?.success) {
           const avisos = response.data.avisos || [];
@@ -171,19 +143,25 @@ const OrderSuccess: React.FC = () => {
               `Alguns produtos tiveram alterações:\n${mensagens}\n\nVocê pode prosseguir com o pagamento.`
             );
             
+            console.log("⚠️ Avisos exibidos ao usuário");
             // Pequeno delay para o usuário ler o aviso
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
           
           // Redireciona para a página de pagamento PIX
+          console.log("🔄 Redirecionando para /pagamento/pix/" + order.id);
           navigate(`/pagamento/pix/${order.id}`);
+          console.log("✅ Navigate executado");
         }
       } else {
+        console.log("ℹ️ Não é pagamento PIX, redirecionando para checkout");
         // Para outros métodos, redireciona para checkout
         navigate(`/checkout`);
       }
     } catch (error: any) {
-      console.error("Erro ao processar pagamento:", error);
+      console.error("❌ Erro ao processar pagamento:", error);
+      console.error("❌ Status:", error.response?.status);
+      console.error("❌ Dados:", error.response?.data);
       
       // Tratamento específico de erros
       if (error.response?.status === 404) {
@@ -203,6 +181,7 @@ const OrderSuccess: React.FC = () => {
         );
       }
     } finally {
+      console.log("🏁 Finalizando processo de pagamento");
       setProcessandoPagamento(false);
     }
   };

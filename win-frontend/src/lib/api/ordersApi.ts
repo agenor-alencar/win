@@ -13,19 +13,36 @@ export interface OrderItem {
 export interface Order {
   id: string;
   numeroPedido: string;
-  criadoEm: string;
+  usuarioId?: string;
+  usuarioNome?: string;
+  motoristaId?: string;
+  motoristaNome?: string;
   status: 'PENDENTE' | 'PROCESSANDO' | 'ENVIADO' | 'ENTREGUE' | 'CANCELADO';
+  subtotal: number;
+  desconto: number;
+  frete: number;
   total: number;
-  itens: OrderItem[];
-  endereco?: {
-    cep: string;
+  enderecoEntrega?: {
     logradouro: string;
     numero: string;
     complemento?: string;
     bairro: string;
     cidade: string;
     estado: string;
+    cep: string;
   };
+  pagamento?: {
+    formaPagamento: string;
+    status: string;
+  };
+  notaFiscal?: {
+    numeroNota: string;
+    urlPdf: string;
+  };
+  criadoEm: string;
+  confirmadoEm?: string;
+  entregueEm?: string;
+  itens: OrderItem[];
 }
 
 class OrdersApi {
