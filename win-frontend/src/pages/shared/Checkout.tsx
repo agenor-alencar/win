@@ -501,9 +501,9 @@ const Checkout: React.FC = () => {
       } else if (paymentMethod === "boleto") {
         // Processar pagamento tradicional
         const pagamentoData = {
-          pedidoId: pedido.id,
+          pedidoId: pedidoIdFinal,
           metodoPagamento: "BOLETO",
-          valor: total,
+          valor: modoReprocessamento ? pedidoExistente.total : total,
           parcelas: null,
           informacoesCartao: null,
         };
