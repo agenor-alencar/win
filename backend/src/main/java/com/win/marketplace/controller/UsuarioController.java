@@ -4,6 +4,7 @@ import com.win.marketplace.dto.request.RegisterRequestDTO;
 import com.win.marketplace.dto.request.PasswordUpdateRequestDTO;
 import com.win.marketplace.dto.request.LojistaRequestDTO;
 import com.win.marketplace.dto.response.UsuarioResponseDTO;
+import com.win.marketplace.exception.BusinessException;
 import com.win.marketplace.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -94,21 +95,46 @@ public class UsuarioController {
     }
 
     /**
-     * Atualizar usuário - Apenas ADMIN
+     * Atualizar perfil próprio - Qualquer usuário autenticado
+     * Este endpoint permite que usuários atualizem seu próprio perfil
      */
     @PutMapping("/update/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioResponseDTO> atualizarUsuario(@PathVariable UUID id, @RequestBody RegisterRequestDTO requestDTO) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UsuarioResponseDTO> atualizarUsuario(
+            @PathVariable UUID id, 
+            @RequestBody RegisterRequestDTO requestDTO,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        // Verificar se o usuário está tentando atualizar seu próprio perfil
+        String emailAutenticado = userDetails.getUsername();
+        UsuarioResponseDTO usuarioAutenticado = usuarioService.buscarPorEmail(emailAutenticado);
+        
+        if (!usuarioAutenticado.id().equals(id)) {
+            throw new BusinessException("Você só pode atualizar seu próprio perfil");
+        }
+        
         UsuarioResponseDTO usuario = usuarioService.atualizarUsuario(id, requestDTO);
         return ResponseEntity.ok(usuario);
     }
 
     /**
-     * Atualizar senha - Apenas ADMIN
+     * Atualizar senha - Usuário autenticado pode atualizar sua própria senha
      */
     @PatchMapping("/senha/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioResponseDTO> atualizarSenha(@PathVariable UUID id, @RequestBody PasswordUpdateRequestDTO dto) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UsuarioResponseDTO> atualizarSenha(
+            @PathVariable UUID id, 
+            @RequestBody PasswordUpdateRequestDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        // Verificar se o usuário está tentando atualizar sua própria senha
+        String emailAutenticado = userDetails.getUsername();
+        UsuarioResponseDTO usuarioAutenticado = usuarioService.buscarPorEmail(emailAutenticado);
+        
+        if (!usuarioAutenticado.id().equals(id)) {
+            throw new BusinessException("Você só pode atualizar sua própria senha");
+        }
+        
         UsuarioResponseDTO usuario = usuarioService.atualizarSenha(id, dto);
         return ResponseEntity.ok(usuario);
     }
