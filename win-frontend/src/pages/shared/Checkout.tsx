@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useCart } from "../../contexts/CartContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { api } from "@/lib/Api";
+import { ordersApi } from "@/lib/api/ordersApi";
 import AbacatePayCheckout from "@/components/AbacatePayCheckout";
 import { shippingApi, FreteResponseDTO } from "@/lib/api/shippingApi";
 import { lojistaApi } from "@/lib/api/lojistaApi";
@@ -35,6 +36,8 @@ const Checkout: React.FC = () => {
   const { state: cartState, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { success, error: showError } = useNotification();
 
   const [loading, setLoading] = useState(false);
@@ -43,6 +46,8 @@ const Checkout: React.FC = () => {
   const [billingId, setBillingId] = useState<string | null>(null);
   const [billingAmount, setBillingAmount] = useState<number>(0);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
+  const [pedidoExistente, setPedidoExistente] = useState<any>(null);
+  const [modoReprocessamento, setModoReprocessamento] = useState(false);
   
   // Estados para frete dinâmico
   const [simulacaoFrete, setSimulacaoFrete] = useState<FreteResponseDTO | null>(null);
@@ -77,10 +82,59 @@ const Checkout: React.FC = () => {
   });
 
   useEffect(() => {
-    if (cartState.items.length === 0) {
+    // Verifica se está reprocessando um pedido existente
+    const pedidoIdParam = searchParams.get('pedido');
+    const locationState = location.state as any;
+    
+    if (pedidoIdParam || locationState?.pedidoExistente) {
+      const idPedido = pedidoIdParam || locationState?.pedidoId;
+      console.log("🔵 Modo reprocessamento ativado - Pedido:", idPedido);
+      
+      setModoReprocessamento(true);
+      setPedidoId(idPedido);
+      
+      // Carrega dados do pedido
+      const carregarPedido = async () => {
+        try {
+          setLoading(true);
+          const pedido = await ordersApi.getOrderById(idPedido);
+          setPedidoExistente(pedido);
+          
+          // Popula endereço de entrega
+          if (pedido.enderecoEntrega) {
+            setAddress({
+              cep: pedido.enderecoEntrega.cep || "",
+              logradouro: pedido.enderecoEntrega.logradouro || "",
+              numero: pedido.enderecoEntrega.numero || "",
+              complemento: pedido.enderecoEntrega.complemento || "",
+              bairro: pedido.enderecoEntrega.bairro || "",
+              cidade: pedido.enderecoEntrega.cidade || "",
+              uf: pedido.enderecoEntrega.estado || "",
+            });
+          }
+          
+          console.log("✅ Pedido carregado:", pedido);
+        } catch (error) {
+          console.error("❌ Erro ao carregar pedido:", error);
+          showError("Erro", "Não foi possível carregar os dados do pedido");
+          navigate("/orders");
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      carregarPedido();
+    } else if (cartState.items.length === 0) {
+      // Modo normal: redireciona se carrinho vazio
       navigate("/cart");
     }
-  }, [cartState.items, navigate]);
+  }, [searchParams, location.state]);
+
+  useEffect(() => {
+    if (cartState.items.length === 0 && !modoReprocessamento) {
+      navigate("/cart");
+    }
+  }, [cartState.items, navigate, modoReprocessamento]);
 
   // Verifica se é primeira compra
   useEffect(() => {
@@ -245,15 +299,20 @@ const Checkout: React.FC = () => {
     calcularFrete();
   }, [address.cep, address.logradouro, address.numero, address.cidade, address.uf, user, isPrimeiraCompra, cartState.items, freteCalculado, enderecoId, success, showError]);
 
-  const subtotal = cartState.total;
+  // 💰 Cálculo de valores
+  const subtotal = modoReprocessamento && pedidoExistente 
+    ? pedidoExistente.subtotal 
+    : cartState.total;
   
-  // ✅ Cálculo do frete para exibição ao cliente:
-  // - Se for primeira compra: Cliente paga R$ 0 (WIN assume o custo)
-  // - Se não: Cliente paga o valor calculado pela Uber
-  const freteValorReal = simulacaoFrete ? simulacaoFrete.valorFreteTotal : 15.0;
+  const freteValorReal = modoReprocessamento && pedidoExistente
+    ? pedidoExistente.frete
+    : (simulacaoFrete ? simulacaoFrete.valorFreteTotal : 15.0);
+  
   const freteClientePaga = isPrimeiraCompra ? 0 : freteValorReal;
   const shipping = freteClientePaga;
-  const total = subtotal + shipping;
+  const total = modoReprocessamento && pedidoExistente
+    ? pedidoExistente.total
+    : (subtotal + shipping);
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\s/g, "");
@@ -321,50 +380,62 @@ const Checkout: React.FC = () => {
     setLoading(true);
 
     try {
-      // Preparar dados do pedido (SEM informações de pagamento - serão adicionadas depois)
-      const pedidoData = {
-        usuarioId: user.id,
-        enderecoEntrega: {
-          cep: address.cep,
-          logradouro: address.logradouro,
-          numero: address.numero,
-          complemento: address.complemento || "",
-          bairro: address.bairro,
-          cidade: address.cidade,
-          uf: address.uf,
-        },
-        desconto: 0.00,
-        frete: parseFloat(shipping.toFixed(2)),
-        // Passar quoteId da Uber para garantir o preço cotado
-        quoteId: simulacaoFrete?.quoteId || null,
-        // Passar valores detalhados do frete
-        valorFreteReal: simulacaoFrete?.valorFreteTotal || shipping,
-        valorCorridaUber: simulacaoFrete?.valorCorridaUber || 0,
-        taxaWin: simulacaoFrete?.taxaWin || 0,
-        itens: cartState.items.map((item) => ({
-          produtoId: item.id,
-          quantidade: item.quantity,
-          precoUnitario: parseFloat(item.price.toFixed(2)),
-        })),
-      };
-
-      console.log("📦 Criando pedido com dados:", JSON.stringify(pedidoData, null, 2));
-
-      // Criar pedido no backend
-      const pedidoResponse = await api.post("/v1/pedidos", pedidoData);
-      const pedido = pedidoResponse.data;
+      let pedidoIdFinal = pedidoId;
       
-      console.log("✅ Pedido criado:", pedido);
+      // 🔄 MODO REPROCESSAMENTO: Usar pedido existente
+      if (modoReprocessamento && pedidoExistente) {
+        console.log("🔄 Modo Reprocessamento - Usando pedido existente:", pedidoExistente.id);
+        pedidoIdFinal = pedidoExistente.id;
+        
+        // Atualizar endereço se foi modificado (opcional)
+        // TODO: Implementar atualização de endereço se necessário
+        
+      } else {
+        // 📦 MODO NORMAL: Criar novo pedido
+        console.log("📦 Modo Normal - Criando novo pedido");
+        
+        const pedidoData = {
+          usuarioId: user.id,
+          enderecoEntrega: {
+            cep: address.cep,
+            logradouro: address.logradouro,
+            numero: address.numero,
+            complemento: address.complemento || "",
+            bairro: address.bairro,
+            cidade: address.cidade,
+            uf: address.uf,
+          },
+          desconto: 0.00,
+          frete: parseFloat(shipping.toFixed(2)),
+          quoteId: simulacaoFrete?.quoteId || null,
+          valorFreteReal: simulacaoFrete?.valorFreteTotal || shipping,
+          valorCorridaUber: simulacaoFrete?.valorCorridaUber || 0,
+          taxaWin: simulacaoFrete?.taxaWin || 0,
+          itens: cartState.items.map((item) => ({
+            produtoId: item.id,
+            quantidade: item.quantity,
+            precoUnitario: parseFloat(item.price.toFixed(2)),
+          })),
+        };
 
-      // Processar pagamento via Pagar.me (Stone)
+        console.log("📦 Criando pedido com dados:", JSON.stringify(pedidoData, null, 2));
+
+        const pedidoResponse = await api.post("/v1/pedidos", pedidoData);
+        const pedido = pedidoResponse.data;
+        pedidoIdFinal = pedido.id;
+        
+        console.log("✅ Pedido criado:", pedido);
+      }
+
+      // 💳 PROCESSAR PAGAMENTO (funciona para ambos os modos)
       if (paymentMethod === "pix") {
-        console.log("💳 Iniciando pagamento PIX via Pagar.me para pedido:", pedido.id);
+        console.log("💳 Iniciando pagamento PIX via Pagar.me para pedido:", pedidoIdFinal);
         console.log("👤 Nome:", pixData.nome);
         console.log("📧 Email:", pixData.email);
         
         // Criar cobrança PIX no Pagar.me
         const pixResponse = await api.post(
-          `/v1/pagamentos/pagarme/pix/${pedido.id}`,
+          `/v1/pagamentos/pagarme/pix/${pedidoIdFinal}`,
           {
             nome: pixData.nome,
             cpf: pixData.cpf.replace(/\D/g, ""),
@@ -375,7 +446,6 @@ const Checkout: React.FC = () => {
 
         console.log("✅ Resposta do backend Pagar.me:", pixResponse.data);
 
-        // Backend retorna a cobrança
         const { billing } = pixResponse.data;
         
         if (!billing || !billing.checkoutUrl) {
@@ -386,19 +456,21 @@ const Checkout: React.FC = () => {
         console.log("🎫 Checkout URL recebido:", billing.checkoutUrl);
         console.log("🆔 Billing ID:", billing.billingId);
         
-        // Limpar carrinho
-        clearCart();
+        // Limpar carrinho apenas se for modo normal
+        if (!modoReprocessamento) {
+          clearCart();
+        }
         
         console.log("✅ Pedido finalizado, redirecionando para pagamento...");
         success("Pedido criado!", "Redirecionando para o pagamento...");
         
         // Redirecionar para página de pagamento PIX
         setTimeout(() => {
-          navigate(`/pagamento/pix/${pedido.id}`, {
+          navigate(`/pagamento/pix/${pedidoIdFinal}`, {
             state: {
-              pedidoId: pedido.id,
+              pedidoId: pedidoIdFinal,
               billing: billing,
-              total: total
+              total: modoReprocessamento ? pedidoExistente.total : total
             }
           });
         }, 1000);
@@ -407,7 +479,7 @@ const Checkout: React.FC = () => {
         // Criar checkout de cartão
         const cartaoResponse = await api.post("/v1/pagamentos/mercadopago/cartao", null, {
           params: {
-            pedidoId: pedido.id
+            pedidoId: pedidoIdFinal
           }
         });
 
@@ -491,6 +563,25 @@ const Checkout: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Finalizar Compra</h1>
+
+        {/* Indicador de modo reprocessamento */}
+        {modoReprocessamento && pedidoExistente && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-blue-800">
+                Completando Pedido #{pedidoExistente.id}
+              </h3>
+              <p className="mt-1 text-sm text-blue-700">
+                Complete a forma de pagamento e confirme o endereço de entrega para finalizar seu pedido.
+              </p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -873,26 +964,51 @@ const Checkout: React.FC = () => {
 
                 {/* Itens */}
                 <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-                  {cartState.items.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {item.quantity}x R$ {item.price.toFixed(2)}
+                  {modoReprocessamento && pedidoExistente ? (
+                    /* Itens do pedido existente */
+                    pedidoExistente.itens?.map((item: any) => (
+                      <div key={item.id} className="flex items-center space-x-3">
+                        <img
+                          src={item.produto?.imagens?.[0]?.url || '/placeholder.jpg'}
+                          alt={item.produto?.nome || 'Produto'}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {item.produto?.nome || 'Produto'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {item.quantidade}x R$ {item.precoUnitario.toFixed(2)}
+                          </p>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          R$ {(item.precoUnitario * item.quantidade).toFixed(2)}
                         </p>
                       </div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        R$ {(item.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    /* Itens do carrinho */
+                    cartState.items.map((item) => (
+                      <div key={item.id} className="flex items-center space-x-3">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {item.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {item.quantity}x R$ {item.price.toFixed(2)}
+                          </p>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          R$ {(item.price * item.quantity).toFixed(2)}
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 {/* Totais */}

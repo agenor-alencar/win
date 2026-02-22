@@ -78,112 +78,16 @@ const OrderSuccess: React.FC = () => {
   const handleEfetuarPagamento = async () => {
     if (!order?.id) return;
     
-    console.log("🔵 Iniciando processo de pagamento para pedido:", order.id);
-    console.log("🔵 Forma de pagamento:", order.pagamento?.formaPagamento);
+    console.log("🔵 Redirecionando para checkout com pedido:", order.id);
     
-    setProcessandoPagamento(true);
-    
-    try {
-      // Verifica se é pagamento PIX
-      if (order.pagamento?.formaPagamento?.toUpperCase().includes("PIX")) {
-        console.log("✅ Pagamento identificado como PIX");
-        
-        // Prepara dados do cliente para validação
-        const dadosCliente = {
-          nome: user?.nome || "Cliente",
-          email: user?.email || "",
-          cpf: "", // CPF não está disponível no contexto, mas backend pode buscar do pedido
-          telefone: user?.telefone || ""
-        };
-
-        console.log("📤 Chamando endpoint de validação e recriação de PIX...");
-        console.log("📤 Dados do cliente:", dadosCliente);
-
-        // Chama novo endpoint que valida produtos e recria PIX se necessário
-        const response = await api.post(
-          `/v1/pagamentos/pedido/${order.id}/pix/obter-ou-recriar`,
-          dadosCliente
-        );
-        
-        console.log("✅ Resposta do backend:", response.data);
-        
-        if (response.data?.success) {
-          const avisos = response.data.avisos || [];
-          
-          // Verifica se há produtos indisponíveis
-          const produtosIndisponiveis = avisos.filter(
-            (aviso: any) => aviso.tipo === "PRODUTO_INDISPONIVEL"
-          );
-          
-          if (produtosIndisponiveis.length > 0) {
-            // Bloqueia pagamento se produtos não estão disponíveis
-            const mensagens = produtosIndisponiveis
-              .map((aviso: any) => `- ${aviso.produtoNome}: ${aviso.mensagem}`)
-              .join("\n");
-            
-            showError(
-              "Produtos Indisponíveis",
-              `Os seguintes produtos não estão mais disponíveis:\n${mensagens}`
-            );
-            return;
-          }
-          
-          // Exibe avisos sobre alterações de preço/estoque (não bloqueantes)
-          const alteracoes = avisos.filter(
-            (aviso: any) => aviso.tipo === "PRECO_ALTERADO" || aviso.tipo === "ESTOQUE_ALTERADO"
-          );
-          
-          if (alteracoes.length > 0) {
-            const mensagens = alteracoes
-              .map((aviso: any) => `${aviso.produtoNome}: ${aviso.mensagem}`)
-              .join("\n");
-            
-            showWarning(
-              "Alterações nos Produtos",
-              `Alguns produtos tiveram alterações:\n${mensagens}\n\nVocê pode prosseguir com o pagamento.`
-            );
-            
-            console.log("⚠️ Avisos exibidos ao usuário");
-            // Pequeno delay para o usuário ler o aviso
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-          
-          // Redireciona para a página de pagamento PIX
-          console.log("🔄 Redirecionando para /pagamento/pix/" + order.id);
-          navigate(`/pagamento/pix/${order.id}`);
-          console.log("✅ Navigate executado");
-        }
-      } else {
-        console.log("ℹ️ Não é pagamento PIX, redirecionando para checkout");
-        // Para outros métodos, redireciona para checkout
-        navigate(`/checkout`);
+    // Redireciona para checkout passando o pedido existente
+    navigate(`/checkout?pedido=${order.id}`, {
+      state: { 
+        pedidoExistente: true,
+        pedidoId: order.id,
+        pedido: order 
       }
-    } catch (error: any) {
-      console.error("❌ Erro ao processar pagamento:", error);
-      console.error("❌ Status:", error.response?.status);
-      console.error("❌ Dados:", error.response?.data);
-      
-      // Tratamento específico de erros
-      if (error.response?.status === 404) {
-        showError(
-          "Pedido não encontrado",
-          "O pedido não foi encontrado no sistema."
-        );
-      } else if (error.response?.data?.error === "PRODUTOS_INDISPONIVEIS") {
-        showError(
-          "Produtos Indisponíveis",
-          error.response.data.message || "Alguns produtos não estão mais disponíveis."
-        );
-      } else {
-        showError(
-          "Erro ao Processar Pagamento",
-          error.response?.data?.message || "Não foi possível processar o pagamento. Tente novamente."
-        );
-      }
-    } finally {
-      console.log("🏁 Finalizando processo de pagamento");
-      setProcessandoPagamento(false);
-    }
+    });
   };
 
   if (loading) {
