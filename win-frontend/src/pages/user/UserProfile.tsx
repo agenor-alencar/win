@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { User, Mail, Phone, Calendar, Shield, Camera } from "lucide-react";
 import { userApi } from "@/lib/api/userApi";
+import { removeNonNumeric } from "@/lib/utils";
 
 export default function UserProfile() {
   const { user } = useAuth();
@@ -41,8 +42,8 @@ export default function UserProfile() {
     try {
       await userApi.updateProfile(user.id, {
         nome: formData.name,
-        telefone: formData.phone,
-        cpf: formData.cpf || undefined,
+        telefone: removeNonNumeric(formData.phone),
+        cpf: formData.cpf ? removeNonNumeric(formData.cpf) : undefined,
       });
       
       toast({

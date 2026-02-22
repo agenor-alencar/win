@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useNotification } from "../../contexts/NotificationContext";
 import { api } from "@/lib/Api";
+import { removeNonNumeric } from "@/lib/utils";
 
 // TypeScript interfaces
 interface Lojista {
@@ -189,11 +190,11 @@ const MerchantProfile: React.FC = () => {
       
       await api.put(`/v1/lojistas/${lojista.id}`, {
         usuarioId: lojista.usuarioId,
-        cnpj: profileData.cnpj,
+        cnpj: removeNonNumeric(profileData.cnpj),
         nomeFantasia: profileData.storeName,
         razaoSocial: profileData.legalName,
         descricao: profileData.description,
-        telefone: profileData.phone,
+        telefone: removeNonNumeric(profileData.phone),
         email: profileData.email,
         site: profileData.site,
         inscricaoEstadual: profileData.inscricaoEstadual,
@@ -204,7 +205,7 @@ const MerchantProfile: React.FC = () => {
         bairro: profileData.bairro,
         cidade: profileData.cidade,
         uf: profileData.uf,
-        cep: profileData.cep,
+        cep: removeNonNumeric(profileData.cep),
         ativo: lojista.ativo,
       });
 
