@@ -58,9 +58,12 @@ public interface UsuarioMapper {
 
     /**
      * Atualiza Usuario existente com dados do RegisterRequestDTO
+     * Email não é atualizado pois não pode ser alterado após criação
      */
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "email", ignore = true) // ✅ Email não pode ser alterado
     @Mapping(target = "senhaHash", ignore = true) // ✅ CORRIGIDO
+    @Mapping(target = "ativo", ignore = true) // ✅ Usuário não pode alterar seu próprio status
     @Mapping(target = "ultimoAcesso", ignore = true)
     @Mapping(target = "criadoEm", ignore = true) // ✅ CORRIGIDO
     @Mapping(target = "atualizadoEm", ignore = true) // ✅ CORRIGIDO

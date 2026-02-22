@@ -187,6 +187,7 @@ public class UsuarioService {
 
     /**
      * Atualiza dados do usuário
+     * Email não é atualizado pois não pode ser alterado após criação da conta
      */
     public UsuarioResponseDTO atualizarUsuario(UUID id, RegisterRequestDTO requestDTO) {
         log.info("Atualizando usuário ID: {}", id);
@@ -194,14 +195,9 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com ID: " + id));
 
-        // Verificar se o novo email já existe (se foi alterado)
-        if (!usuario.getEmail().equals(requestDTO.email()) &&
-            usuarioRepository.existsByEmail(requestDTO.email())) {
-            throw new BusinessException("Email já está sendo utilizado");
-        }
-
-        // Verificar se o novo CPF já existe (se foi alterado)
+        // Verificar se o novo CPF já existe (se foi alterado e foi fornecido)
         if (requestDTO.cpf() != null && 
+            !requestDTO.cpf().isEmpty() &&
             !requestDTO.cpf().equals(usuario.getCpf()) &&
             usuarioRepository.existsByCpf(requestDTO.cpf())) {
             throw new BusinessException("CPF já está sendo utilizado");

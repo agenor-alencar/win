@@ -230,12 +230,66 @@ Essas operações continuam restritas apenas a ADMIN.
 
 - ✅ Código implementado
 - ✅ Build realizado com sucesso
+- ✅ Correção adicional aplicada (email não sendo sobrescrito)
 - ⏳ Aguardando deploy no VPS
 - ⏳ Aguardando testes em produção
+
+## Correções Adicionais Aplicadas
+
+### Problema: Email sendo setado como NULL
+
+**Erro**: 
+```
+org.hibernate.PropertyValueException: not-null property references a null or transient value: com.win.marketplace.model.Usuario.email
+```
+
+**Causa**: O frontend não envia o campo `email` durante atualizações (correto, pois email não deve ser alterável), mas o MapStruct estava tentando atualizar o campo email com NULL.
+
+**Solução**:
+
+1. **UsuarioMapper.java** - Adicionado ignore para campos imutáveis:
+```java
+@Mapping(target = "email", ignore = true) // ✅ Email não pode ser alterado
+@Mapping(target = "ativo", ignore = true) // ✅ Usuário não pode alterar seu próprio status
+void updateEntityFromDTO(RegisterRequestDTO requestDTO, @MappingTarget Usuario usuario);
+```
+
+2. **UsuarioService.java** - Removida validação de email duplicado:
+```java
+// ❌ REMOVIDO - Email não é mais atualizado
+// if (!usuario.getEmail().equals(requestDTO.email()) &&
+//     usuarioRepository.existsByEmail(requestDTO.email())) {
+//     throw new BusinessException("Email já está sendo utilizado");
+// }
+
+// ✅ Mantida validação de CPF
+if (requestDTO.cpf() != null && 
+    !requestDTO.cpf().isEmpty() &&
+    !requestDTO.cpf().equals(usuario.getCpf()) &&
+    usuarioRepository.existsByCpf(requestDTO.cpf())) {
+    throw new BusinessException("CPF já está sendo utilizado");
+}
+```
+
+### Campos Atualizáveis pelo Usuário
+
+✅ **Permitido**:
+- Nome completo
+- Telefone
+- CPF (se ainda não cadastrado)
+- Endereço
+- Data de nascimento
+
+❌ **Não permitido** (protegido):
+- Email (imutável após criação)
+- Status ativo/inativo (apenas ADMIN)
+- Perfis (USER, LOJISTA, ADMIN)
+- Data de cadastro
+- Último acesso
 
 ---
 
 **Data**: 22/02/2026  
-**Tipo**: Correção de Bug (Autorização)  
+**Tipo**: Correção de Bug (Autorização + Validação de Dados)  
 **Prioridade**: Alta  
 **Autor**: GitHub Copilot
