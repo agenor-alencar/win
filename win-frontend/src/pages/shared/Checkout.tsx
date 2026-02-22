@@ -130,12 +130,6 @@ const Checkout: React.FC = () => {
     }
   }, [searchParams, location.state]);
 
-  useEffect(() => {
-    if (cartState.items.length === 0 && !modoReprocessamento) {
-      navigate("/cart");
-    }
-  }, [cartState.items, navigate, modoReprocessamento]);
-
   // Verifica se é primeira compra
   useEffect(() => {
     const verificarPrimeiraCompra = async () => {
