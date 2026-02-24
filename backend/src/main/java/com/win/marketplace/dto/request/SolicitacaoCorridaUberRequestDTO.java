@@ -43,6 +43,10 @@ public class SolicitacaoCorridaUberRequestDTO {
     @NotBlank(message = "Telefone do lojista é obrigatório")
     private String telefoneLojista;
     
+    private String emailLojista;
+    
+    private String instrucoesRetirada; // Ex: "Entrada pela garagem"
+    
     // Geolocalização origem (opcional mas recomendado)
     private Double origemLatitude;
     private Double origemLongitude;
@@ -57,6 +61,10 @@ public class SolicitacaoCorridaUberRequestDTO {
     @NotBlank(message = "Telefone do cliente é obrigatório")
     private String telefoneCliente;
     
+    private String emailCliente;
+    
+    private String instrucoesEntrega; // Ex: "Deixar com portaria"
+    
     // Geolocalização destino (opcional mas recomendado)
     private Double destinoLatitude;
     private Double destinoLongitude;
@@ -64,7 +72,14 @@ public class SolicitacaoCorridaUberRequestDTO {
     // Valores
     @NotNull(message = "Valor da corrida Uber é obrigatório")
     private BigDecimal valorCorridaUber;
+    
+    private BigDecimal valorTotalPedido; // Valor total dos produtos (em reais)
 
     // Informações adicionais
     private String observacoes;
+    
+    private String cepOrigem; // CEP separado (recomendado pela Uber)
+    private String cepDestino; // CEP separado (recomendado pela Uber)
+    
+    private UUID lojistaId; // ID da loja no sistema WIN (external_store_id)
 }

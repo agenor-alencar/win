@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,10 +36,20 @@ import {
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
 import { MerchantLayout } from "@/components/MerchantLayout";
+import { api } from "@/lib/Api";
+import {
+  BankDataApi,
+  BANCOS_BRASILEIROS,
+  DadosBancariosResponse,
+  DadosBancariosRequest,
+} from "@/lib/BankDataApi";
 
 export default function MerchantSettings() {
   const [isLoading, setIsLoading] = useState(false);
-  const { success } = useNotification();
+  const [isSavingBank, setIsSavingBank] = useState(false);
+  const [lojistaId, setLojistaId] = useState<number | null>(null);
+  const [dadosBancarios, setDadosBancarios] = useState<DadosBancariosResponse | null>(null);
+  const { success, error: notifyError } = useNotification();
 
   const [settings, setSettings] = useState({
     // Notificações
@@ -72,32 +82,124 @@ export default function MerchantSettings() {
     keywords: "",
   });
 
-  const [bankAccounts, setBankAccounts] = useState([
-    {
-      id: 1,
-      bankName: "Banco do Brasil",
-      bankCode: "001",
-      agency: "1234-5",
-      account: "12345-6",
-      accountType: "corrente",
-      holderName: "João Silva",
-      holderDocument: "123.456.789-00",
-      isPrimary: true,
-    },
-  ]);
+  // Removido bankAccounts mock - agora usa dadosBancarios do backend
 
   const [newAccount, setNewAccount] = useState({
     bankName: "",
     bankCode: "",
     agency: "",
+    agencyDv: "",
     account: "",
-    accountType: "corrente",
+    accountDv: "",
+    accountType: "conta_corrente" as "conta_corrente" | "conta_poupanca",
     holderName: "",
     holderDocument: "",
-    isPrimary: false,
+    holderType: "individual" as "individual" | "company",
   });
 
   const [showNewAccountForm, setShowNewAccountForm] = useState(false);
+
+  // Buscar lojista e dados bancários ao carregar
+  useEffect(() => {
+    const fetchLojistaData = async () => {
+      try {
+        const response = await api.get("/v1/lojistas/me");
+        const lojistaData = response.data;
+        setLojistaId(lojistaData.id);
+        
+        // Buscar dados bancários se lojista existe
+        if (lojistaData.id) {
+          await fetchBankData(lojistaData.id);
+        }
+      } catch (err: any) {
+        console.error("Erro ao buscar dados do lojista:", err);
+        if (err.response?.status !== 404) {
+          notifyError(
+            "Erro ao carregar dados",
+            "Não foi possível carregar suas informações"
+          );
+        }
+      }
+    };
+    fetchLojistaData();
+  }, []);
+
+  const fetchBankData = async (id: number) => {
+    try {
+      const data = await BankDataApi.buscarDadosBancarios(id);
+      setDadosBancarios(data);
+    } catch (err: any) {
+      // 404 é esperado se não houver dados bancários ainda
+      if (err.response?.status !== 404) {
+        console.error("Erro ao buscar dados bancários:", err);
+      }
+    }
+  };
+
+  const handleSaveBankData = async () => {
+    if (!lojistaId) {
+      notifyError("Erro", "Lojista não identificado");
+      return;
+    }
+
+    // Validações básicas
+    if (!newAccount.bankCode || !newAccount.agency || !newAccount.account || 
+        !newAccount.holderName || !newAccount.holderDocument) {
+      notifyError("Campos obrigatórios", "Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    try {
+      setIsSavingBank(true);
+      
+      const request: DadosBancariosRequest = {
+        titularNome: newAccount.holderName,
+        titularDocumento: newAccount.holderDocument.replace(/[^0-9]/g, ""),
+        titularTipo: newAccount.holderType,
+        codigoBanco: newAccount.bankCode,
+        agencia: newAccount.agency,
+        agenciaDv: newAccount.agencyDv || undefined,
+        conta: newAccount.account,
+        contaDv: newAccount.accountDv || undefined,
+        tipoConta: newAccount.accountType,
+      };
+
+      const response = await BankDataApi.cadastrarDadosBancarios(lojistaId, request);
+      
+      success(
+        "Dados bancários salvos!",
+        response.status === "sucesso" 
+          ? "Recipient criado automaticamente no Pagar.me" 
+          : "Dados salvos. Recipient será criado em breve"
+      );
+      
+      // Atualizar dados bancários
+      setDadosBancarios(response.dadosBancarios);
+      
+      // Limpar formulário e fechar
+      setShowNewAccountForm(false);
+      setNewAccount({
+        bankName: "",
+        bankCode: "",
+        agency: "",
+        agencyDv: "",
+        account: "",
+        accountDv: "",
+        accountType: "conta_corrente",
+        holderName: "",
+        holderDocument: "",
+        holderType: "individual",
+      });
+    } catch (err: any) {
+      console.error("Erro ao salvar dados bancários:", err);
+      notifyError(
+        "Erro ao salvar",
+        err.response?.data?.message || "Não foi possível salvar os dados bancários"
+      );
+    } finally {
+      setIsSavingBank(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -476,103 +578,105 @@ export default function MerchantSettings() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Existing Bank Accounts */}
-                <div className="space-y-4">
-                  {bankAccounts.map((account) => (
-                    <div
-                      key={account.id}
-                      className={`p-4 border rounded-lg ${
-                        account.isPrimary
-                          ? "border-[#3DBEAB] bg-green-50"
-                          : "border-gray-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3">
-                            <div>
-                              <h4 className="font-semibold text-gray-900">
-                                {account.bankName}
-                              </h4>
-                              <p className="text-sm text-gray-600">
-                                Ag: {account.agency} | Conta: {account.account}{" "}
-                                ({account.accountType})
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                {account.holderName} - {account.holderDocument}
-                              </p>
-                            </div>
-                            {account.isPrimary && (
-                              <div className="flex items-center">
+                {/* Existing Bank Account */}
+                {dadosBancarios ? (
+                  <div className="p-4 border rounded-lg border-[#3DBEAB] bg-green-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">
+                              {dadosBancarios.nomeBanco || `Banco ${dadosBancarios.codigoBanco}`}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              Ag: {dadosBancarios.agencia}{dadosBancarios.agenciaDv ? `-${dadosBancarios.agenciaDv}` : ""} | 
+                              Conta: {dadosBancarios.conta}{dadosBancarios.contaDv ? `-${dadosBancarios.contaDv}` : ""}
+                              {" "}({dadosBancarios.tipoConta})
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {dadosBancarios.titularNome} - {dadosBancarios.titularDocumento}
+                            </p>
+                            {dadosBancarios.validado && (
+                              <div className="flex items-center mt-2">
                                 <CheckCircle className="h-4 w-4 text-green-600 mr-1" />
                                 <span className="text-sm font-medium text-green-600">
-                                  Principal
+                                  Validado - Recipient ativo no Pagar.me
+                                </span>
+                              </div>
+                            )}
+                            {!dadosBancarios.validado && (
+                              <div className="flex items-center mt-2">
+                                <AlertTriangle className="h-4 w-4 text-yellow-600 mr-1" />
+                                <span className="text-sm font-medium text-yellow-600">
+                                  Aguardando validação do recipient
                                 </span>
                               </div>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {!account.isPrimary && (
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setShowNewAccountForm(true)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="p-6 border-2 border-dashed rounded-lg text-center">
+                    <Banknote className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      Nenhuma conta bancária cadastrada
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Cadastre sua conta para receber pagamentos pelo marketplace
+                    </p>
+                    <Button
+                      onClick={() => setShowNewAccountForm(true)}
+                      className="bg-[#3DBEAB] hover:bg-[#3DBEAB]/90"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Cadastrar Conta Bancária
+                    </Button>
+                  </div>
+                )}
 
                 {/* New Account Form */}
                 {showNewAccountForm && (
                   <Card className="border-[#3DBEAB]">
                     <CardHeader>
                       <CardTitle className="text-lg">
-                        Adicionar Nova Conta Bancária
+                        {dadosBancarios ? "Atualizar" : "Adicionar"} Conta Bancária
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="bankName">Nome do Banco *</Label>
+                          <Label htmlFor="bankCode">Banco *</Label>
                           <Select
-                            value={newAccount.bankName}
-                            onValueChange={(value) =>
-                              setNewAccount({ ...newAccount, bankName: value })
-                            }
+                            value={newAccount.bankCode}
+                            onValueChange={(value) => {
+                              const banco = BANCOS_BRASILEIROS.find(b => b.codigo === value);
+                              setNewAccount({ 
+                                ...newAccount, 
+                                bankCode: value,
+                                bankName: banco?.nome || ""
+                              });
+                            }}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione o banco" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Banco do Brasil">
-                                Banco do Brasil (001)
-                              </SelectItem>
-                              <SelectItem value="Bradesco">
-                                Bradesco (237)
-                              </SelectItem>
-                              <SelectItem value="Caixa Econômica Federal">
-                                Caixa Econômica Federal (104)
-                              </SelectItem>
-                              <SelectItem value="Itaú">Itaú (341)</SelectItem>
-                              <SelectItem value="Santander">
-                                Santander (033)
-                              </SelectItem>
-                              <SelectItem value="Nubank">
-                                Nubank (260)
-                              </SelectItem>
-                              <SelectItem value="Inter">Inter (077)</SelectItem>
-                              <SelectItem value="Sicoob">
-                                Sicoob (756)
-                              </SelectItem>
-                              <SelectItem value="Sicredi">
-                                Sicredi (748)
-                              </SelectItem>
-                              <SelectItem value="Outros">Outros</SelectItem>
+                              {BANCOS_BRASILEIROS.map((banco) => (
+                                <SelectItem key={banco.codigo} value={banco.codigo}>
+                                  {banco.nome} ({banco.codigo})
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -581,7 +685,7 @@ export default function MerchantSettings() {
                           <Label htmlFor="accountType">Tipo de Conta *</Label>
                           <Select
                             value={newAccount.accountType}
-                            onValueChange={(value) =>
+                            onValueChange={(value: any) =>
                               setNewAccount({
                                 ...newAccount,
                                 accountType: value,
@@ -592,10 +696,10 @@ export default function MerchantSettings() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="corrente">
+                              <SelectItem value="conta_corrente">
                                 Conta Corrente
                               </SelectItem>
-                              <SelectItem value="poupanca">
+                              <SelectItem value="conta_poupanca">
                                 Conta Poupança
                               </SelectItem>
                             </SelectContent>
@@ -606,7 +710,7 @@ export default function MerchantSettings() {
                           <Label htmlFor="agency">Agência *</Label>
                           <Input
                             id="agency"
-                            placeholder="1234-5"
+                            placeholder="1234"
                             value={newAccount.agency}
                             onChange={(e) =>
                               setNewAccount({
@@ -618,10 +722,26 @@ export default function MerchantSettings() {
                         </div>
 
                         <div className="space-y-2">
+                          <Label htmlFor="agencyDv">Dígito da Agência</Label>
+                          <Input
+                            id="agencyDv"
+                            placeholder="0"
+                            maxLength={1}
+                            value={newAccount.agencyDv}
+                            onChange={(e) =>
+                              setNewAccount({
+                                ...newAccount,
+                                agencyDv: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
                           <Label htmlFor="account">Número da Conta *</Label>
                           <Input
                             id="account"
-                            placeholder="12345-6"
+                            placeholder="12345"
                             value={newAccount.account}
                             onChange={(e) =>
                               setNewAccount({
@@ -630,6 +750,47 @@ export default function MerchantSettings() {
                               })
                             }
                           />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="accountDv">Dígito da Conta *</Label>
+                          <Input
+                            id="accountDv"
+                            placeholder="6"
+                            maxLength={2}
+                            value={newAccount.accountDv}
+                            onChange={(e) =>
+                              setNewAccount({
+                                ...newAccount,
+                                accountDv: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="holderType">Tipo de Titular *</Label>
+                          <Select
+                            value={newAccount.holderType}
+                            onValueChange={(value: any) =>
+                              setNewAccount({
+                                ...newAccount,
+                                holderType: value,
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="individual">
+                                Pessoa Física
+                              </SelectItem>
+                              <SelectItem value="company">
+                                Pessoa Jurídica
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div className="space-y-2">
@@ -649,11 +810,11 @@ export default function MerchantSettings() {
 
                         <div className="space-y-2">
                           <Label htmlFor="holderDocument">
-                            CPF/CNPJ do Titular *
+                            {newAccount.holderType === "individual" ? "CPF" : "CNPJ"} do Titular *
                           </Label>
                           <Input
                             id="holderDocument"
-                            placeholder="123.456.789-00"
+                            placeholder={newAccount.holderType === "individual" ? "123.456.789-00" : "12.345.678/0001-00"}
                             value={newAccount.holderDocument}
                             onChange={(e) =>
                               setNewAccount({
@@ -697,6 +858,9 @@ export default function MerchantSettings() {
                             recebimentos
                           </li>
                           <li>
+                            • Um recipient será criado automaticamente no Pagar.me
+                          </li>
+                          <li>
                             • Os recebimentos são processados em D+2 (2 dias
                             úteis)
                           </li>
@@ -716,43 +880,25 @@ export default function MerchantSettings() {
                               bankName: "",
                               bankCode: "",
                               agency: "",
+                              agencyDv: "",
                               account: "",
-                              accountType: "corrente",
+                              accountDv: "",
+                              accountType: "conta_corrente",
                               holderName: "",
                               holderDocument: "",
-                              isPrimary: false,
+                              holderType: "individual",
                             });
                           }}
+                          disabled={isSavingBank}
                         >
                           Cancelar
                         </Button>
                         <Button
-                          onClick={() => {
-                            // Add new account logic
-                            const id = bankAccounts.length + 1;
-                            setBankAccounts([
-                              ...bankAccounts,
-                              { ...newAccount, id },
-                            ]);
-                            setShowNewAccountForm(false);
-                            setNewAccount({
-                              bankName: "",
-                              bankCode: "",
-                              agency: "",
-                              account: "",
-                              accountType: "corrente",
-                              holderName: "",
-                              holderDocument: "",
-                              isPrimary: false,
-                            });
-                            success(
-                              "Conta bancária adicionada!",
-                              "Os dados foram salvos com sucesso",
-                            );
-                          }}
+                          onClick={handleSaveBankData}
+                          disabled={isSavingBank}
                           className="bg-[#3DBEAB] hover:bg-[#3DBEAB]/90"
                         >
-                          Adicionar Conta
+                          {isSavingBank ? "Salvando..." : dadosBancarios ? "Atualizar Conta" : "Adicionar Conta"}
                         </Button>
                       </div>
                     </CardContent>

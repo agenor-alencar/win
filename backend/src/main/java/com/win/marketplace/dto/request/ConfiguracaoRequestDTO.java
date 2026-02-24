@@ -64,6 +64,11 @@ public class ConfiguracaoRequestDTO {
     @DecimalMin(value = "0.0", message = "Taxa por km não pode ser negativa")
     private BigDecimal taxaEntregaPorKm;
 
+    @NotNull(message = "Taxa de comissão sobre frete é obrigatória")
+    @DecimalMin(value = "0.0", message = "Taxa de comissão não pode ser negativa")
+    @DecimalMax(value = "50.0", message = "Taxa de comissão não pode exceder 50%")
+    private BigDecimal taxaComissaoFrete;
+
     @NotNull(message = "Tempo máximo de entrega é obrigatório")
     @Min(value = 10, message = "Tempo máximo deve ser pelo menos 10 minutos")
     @Max(value = 240, message = "Tempo máximo não pode exceder 240 minutos")

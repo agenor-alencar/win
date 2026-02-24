@@ -38,6 +38,15 @@ public class SimulacaoFreteRequestDTO {
 
     @NotNull(message = "Peso total é obrigatório")
     private Double pesoTotalKg;
+    
+    private BigDecimal valorTotalPedido; // Valor total dos produtos (para manifest)
+    
+    private String nomeLojista; // Para contato na cotação
+    private String telefoneLojista; // Para contato na cotação
+    private String nomeCliente; // Para contato na cotação
+    private String telefoneCliente; // Para contato na cotação
+    
+    private UUID pedidoId; // Para referência no manifest
 
     /**
      * Coordenadas opcionais de origem (serão geocodificadas se não informadas)

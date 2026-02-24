@@ -66,6 +66,7 @@ public class ConfiguracaoService {
 
         // Atualizar entregas
         config.setTaxaEntregaPorKm(dto.getTaxaEntregaPorKm());
+        config.setTaxaComissaoFrete(dto.getTaxaComissaoFrete());
         config.setTempoMaximoEntregaMinutos(dto.getTempoMaximoEntregaMinutos());
         config.setAutoAtribuirEntrega(dto.getAutoAtribuirEntrega());
         config.setPermitirAgendamento(dto.getPermitirAgendamento());

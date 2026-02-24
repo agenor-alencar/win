@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.win.marketplace.dto.request.SimulacaoFreteRequestDTO;
 import com.win.marketplace.dto.request.SolicitacaoCorridaUberRequestDTO;
+import com.win.marketplace.dto.response.DeliveryStatusResponseDTO;
 import com.win.marketplace.dto.response.SimulacaoFreteResponseDTO;
 import com.win.marketplace.dto.response.SolicitacaoCorridaUberResponseDTO;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class UberFlashService {
 
     private final RestTemplate restTemplate;
     private final GeocodingService geocodingService;
+    private final ConfiguracaoService configuracaoService;
 
     @Value("${uber.client.id:}")
     private String uberClientId;
@@ -145,9 +147,18 @@ public class UberFlashService {
         return headers;
     }
 
-    // ========================================
-    // COTAÇÃO DE FRETE (QUOTE)
-    // ========================================
+    /**
+     * Obtém taxa de comissão sobre frete configurada no sistema.
+     * Retorna valor decimal (ex: 10.00 = 10%)
+     */
+    private BigDecimal obterTaxaComissaoFrete() {
+        try {
+            return configuracaoService.buscarConfigInterna().getTaxaComissaoFrete();
+        } catch (Exception e) {
+            log.warn("Erro ao buscar taxa de comissão, usando padrão de 10%", e);
+            return new BigDecimal("10.00");
+        }
+    }
 
     // ========================================
     // COTAÇÃO DE FRETE (QUOTE)
@@ -167,7 +178,12 @@ public class UberFlashService {
 
         try {
             if (uberApiEnabled) {
-                return simularFreteApiReal(request);
+                try {
+                    return simularFreteApiReal(request);
+                } catch (Exception e) {
+                    log.warn("❌ API Uber falhou, usando simulação local: {}", e.getMessage());
+                    return simularFreteMock(request);
+                }
             } else {
                 log.info("Modo MOCK ativo - usando simulação local");
                 return simularFreteMock(request);
@@ -233,22 +249,77 @@ public class UberFlashService {
             Map<String, Object> pickup = new HashMap<>();
             pickup.put("address", request.getEnderecoOrigemCompleto());
             pickup.put("postal_code", request.getCepOrigem());
-            pickup.put("latitude", request.getOrigemLatitude());
-            pickup.put("longitude", request.getOrigemLongitude());
+            
+            Map<String, Double> pickupLocation = new HashMap<>();
+            pickupLocation.put("latitude", request.getOrigemLatitude());
+            pickupLocation.put("longitude", request.getOrigemLongitude());
+            pickup.put("location", pickupLocation);
+            
+            // Adicionar contato de pickup (recomendado pela Uber)
+            if (request.getNomeLojista() != null && request.getTelefoneLojista() != null) {
+                Map<String, Object> pickupContact = new HashMap<>();
+                pickupContact.put("name", request.getNomeLojista());
+                
+                Map<String, Object> pickupPhone = new HashMap<>();
+                pickupPhone.put("number", limparTelefone(request.getTelefoneLojista()));
+                pickupContact.put("phone", pickupPhone);
+                
+                pickup.put("contact", pickupContact);
+            }
+            
             quoteRequest.put("pickup", pickup);
             
             // Endereço de destino (cliente) com coordenadas
             Map<String, Object> dropoff = new HashMap<>();
             dropoff.put("address", request.getEnderecoDestinoCompleto());
             dropoff.put("postal_code", request.getCepDestino());
-            dropoff.put("latitude", request.getDestinoLatitude());
-            dropoff.put("longitude", request.getDestinoLongitude());
+            
+            Map<String, Double> dropoffLocation = new HashMap<>();
+            dropoffLocation.put("latitude", request.getDestinoLatitude());
+            dropoffLocation.put("longitude", request.getDestinoLongitude());
+            dropoff.put("location", dropoffLocation);
+            
+            // Adicionar contato de dropoff (recomendado pela Uber)
+            if (request.getNomeCliente() != null && request.getTelefoneCliente() != null) {
+                Map<String, Object> dropoffContact = new HashMap<>();
+                dropoffContact.put("name", request.getNomeCliente());
+                
+                Map<String, Object> dropoffPhone = new HashMap<>();
+                dropoffPhone.put("number", limparTelefone(request.getTelefoneCliente()));
+                dropoffContact.put("phone", dropoffPhone);
+                
+                dropoff.put("contact", dropoffContact);
+            }
+            
             quoteRequest.put("dropoff", dropoff);
             
             // Tipo de veículo baseado no peso
             var tipoVeiculo = request.getTipoVeiculoCalculado();
             String vehicleType = tipoVeiculo.name().contains("MOTO") ? "motorcycle" : "car";
             quoteRequest.put("vehicle_type", vehicleType);
+            
+            // Adicionar manifest (informações do pedido)
+            if (request.getPedidoId() != null) {
+                Map<String, Object> manifest = new HashMap<>();
+                manifest.put("description", "Pedido Win Marketplace #" + 
+                        request.getPedidoId().toString().substring(0, 8));
+                
+                if (request.getValorTotalPedido() != null) {
+                    // Converter para centavos
+                    int totalValueCents = request.getValorTotalPedido()
+                            .multiply(BigDecimal.valueOf(100))
+                            .intValue();
+                    manifest.put("total_value", totalValueCents);
+                }
+                
+                quoteRequest.put("manifest", manifest);
+            }
+            
+            // Adicionar ação padrão caso não seja possível entregar
+            quoteRequest.put("undeliverable_action", "return_to_sender");
+            
+            // Adicionar tempo de preparação do pedido (15 minutos padrão)
+            quoteRequest.put("courier_imminent_pickup_time", 15);
 
             // Fazer requisição
             HttpHeaders headers = criarHeadersAutenticados();
@@ -301,10 +372,14 @@ public class UberFlashService {
             BigDecimal valorCorridaUber = BigDecimal.valueOf(priceCents)
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
             
-            // Taxa Win (10%)
+            // Taxa de comissão (configurável pelo admin)
+            BigDecimal taxaComissaoPct = obterTaxaComissaoFrete(); // Ex: 10.00 = 10%
             BigDecimal taxaWin = valorCorridaUber
-                    .multiply(BigDecimal.valueOf(0.10))
+                    .multiply(taxaComissaoPct.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP))
                     .setScale(2, RoundingMode.HALF_UP);
+            
+            log.debug("Taxa de comissão aplicada: {}% | Valor Uber: R$ {} | Comissão: R$ {}", 
+                    taxaComissaoPct, valorCorridaUber, taxaWin);
             
             // Valor total SEM arredondamento (para cálculo interno)
             BigDecimal valorFreteExato = valorCorridaUber
@@ -351,13 +426,12 @@ public class UberFlashService {
     
     /**
      * Arredonda valor do frete de forma inteligente.
-     * Regra: Valores sempre terminam em X,90 ou X,00
+     * Regra: Valores SEMPRE arredondam PARA CIMA terminando em X,90
      * 
-     * Exemplos:
-     * - R$ 17,43 → R$ 17,90
-     * - R$ 15,00 → R$ 15,00 (já termina em 0)
-     * - R$ 22,78 → R$ 22,90
-     * - R$ 30,10 → R$ 30,90
+     * Exemplos (conforme explicado pelo cliente):
+     * - R$ 9,47 (Uber) + 10% = R$ 10,417 → R$ 10,90
+     * - R$ 15,32 (Uber) + 10% = R$ 16,852 → R$ 16,90
+     * - R$ 22,78 (Uber) + 10% = R$ 25,058 → R$ 25,90
      * 
      * Benefícios:
      * 1. Valores mais "redondos" para o cliente
@@ -365,18 +439,19 @@ public class UberFlashService {
      * 3. Cobre possíveis flutuações da API Uber
      */
     private BigDecimal aplicarArredondamentoInteligente(BigDecimal valorExato) {
-        // Pegar parte decimal
+        // Pegar parte inteira
         BigDecimal parteInteira = valorExato.setScale(0, RoundingMode.DOWN);
         BigDecimal parteDecimal = valorExato.subtract(parteInteira);
         
-        // Se já termina em X,00, retornar como está
-        if (parteDecimal.compareTo(BigDecimal.ZERO) == 0) {
-            return valorExato;
+        // Se parte decimal for menor ou igual a 0.90, arredondar para X,90
+        if (parteDecimal.compareTo(BigDecimal.valueOf(0.90)) <= 0) {
+            BigDecimal valorArredondado = parteInteira.add(BigDecimal.valueOf(0.90));
+            log.debug("Arredondamento inteligente: R$ {} → R$ {}", valorExato, valorArredondado);
+            return valorArredondado;
         }
         
-        // Caso contrário, arredondar para X,90
-        BigDecimal valorArredondado = parteInteira.add(BigDecimal.valueOf(0.90));
-        
+        // Se parte decimal for maior que 0.90, arredondar para próximo inteiro + 0.90
+        BigDecimal valorArredondado = parteInteira.add(BigDecimal.ONE).add(BigDecimal.valueOf(0.90));
         log.debug("Arredondamento inteligente: R$ {} → R$ {}", valorExato, valorArredondado);
         
         return valorArredondado;
@@ -410,10 +485,14 @@ public class UberFlashService {
                 .add(precoPorKm.multiply(BigDecimal.valueOf(distanciaEstimadaKm)))
                 .setScale(2, RoundingMode.HALF_UP);
 
-        // Taxa Win (10%)
+        // Taxa de comissão (configurável pelo admin)
+        BigDecimal taxaComissaoPct = obterTaxaComissaoFrete(); // Ex: 10.00 = 10%
         BigDecimal taxaWin = valorCorridaUber
-                .multiply(BigDecimal.valueOf(0.10))
+                .multiply(taxaComissaoPct.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP))
                 .setScale(2, RoundingMode.HALF_UP);
+
+        log.debug("MOCK - Taxa de comissão aplicada: {}% | Valor Uber: R$ {} | Comissão: R$ {}", 
+                taxaComissaoPct, valorCorridaUber, taxaWin);
 
         // Valor total SEM arredondamento
         BigDecimal valorFreteExato = valorCorridaUber
@@ -501,8 +580,11 @@ public class UberFlashService {
             // Informações de pickup (lojista)
             Map<String, Object> pickup = new HashMap<>();
             pickup.put("address", request.getEnderecoOrigemCompleto());
-            pickup.put("name", request.getNomeLojista());
-            pickup.put("phone_number", limparTelefone(request.getTelefoneLojista()));
+            
+            // CEP separado (recomendado)
+            if (request.getCepOrigem() != null) {
+                pickup.put("postal_code", request.getCepOrigem());
+            }
             
             // ✅ Adicionar lat/long se disponíveis (melhora precisão)
             if (request.getOrigemLatitude() != null && request.getOrigemLongitude() != null) {
@@ -513,13 +595,37 @@ public class UberFlashService {
                 log.debug("Usando geolocalização de origem: {}, {}", 
                         request.getOrigemLatitude(), request.getOrigemLongitude());
             }
+            
+            // Contato de pickup (name, phone, email)
+            Map<String, Object> pickupContact = new HashMap<>();
+            pickupContact.put("name", request.getNomeLojista());
+            
+            Map<String, Object> pickupPhone = new HashMap<>();
+            pickupPhone.put("number", limparTelefone(request.getTelefoneLojista()));
+            pickupPhone.put("sms_enabled", true);
+            pickupContact.put("phone", pickupPhone);
+            
+            if (request.getEmailLojista() != null && !request.getEmailLojista().isEmpty()) {
+                pickupContact.put("email", request.getEmailLojista());
+            }
+            
+            pickup.put("contact", pickupContact);
+            
+            // Instruções de retirada
+            if (request.getInstrucoesRetirada() != null && !request.getInstrucoesRetirada().isEmpty()) {
+                pickup.put("instructions", request.getInstrucoesRetirada());
+            }
+            
             deliveryRequest.put("pickup", pickup);
             
             // Informações de dropoff (cliente)
             Map<String, Object> dropoff = new HashMap<>();
             dropoff.put("address", request.getEnderecoDestinoCompleto());
-            dropoff.put("name", request.getNomeCliente());
-            dropoff.put("phone_number", limparTelefone(request.getTelefoneCliente()));
+            
+            // CEP separado (recomendado)
+            if (request.getCepDestino() != null) {
+                dropoff.put("postal_code", request.getCepDestino());
+            }
             
             // ✅ Adicionar lat/long de destino se disponíveis
             if (request.getDestinoLatitude() != null && request.getDestinoLongitude() != null) {
@@ -531,6 +637,26 @@ public class UberFlashService {
                         request.getDestinoLatitude(), request.getDestinoLongitude());
             }
             
+            // Contato de dropoff (name, phone, email)
+            Map<String, Object> dropoffContact = new HashMap<>();
+            dropoffContact.put("name", request.getNomeCliente());
+            
+            Map<String, Object> dropoffPhone = new HashMap<>();
+            dropoffPhone.put("number", limparTelefone(request.getTelefoneCliente()));
+            dropoffPhone.put("sms_enabled", true);
+            dropoffContact.put("phone", dropoffPhone);
+            
+            if (request.getEmailCliente() != null && !request.getEmailCliente().isEmpty()) {
+                dropoffContact.put("email", request.getEmailCliente());
+            }
+            
+            dropoff.put("contact", dropoffContact);
+            
+            // Instruções de entrega
+            if (request.getInstrucoesEntrega() != null && !request.getInstrucoesEntrega().isEmpty()) {
+                dropoff.put("instructions", request.getInstrucoesEntrega());
+            }
+            
             deliveryRequest.put("dropoff", dropoff);
             
             // Tipo de veículo
@@ -538,14 +664,32 @@ public class UberFlashService {
                     ? "motorcycle" : "car";
             deliveryRequest.put("vehicle_type", vehicleType);
             
-            // Detalhes da entrega
+            // Detalhes da entrega (manifest)
             Map<String, Object> manifest = new HashMap<>();
+            manifest.put("reference", request.getPedidoId().toString()); // ID do pedido
             manifest.put("description", "Pedido Win Marketplace #" + 
                     request.getPedidoId().toString().substring(0, 8));
+            
+            // Adicionar valor total do pedido (em centavos)
+            if (request.getValorTotalPedido() != null) {
+                int totalValueCents = request.getValorTotalPedido()
+                        .multiply(BigDecimal.valueOf(100))
+                        .intValue();
+                manifest.put("total_value", totalValueCents);
+            }
+            
             deliveryRequest.put("manifest", manifest);
+            
+            // Ação padrão caso não seja possível entregar
+            deliveryRequest.put("undeliverable_action", "return_to_sender");
             
             // ID externo (nosso pedido)
             deliveryRequest.put("external_id", request.getPedidoId().toString());
+            
+            // ID da loja (external_store_id)
+            if (request.getLojistaId() != null) {
+                deliveryRequest.put("external_store_id", request.getLojistaId().toString());
+            }
 
             // Fazer requisição
             HttpHeaders headers = criarHeadersAutenticados();
@@ -754,6 +898,250 @@ public class UberFlashService {
     private boolean cancelarCorridaMock(String idCorridaUber) {
         log.debug("Mock: Entrega {} cancelada com sucesso", idCorridaUber);
         return true;
+    }
+
+    // ========================================
+    // CONSULTAR STATUS DA ENTREGA
+    // ========================================
+
+    /**
+     * Consulta o status atualizado de uma entrega Uber Direct.
+     * Retorna informações em tempo real sobre motorista, localização e ETAs.
+     * 
+     * @param idCorridaUber ID da corrida na Uber
+     * @return Status atualizado da entrega
+     */
+    public DeliveryStatusResponseDTO consultarStatusEntrega(String idCorridaUber) {
+        log.info("Consultando status da entrega Uber Direct: {}", idCorridaUber);
+
+        try {
+            if (uberApiEnabled) {
+                return consultarStatusApiReal(idCorridaUber);
+            } else {
+                log.info("Modo MOCK ativo - retornando status simulado");
+                return consultarStatusMock(idCorridaUber);
+            }
+        } catch (Exception e) {
+            log.error("Erro ao consultar status da entrega: {}", idCorridaUber, e);
+            return DeliveryStatusResponseDTO.builder()
+                    .deliveryId(idCorridaUber)
+                    .status("unknown")
+                    .build();
+        }
+    }
+
+    /**
+     * Consulta real via API Uber Direct.
+     * Endpoint: GET /v1/customers/me/deliveries/{delivery_id}
+     */
+    private DeliveryStatusResponseDTO consultarStatusApiReal(String idCorridaUber) {
+        log.info("Consultando status real via API Uber Direct: {}", idCorridaUber);
+
+        try {
+            HttpHeaders headers = criarHeadersAutenticados();
+            HttpEntity<Void> httpRequest = new HttpEntity<>(headers);
+            
+            String statusUrl = uberApiBaseUrl + "/v1/customers/me/deliveries/" + idCorridaUber;
+            
+            ResponseEntity<JsonNode> response = restTemplate.exchange(
+                    statusUrl, HttpMethod.GET, httpRequest, JsonNode.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return processarRespostaStatus(response.getBody());
+            } else {
+                log.warn("Resposta inesperada ao consultar status: {}", response.getStatusCode());
+                return DeliveryStatusResponseDTO.builder()
+                        .deliveryId(idCorridaUber)
+                        .status("unknown")
+                        .build();
+            }
+            
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                log.warn("Entrega {} não encontrada na Uber", idCorridaUber);
+                return DeliveryStatusResponseDTO.builder()
+                        .deliveryId(idCorridaUber)
+                        .status("not_found")
+                        .build();
+            }
+            
+            log.error("Erro HTTP ao consultar status na Uber: {} - {}", 
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Erro ao consultar status: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Erro inesperado ao consultar status", e);
+            throw new RuntimeException("Erro na consulta: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Processa resposta da consulta de status e monta DTO.
+     */
+    private DeliveryStatusResponseDTO processarRespostaStatus(JsonNode responseBody) {
+        try {
+            String deliveryId = responseBody.get("id").asText();
+            String status = responseBody.get("status").asText();
+            String trackingUrl = responseBody.has("tracking_url") 
+                    ? responseBody.get("tracking_url").asText() : null;
+            
+            Instant updatedAt = responseBody.has("updated_at")
+                    ? Instant.parse(responseBody.get("updated_at").asText())
+                    : Instant.now();
+            
+            // Processar informações do motorista
+            DeliveryStatusResponseDTO.CourierInfo courierInfo = null;
+            if (responseBody.has("courier")) {
+                JsonNode courier = responseBody.get("courier");
+                
+                DeliveryStatusResponseDTO.VehicleInfo vehicleInfo = null;
+                if (courier.has("vehicle")) {
+                    JsonNode vehicle = courier.get("vehicle");
+                    vehicleInfo = DeliveryStatusResponseDTO.VehicleInfo.builder()
+                            .make(vehicle.has("make") ? vehicle.get("make").asText() : null)
+                            .model(vehicle.has("model") ? vehicle.get("model").asText() : null)
+                            .licensePlate(vehicle.has("license_plate") ? vehicle.get("license_plate").asText() : null)
+                            .color(vehicle.has("color") ? vehicle.get("color").asText() : null)
+                            .build();
+                }
+                
+                Double latitude = null;
+                Double longitude = null;
+                Integer bearing = null;
+                
+                if (courier.has("location")) {
+                    JsonNode location = courier.get("location");
+                    latitude = location.has("latitude") ? location.get("latitude").asDouble() : null;
+                    longitude = location.has("longitude") ? location.get("longitude").asDouble() : null;
+                    bearing = location.has("bearing") ? location.get("bearing").asInt() : null;
+                }
+                
+                courierInfo = DeliveryStatusResponseDTO.CourierInfo.builder()
+                        .name(courier.has("name") ? courier.get("name").asText() : null)
+                        .phoneNumber(courier.has("phone_number") ? courier.get("phone_number").asText() : null)
+                        .latitude(latitude)
+                        .longitude(longitude)
+                        .bearing(bearing)
+                        .vehicle(vehicleInfo)
+                        .build();
+            }
+            
+            // Processar informações de pickup
+            DeliveryStatusResponseDTO.LocationInfo pickupInfo = null;
+            if (responseBody.has("pickup")) {
+                JsonNode pickup = responseBody.get("pickup");
+                
+                Instant pickupEta = pickup.has("eta") 
+                        ? Instant.parse(pickup.get("eta").asText()) : null;
+                
+                String verificationCode = null;
+                Boolean verified = null;
+                
+                if (pickup.has("verification")) {
+                    JsonNode verification = pickup.get("verification");
+                    verificationCode = verification.has("code") ? verification.get("code").asText() : null;
+                    verified = verification.has("verified") ? verification.get("verified").asBoolean() : null;
+                }
+                
+                pickupInfo = DeliveryStatusResponseDTO.LocationInfo.builder()
+                        .eta(pickupEta)
+                        .verificationCode(verificationCode)
+                        .verified(verified)
+                        .build();
+            }
+            
+            // Processar informações de dropoff
+            DeliveryStatusResponseDTO.LocationInfo dropoffInfo = null;
+            if (responseBody.has("dropoff")) {
+                JsonNode dropoff = responseBody.get("dropoff");
+                
+                Instant dropoffEta = dropoff.has("eta") 
+                        ? Instant.parse(dropoff.get("eta").asText()) : null;
+                
+                String verificationCode = null;
+                Boolean verified = null;
+                
+                if (dropoff.has("verification")) {
+                    JsonNode verification = dropoff.get("verification");
+                    verificationCode = verification.has("code") ? verification.get("code").asText() : null;
+                    verified = verification.has("verified") ? verification.get("verified").asBoolean() : null;
+                }
+                
+                dropoffInfo = DeliveryStatusResponseDTO.LocationInfo.builder()
+                        .eta(dropoffEta)
+                        .verificationCode(verificationCode)
+                        .verified(verified)
+                        .build();
+            }
+            
+            log.info("Status consultado - ID: {}, Status: {}, Motorista: {}", 
+                    deliveryId, status, courierInfo != null ? courierInfo.getName() : "N/A");
+            
+            return DeliveryStatusResponseDTO.builder()
+                    .deliveryId(deliveryId)
+                    .status(status)
+                    .trackingUrl(trackingUrl)
+                    .courier(courierInfo)
+                    .pickup(pickupInfo)
+                    .dropoff(dropoffInfo)
+                    .updatedAt(updatedAt)
+                    .build();
+                    
+        } catch (Exception e) {
+            log.error("Erro ao processar resposta de status da Uber", e);
+            throw new RuntimeException("Erro ao processar status: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Consulta MOCK de status (para desenvolvimento/testes).
+     */
+    private DeliveryStatusResponseDTO consultarStatusMock(String idCorridaUber) {
+        log.debug("Mock: Consultando status da entrega {}", idCorridaUber);
+        
+        // Simular status baseado no tempo (para testes)
+        String[] statuses = {"pending", "pickup", "pickup_complete", "dropoff", "delivered"};
+        String status = statuses[(int) (Math.random() * statuses.length)];
+        
+        // Motorista fictício
+        DeliveryStatusResponseDTO.VehicleInfo vehicle = DeliveryStatusResponseDTO.VehicleInfo.builder()
+                .make("Honda")
+                .model("CG 160")
+                .licensePlate(String.format("ABC-%04d", (int) (Math.random() * 10000)))
+                .color("Preta")
+                .build();
+        
+        DeliveryStatusResponseDTO.CourierInfo courier = DeliveryStatusResponseDTO.CourierInfo.builder()
+                .name("Carlos Silva (MOCK)")
+                .phoneNumber("+5511998877665")
+                .latitude(-23.550520 + (Math.random() * 0.01))
+                .longitude(-46.633309 + (Math.random() * 0.01))
+                .bearing((int) (Math.random() * 360))
+                .vehicle(vehicle)
+                .build();
+        
+        // Informações de pickup
+        DeliveryStatusResponseDTO.LocationInfo pickup = DeliveryStatusResponseDTO.LocationInfo.builder()
+                .eta(Instant.now().plusSeconds(600)) // 10 minutos
+                .verificationCode("1234")
+                .verified(status.equals("pickup_complete") || status.equals("dropoff") || status.equals("delivered"))
+                .build();
+        
+        // Informações de dropoff
+        DeliveryStatusResponseDTO.LocationInfo dropoff = DeliveryStatusResponseDTO.LocationInfo.builder()
+                .eta(Instant.now().plusSeconds(1800)) // 30 minutos
+                .verificationCode("5678")
+                .verified(status.equals("delivered"))
+                .build();
+        
+        return DeliveryStatusResponseDTO.builder()
+                .deliveryId(idCorridaUber)
+                .status(status)
+                .trackingUrl("https://m.uber.com/looking?ride=" + idCorridaUber)
+                .courier(courier)
+                .pickup(pickup)
+                .dropoff(dropoff)
+                .updatedAt(Instant.now())
+                .build();
     }
 
     // ========================================

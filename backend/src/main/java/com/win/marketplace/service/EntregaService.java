@@ -2,6 +2,7 @@ package com.win.marketplace.service;
 
 import com.win.marketplace.dto.request.SimulacaoFreteRequestDTO;
 import com.win.marketplace.dto.request.UberWebhookDTO;
+import com.win.marketplace.dto.response.DeliveryStatusResponseDTO;
 import com.win.marketplace.dto.response.EntregaResponseDTO;
 import com.win.marketplace.dto.response.SimulacaoFreteResponseDTO;
 import com.win.marketplace.dto.response.SolicitacaoCorridaUberResponseDTO;
@@ -190,6 +191,87 @@ public class EntregaService {
         var entrega = entregaRepository.findByPedidoId(pedidoId)
                 .orElseThrow(() -> new BusinessException("Entrega não encontrada"));
         return mapearParaDTO(entrega);
+    }
+    
+    /**
+     * Consulta status em tempo real da entrega na API Uber.
+     * Retorna informações atualizadas sobre motorista, localização, ETAs, etc.
+     * 
+     * ✅ Permite rastreamento em tempo real
+     * ✅ Dados sempre atualizados (não usa cache)
+     * ✅ Informações de geolocalização do motorista
+     * 
+     * @param entregaId ID da entrega no sistema WIN
+     * @return Status atualizado com dados em tempo real da Uber
+     * @throws BusinessException se entrega não encontrada ou sem ID Uber
+     */
+    @Transactional
+    public DeliveryStatusResponseDTO consultarStatusEmTempoReal(UUID entregaId) {
+        log.info("Consultando status em tempo real da entrega: {}", entregaId);
+        
+        var entrega = entregaRepository.findById(entregaId)
+                .orElseThrow(() -> new BusinessException("Entrega não encontrada"));
+        
+        if (entrega.getIdCorridaUber() == null) {
+            throw new BusinessException("Entrega ainda não foi solicitada na Uber");
+        }
+        
+        // Consultar status atualizado na Uber
+        DeliveryStatusResponseDTO status = uberFlashService.consultarStatusEntrega(
+                entrega.getIdCorridaUber());
+        
+        // Atualizar dados no banco de dados se houver mudanças
+        if (status != null && status.getStatus() != null) {
+            StatusEntrega novoStatus = mapearStatusUberParaWIN(status.getStatus());
+            if (novoStatus != null && novoStatus != entrega.getStatusEntrega()) {
+                log.info("Atualizando status da entrega {} de {} para {}", 
+                        entrega.getId(), entrega.getStatusEntrega(), novoStatus);
+                entrega.setStatusEntrega(novoStatus);
+                
+                // Atualizar dados do motorista se disponíveis
+                if (status.getCourier() != null) {
+                    if (status.getCourier().getName() != null) {
+                        entrega.setNomeMotorista(status.getCourier().getName());
+                    }
+                    if (status.getCourier().getPhoneNumber() != null) {
+                        entrega.setContatoMotorista(status.getCourier().getPhoneNumber());
+                    }
+                    if (status.getCourier().getVehicle() != null && 
+                            status.getCourier().getVehicle().getLicensePlate() != null) {
+                        entrega.setPlacaVeiculo(status.getCourier().getVehicle().getLicensePlate());
+                    }
+                }
+                
+                // Marcar datas importantes
+                if (novoStatus == StatusEntrega.ENTREGUE && entrega.getDataHoraEntrega() == null) {
+                    entrega.setDataHoraEntrega(OffsetDateTime.now());
+                }
+                if (novoStatus == StatusEntrega.EM_TRANSITO && entrega.getDataHoraRetirada() == null) {
+                    entrega.setDataHoraRetirada(OffsetDateTime.now());
+                }
+                
+                entregaRepository.save(entrega);
+            }
+        }
+        
+        return status;
+    }
+    
+    /**
+     * Mapeia status da Uber para status WIN
+     */
+    private StatusEntrega mapearStatusUberParaWIN(String statusUber) {
+        if (statusUber == null) return null;
+        
+        return switch (statusUber.toLowerCase()) {
+            case "pending" -> StatusEntrega.AGUARDANDO_MOTORISTA;
+            case "pickup" -> StatusEntrega.MOTORISTA_A_CAMINHO_RETIRADA;
+            case "pickup_complete" -> StatusEntrega.EM_TRANSITO;
+            case "dropoff" -> StatusEntrega.EM_TRANSITO;
+            case "delivered" -> StatusEntrega.ENTREGUE;
+            case "cancelled" -> StatusEntrega.CANCELADA;
+            default -> null;
+        };
     }
 
     /**

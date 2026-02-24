@@ -1,5 +1,6 @@
 package com.win.marketplace.controller;
 
+import com.win.marketplace.dto.webhook.UberWebhookEventDTO;
 import com.win.marketplace.service.UberWebhookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,18 +10,22 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * Controller para webhooks da Uber Direct API.
+ * Controller otimizado para webhooks da Uber Direct API.
  * 
- * Recebe notificações em tempo real sobre mudanças de status das entregas:
- * - Motorista atribuído
- * - Motorista a caminho da loja
- * - Pedido coletado
- * - Motorista a caminho do cliente
- * - Entrega concluída
- * - Entrega cancelada
+ * <p>Recebe notificações em tempo real sobre mudanças de status das entregas:</p>
+ * <ul>
+ *   <li>Motorista atribuído</li>
+ *   <li>Motorista a caminho da loja</li>
+ *   <li>Pedido coletado</li>
+ *   <li>Motorista a caminho do cliente</li>
+ *   <li>Entrega concluída</li>
+ *   <li>Entrega cancelada</li>
+ * </ul>
  * 
- * Endpoint público (sem autenticação JWT) pois é chamado pela Uber.
- * Segurança via assinatura HMAC no header X-Uber-Signature.
+ * <p>Endpoint público (sem autenticação JWT) pois é chamado pela Uber.
+ * Segurança via assinatura HMAC-SHA256 no header X-Uber-Signature.</p>
+ * 
+ * @since 2026-02-24
  */
 @Slf4j
 @RestController
@@ -31,60 +36,37 @@ public class WebhookController {
     private final UberWebhookService uberWebhookService;
 
     /**
-     * Webhook para notificações da Uber Direct.
+     * Webhook otimizado para notificações da Uber Direct (versão tipada).
      * 
-     * A Uber envia POST para este endpoint quando há mudança de status na entrega.
+     * <p>A Uber envia POST para este endpoint quando há mudança de status na entrega.</p>
      * 
-     * Exemplos de eventos:
-     * - deliveries.delivery_status_updated
-     * - deliveries.courier_assigned
-     * - deliveries.courier_approaching_pickup
-     * - deliveries.courier_at_pickup
-     * - deliveries.courier_approaching_dropoff
-     * - deliveries.courier_at_dropoff
-     * - deliveries.delivered
-     * - deliveries.canceled
+     * <p>Eventos tratados:</p>
+     * <ul>
+     *   <li>deliveries.delivery_status_updated</li>
+     *   <li>deliveries.courier_assigned</li>
+     *   <li>deliveries.courier_approaching_pickup</li>
+     *   <li>deliveries.courier_at_pickup</li>
+     *   <li>deliveries.courier_approaching_dropoff</li>
+     *   <li>deliveries.courier_at_dropoff</li>
+     *   <li>deliveries.delivered</li>
+     *   <li>deliveries.canceled</li>
+     * </ul>
      * 
-     * Payload exemplo:
-     * {
-     *   "event_id": "evt_123",
-     *   "event_time": 1642541234,
-     *   "event_type": "deliveries.delivery_status_updated",
-     *   "resource_href": "/v1/customers/me/deliveries/del_123",
-     *   "meta": {
-     *     "user_id": "customer_123",
-     *     "resource_id": "del_123"
-     *   },
-     *   "data": {
-     *     "id": "del_123",
-     *     "status": "courier_approaching_dropoff",
-     *     "courier": {
-     *       "name": "João Silva",
-     *       "phone_number": "+5511999999999",
-     *       "vehicle": {
-     *         "make": "Honda",
-     *         "model": "CG 160",
-     *         "license_plate": "ABC1234"
-     *       }
-     *     }
-     *   }
-     * }
-     * 
-     * @param payload Dados do evento enviado pela Uber
-     * @param signature Assinatura HMAC para validação (header X-Uber-Signature)
+     * @param event DTO tipado com dados do evento
+     * @param signature Assinatura HMAC-SHA256 para validação
      * @return 200 OK se processado com sucesso
      */
     @PostMapping("/uber-direct")
     public ResponseEntity<?> receberWebhookUber(
-            @RequestBody Map<String, Object> payload,
+            @RequestBody UberWebhookEventDTO event,
             @RequestHeader(value = "X-Uber-Signature", required = false) String signature) {
         
         log.info("📥 Webhook Uber recebido - Event Type: {}", 
-                payload.get("event_type"));
+                event.getEventType());
         
         try {
-            // Processar webhook
-            uberWebhookService.processarWebhook(payload, signature);
+            // Processar webhook (validação HMAC incluída)
+            uberWebhookService.processarWebhook(event, signature);
             
             // Retornar sucesso para a Uber
             return ResponseEntity.ok(Map.of(
@@ -115,9 +97,17 @@ public class WebhookController {
      * 
      * Permite testar o fluxo de webhook sem precisar da Uber enviar.
      * Deve ser desabilitado em produção.
+    /**
+     * Endpoint de teste para simular webhooks da Uber (apenas desenvolvimento).
+     * 
+     * <p>Permite testar o processamento de webhooks sem validação de assinatura.</p>
+     * <p><strong>IMPORTANTE</strong>: Bloqueado em produção por questões de segurança.</p>
+     * 
+     * @param event DTO tipado com dados de teste
+     * @return 200 OK se processado
      */
     @PostMapping("/uber-direct/test")
-    public ResponseEntity<?> testarWebhook(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> testarWebhook(@RequestBody UberWebhookEventDTO event) {
         log.warn("⚠️ Endpoint de TESTE de webhook chamado");
         
         // Em produção, rejeitar
@@ -130,7 +120,7 @@ public class WebhookController {
         
         try {
             // Processar sem validar assinatura (teste)
-            uberWebhookService.processarWebhook(payload, null);
+            uberWebhookService.processarWebhook(event, null);
             
             return ResponseEntity.ok(Map.of(
                     "status", "success",

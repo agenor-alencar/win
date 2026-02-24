@@ -34,6 +34,7 @@ public class ConfiguracaoResponseDTO {
 
     // === ENTREGAS ===
     private BigDecimal taxaEntregaPorKm;
+    private BigDecimal taxaComissaoFrete;
     private Integer tempoMaximoEntregaMinutos;
     private Boolean autoAtribuirEntrega;
     private Boolean permitirAgendamento;
@@ -84,6 +85,7 @@ public class ConfiguracaoResponseDTO {
                 .distanciaMaximaEntregaKm(config.getDistanciaMaximaEntregaKm())
                 .timeoutPedidoMinutos(config.getTimeoutPedidoMinutos())
                 .taxaEntregaPorKm(config.getTaxaEntregaPorKm())
+                .taxaComissaoFrete(config.getTaxaComissaoFrete())
                 .tempoMaximoEntregaMinutos(config.getTempoMaximoEntregaMinutos())
                 .autoAtribuirEntrega(config.getAutoAtribuirEntrega())
                 .permitirAgendamento(config.getPermitirAgendamento())

@@ -85,6 +85,12 @@ public class Entrega {
 
     @Column(name = "contato_motorista", length = 20)
     private String contatoMotorista;
+    
+    @Column(name = "latitude_motorista")
+    private Double latitudeMotorista; // Localização em tempo real do motorista
+    
+    @Column(name = "longitude_motorista")
+    private Double longitudeMotorista; // Atualizado via webhooks da Uber
 
     // ========================================
     // IDs e Códigos Uber

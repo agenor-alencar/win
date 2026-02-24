@@ -1,6 +1,7 @@
 package com.win.marketplace.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.win.marketplace.dto.webhook.UberWebhookEventDTO;
 import com.win.marketplace.model.Entrega;
 import com.win.marketplace.model.Pedido;
 import com.win.marketplace.model.enums.StatusEntrega;
@@ -17,16 +18,20 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Base64;
-import java.util.Map;
+import java.util.Optional;
 
 /**
- * Service para processar webhooks da Uber Direct API.
+ * Service otimizado para processar webhooks da Uber Direct API.
  * 
- * Responsabilidades:
- * - Validar assinatura HMAC dos webhooks
- * - Processar eventos de mudança de status
- * - Atualizar entrega e pedido no banco de dados
- * - Notificar cliente (futuro: WebSocket/Email)
+ * <p>Responsabilidades:</p>
+ * <ul>
+ *   <li>Validar assinatura HMAC-SHA256 dos webhooks</li>
+ *   <li>Processar eventos de mudança de status</li>
+ *   <li>Atualizar entrega e pedido no banco de dados</li>
+ *   <li>Notificar cliente (futuro: WebSocket/Email)</li>
+ * </ul>
+ * 
+ * @since 2026-02-24
  */
 @Slf4j
 @Service
@@ -42,18 +47,18 @@ public class UberWebhookService {
     private String webhookSecret;
 
     /**
-     * Processa webhook recebido da Uber.
+     * Processa webhook recebido da Uber (versão otimizada com DTO tipado).
      * 
-     * @param payload Dados do evento
-     * @param signature Assinatura HMAC (header X-Uber-Signature)
+     * @param event DTO com dados do evento (estrutura tipada)
+     * @param signature Assinatura HMAC-SHA256 do header X-Uber-Signature
      * @throws SecurityException se assinatura inválida
      */
-    public void processarWebhook(Map<String, Object> payload, String signature) {
-        log.info("🔄 Processando webhook Uber - Event Type: {}", payload.get("event_type"));
+    public void processarWebhook(UberWebhookEventDTO event, String signature) {
+        log.info("🔄 Processando webhook Uber - Event Type: {}", event.getEventType());
 
         // 1. VALIDAR ASSINATURA (se configurado)
         if (webhookSecret != null && !webhookSecret.isEmpty() && signature != null) {
-            if (!validarAssinatura(payload, signature)) {
+            if (!validarAssinatura(event, signature)) {
                 throw new SecurityException("Assinatura HMAC inválida");
             }
             log.info("✅ Assinatura HMAC válida");
@@ -61,18 +66,14 @@ public class UberWebhookService {
             log.warn("⚠️ Validação de assinatura HMAC desabilitada (webhook.secret não configurado)");
         }
 
-        // 2. EXTRAIR DADOS DO EVENTO
-        String eventType = (String) payload.get("event_type");
-        
-        @SuppressWarnings("unchecked")
-        Map<String, Object> meta = (Map<String, Object>) payload.get("meta");
-        String deliveryId = meta != null ? (String) meta.get("resource_id") : null;
+        // 2. EXTRAIR DELIVERY ID
+        String deliveryId = Optional.ofNullable(event.getDeliveryId())
+            .or(() -> Optional.ofNullable(event.getMeta())
+                .map(UberWebhookEventDTO.MetaData::getResourceId))
+            .orElse(null);
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> data = (Map<String, Object>) payload.get("data");
-
-        if (deliveryId == null || data == null) {
-            log.error("❌ Webhook inválido: faltando delivery_id ou data");
+        if (deliveryId == null) {
+            log.error("❌ Webhook inválido: faltando delivery_id");
             return;
         }
 
@@ -88,37 +89,38 @@ public class UberWebhookService {
         }
 
         // 4. PROCESSAR EVENTO BASEADO NO TIPO
+        String eventType = event.getEventType();
         switch (eventType) {
             case "deliveries.courier_assigned":
-                processarMotoristaAtribuido(entrega, data);
+                processarMotoristaAtribuido(entrega, event);
                 break;
                 
             case "deliveries.courier_approaching_pickup":
-                processarMotoristaACaminhoDaLoja(entrega, data);
+                processarMotoristaACaminhoDaLoja(entrega, event);
                 break;
                 
             case "deliveries.courier_at_pickup":
-                processarMotoristaChegouNaLoja(entrega, data);
+                processarMotoristaChegouNaLoja(entrega, event);
                 break;
                 
             case "deliveries.courier_approaching_dropoff":
-                processarMotoristaACaminhoDoCliente(entrega, data);
+                processarMotoristaACaminhoDoCliente(entrega, event);
                 break;
                 
             case "deliveries.courier_at_dropoff":
-                processarMotoristaChegouNoCliente(entrega, data);
+                processarMotoristaChegouNoCliente(entrega, event);
                 break;
                 
             case "deliveries.delivered":
-                processarEntregaConcluida(entrega, data);
+                processarEntregaConcluida(entrega, event);
                 break;
                 
             case "deliveries.canceled":
-                processarEntregaCancelada(entrega, data);
+                processarEntregaCancelada(entrega, event);
                 break;
                 
             case "deliveries.delivery_status_updated":
-                processarMudancaDeStatus(entrega, data);
+                processarMudancaDeStatus(entrega, event);
                 break;
                 
             default:
@@ -133,12 +135,12 @@ public class UberWebhookService {
     }
 
     /**
-     * Valida assinatura HMAC do webhook.
+     * Valida assinatura HMAC-SHA256 do webhook (type-safe).
      */
-    private boolean validarAssinatura(Map<String, Object> payload, String signature) {
+    private boolean validarAssinatura(UberWebhookEventDTO event, String signature) {
         try {
-            // Converter payload para JSON string
-            String payloadString = objectMapper.writeValueAsString(payload);
+            // Converter DTO para JSON string
+            String payloadString = objectMapper.writeValueAsString(event);
 
             // Calcular HMAC SHA-256
             Mac mac = Mac.getInstance("HmacSHA256");
@@ -149,7 +151,7 @@ public class UberWebhookService {
             byte[] hmacBytes = mac.doFinal(payloadString.getBytes(StandardCharsets.UTF_8));
             String calculatedSignature = Base64.getEncoder().encodeToString(hmacBytes);
 
-            // Comparar assinaturas
+            // Comparar assinaturas (timing-safe)
             return calculatedSignature.equals(signature);
             
         } catch (Exception e) {
@@ -159,44 +161,51 @@ public class UberWebhookService {
     }
 
     // ========================================
-    // PROCESSADORES DE EVENTOS
+    // PROCESSADORES DE EVENTOS (Type-Safe)
     // ========================================
 
-    private void processarMotoristaAtribuido(Entrega entrega, Map<String, Object> data) {
+    private void processarMotoristaAtribuido(Entrega entrega, UberWebhookEventDTO event) {
         log.info("🏍️ Motorista atribuído à entrega");
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> courier = (Map<String, Object>) data.get("courier");
-        
-        if (courier != null) {
-            entrega.setNomeMotorista((String) courier.get("name"));
-            entrega.setContatoMotorista((String) courier.get("phone_number"));
+        Optional.ofNullable(event.getCourier()).ifPresent(courier -> {
+            entrega.setNomeMotorista(courier.getName());
+            entrega.setContatoMotorista(courier.getPhoneNumber());
             
-            @SuppressWarnings("unchecked")
-            Map<String, Object> vehicle = (Map<String, Object>) courier.get("vehicle");
-            if (vehicle != null) {
-                entrega.setPlacaVeiculo((String) vehicle.get("license_plate"));
-            }
-        }
+            Optional.ofNullable(courier.getVehicle()).ifPresent(vehicle -> {
+                entrega.setPlacaVeiculo(vehicle.getLicensePlate());
+            });
+            
+            // Atualizar localização do motorista
+            Optional.ofNullable(courier.getLocation()).ifPresent(location -> {
+                entrega.setLatitudeMotorista(location.getLatitude());
+                entrega.setLongitudeMotorista(location.getLongitude());
+            });
+        });
 
         entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_MOTORISTA);
-        // DataHora será registrada automaticamente via @UpdateTimestamp
     }
 
-    private void processarMotoristaACaminhoDaLoja(Entrega entrega, Map<String, Object> data) {
+    private void processarMotoristaACaminhoDaLoja(Entrega entrega, UberWebhookEventDTO event) {
         log.info("🛣️ Motorista a caminho da loja");
         entrega.setStatusEntrega(StatusEntrega.MOTORISTA_A_CAMINHO_RETIRADA);
+        
+        // Atualizar localização se disponível
+        atualizarLocalizacaoMotorista(entrega, event);
     }
 
-    private void processarMotoristaChegouNaLoja(Entrega entrega, Map<String, Object> data) {
+    private void processarMotoristaChegouNaLoja(Entrega entrega, UberWebhookEventDTO event) {
         log.info("📍 Motorista chegou na loja");
         entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_PREPARACAO);
+        
+        atualizarLocalizacaoMotorista(entrega, event);
     }
 
-    private void processarMotoristaACaminhoDoCliente(Entrega entrega, Map<String, Object> data) {
+    private void processarMotoristaACaminhoDoCliente(Entrega entrega, UberWebhookEventDTO event) {
         log.info("🚴 Motorista a caminho do cliente");
         entrega.setStatusEntrega(StatusEntrega.EM_TRANSITO);
         entrega.setDataHoraRetirada(OffsetDateTime.now());
+        
+        atualizarLocalizacaoMotorista(entrega, event);
         
         // Atualizar status do pedido também
         Pedido pedido = entrega.getPedido();
@@ -206,12 +215,14 @@ public class UberWebhookService {
         }
     }
 
-    private void processarMotoristaChegouNoCliente(Entrega entrega, Map<String, Object> data) {
+    private void processarMotoristaChegouNoCliente(Entrega entrega, UberWebhookEventDTO event) {
         log.info("🏠 Motorista chegou no endereço do cliente");
         entrega.setStatusEntrega(StatusEntrega.EM_TRANSITO);
+        
+        atualizarLocalizacaoMotorista(entrega, event);
     }
 
-    private void processarEntregaConcluida(Entrega entrega, Map<String, Object> data) {
+    private void processarEntregaConcluida(Entrega entrega, UberWebhookEventDTO event) {
         log.info("✅ Entrega concluída com sucesso");
         entrega.setStatusEntrega(StatusEntrega.ENTREGUE);
         entrega.setDataHoraEntrega(OffsetDateTime.now());
@@ -228,9 +239,14 @@ public class UberWebhookService {
         log.info("📧 TODO: Enviar notificação de entrega concluída ao cliente");
     }
 
-    private void processarEntregaCancelada(Entrega entrega, Map<String, Object> data) {
+    private void processarEntregaCancelada(Entrega entrega, UberWebhookEventDTO event) {
         log.warn("❌ Entrega cancelada pela Uber");
         entrega.setStatusEntrega(StatusEntrega.CANCELADA);
+        
+        // Registrar motivo do cancelamento
+        if (event.getCancellationReason() != null) {
+            log.warn("📝 Motivo: {}", event.getCancellationReason());
+        }
         
         // Atualizar status do pedido
         Pedido pedido = entrega.getPedido();
@@ -243,23 +259,41 @@ public class UberWebhookService {
         log.warn("📧 TODO: Notificar lojista e cliente sobre cancelamento");
     }
 
-    private void processarMudancaDeStatus(Entrega entrega, Map<String, Object> data) {
-        String status = (String) data.get("status");
+    private void processarMudancaDeStatus(Entrega entrega, UberWebhookEventDTO event) {
+        String status = event.getStatus();
         log.info("📝 Status atualizado: {}", status);
         
+        if (status == null) {
+            log.warn("⚠️ Status não informado no evento");
+            return;
+        }
+        
         // Mapear status da Uber para nosso enum
-        // Se não conseguir mapear, log mas não falha
         try {
-            switch (status) {
+            switch (status.toLowerCase()) {
                 case "pending" -> entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_PREPARACAO);
                 case "pickup" -> entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_MOTORISTA);
                 case "dropoff" -> entrega.setStatusEntrega(StatusEntrega.EM_TRANSITO);
-                case "delivered" -> processarEntregaConcluida(entrega, data);
-                case "canceled" -> processarEntregaCancelada(entrega, data);
+                case "delivered" -> processarEntregaConcluida(entrega, event);
+                case "canceled", "cancelled" -> processarEntregaCancelada(entrega, event);
                 default -> log.warn("Status desconhecido: {}", status);
             }
         } catch (Exception e) {
             log.error("Erro ao mapear status: {}", status, e);
         }
+    }
+    
+    /**
+     * Método auxiliar para atualizar localização do motorista.
+     */
+    private void atualizarLocalizacaoMotorista(Entrega entrega, UberWebhookEventDTO event) {
+        Optional.ofNullable(event.getCourier())
+            .map(UberWebhookEventDTO.CourierData::getLocation)
+            .ifPresent(location -> {
+                entrega.setLatitudeMotorista(location.getLatitude());
+                entrega.setLongitudeMotorista(location.getLongitude());
+                log.debug("📍 Localização atualizada: {}, {}", 
+                    location.getLatitude(), location.getLongitude());
+            });
     }
 }

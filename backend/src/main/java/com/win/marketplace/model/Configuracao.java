@@ -68,6 +68,9 @@ public class Configuracao {
     @Column(name = "taxa_entrega_por_km", nullable = false, precision = 10, scale = 2)
     private BigDecimal taxaEntregaPorKm = new BigDecimal("1.20");
 
+    @Column(name = "taxa_comissao_frete", nullable = false, precision = 5, scale = 2)
+    private BigDecimal taxaComissaoFrete = new BigDecimal("10.00"); // 10% comissão sobre frete Uber
+
     @Column(name = "tempo_maximo_entrega_minutos", nullable = false)
     private Integer tempoMaximoEntregaMinutos = 60;
 

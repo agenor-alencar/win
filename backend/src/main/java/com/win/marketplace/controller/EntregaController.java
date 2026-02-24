@@ -1,6 +1,7 @@
 package com.win.marketplace.controller;
 
 import com.win.marketplace.dto.request.SimulacaoFreteRequestDTO;
+import com.win.marketplace.dto.response.DeliveryStatusResponseDTO;
 import com.win.marketplace.dto.response.EntregaResponseDTO;
 import com.win.marketplace.dto.response.SimulacaoFreteResponseDTO;
 import com.win.marketplace.dto.response.SolicitacaoCorridaUberResponseDTO;
@@ -22,6 +23,7 @@ import java.util.UUID;
  * - POST /api/v1/entregas/simular-frete - Simula custo de frete (público)
  * - POST /api/v1/entregas/{pedidoId}/solicitar - Solicita corrida Uber (lojista)
  * - GET /api/v1/entregas/pedido/{pedidoId} - Busca entrega do pedido (lojista/cliente)
+ * - GET /api/v1/entregas/{entregaId}/status - Consulta status em tempo real (lojista/cliente)
  * - GET /api/v1/entregas/lojista/minhas - Lista entregas do lojista (lojista)
  * - GET /api/v1/entregas/lojista/em-andamento - Lista entregas em andamento (lojista)
  * - DELETE /api/v1/entregas/{entregaId} - Cancela entrega (lojista)
@@ -65,6 +67,21 @@ public class EntregaController {
     public ResponseEntity<EntregaResponseDTO> buscarPorPedido(@PathVariable UUID pedidoId) {
         var entrega = entregaService.buscarPorPedido(pedidoId);
         return ResponseEntity.ok(entrega);
+    }
+    
+    /**
+     * Consulta status em tempo real da entrega na Uber.
+     * Retorna informações atualizadas sobre motorista, localização e ETAs.
+     * 
+     * @param entregaId ID da entrega no sistema WIN
+     * @return Status atualizado em tempo real
+     */
+    @GetMapping("/{entregaId}/status")
+    @PreAuthorize("hasAnyAuthority('LOJISTA', 'CLIENTE', 'ADMIN')")
+    public ResponseEntity<DeliveryStatusResponseDTO> consultarStatusEmTempoReal(
+            @PathVariable UUID entregaId) {
+        var status = entregaService.consultarStatusEmTempoReal(entregaId);
+        return ResponseEntity.ok(status);
     }
 
     /**

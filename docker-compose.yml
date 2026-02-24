@@ -130,6 +130,11 @@ services:
       UBER_CLIENT_SECRET: ${UBER_CLIENT_SECRET}
       UBER_API_BASE_URL: ${UBER_API_BASE_URL:-https://sandbox-api.uber.com}
       UBER_API_ENABLED: ${UBER_API_ENABLED:-true}
+      
+      # ========================================
+      # Google Maps API (para geocodificação)
+      # ========================================
+      Maps_API_KEY: ${Maps_API_KEY:-}
     ports:
       - "8080:8080"
     volumes:

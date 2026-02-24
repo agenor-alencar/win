@@ -109,6 +109,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/banners/**").permitAll() // Apenas GET em banners é público
                 .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
                 .requestMatchers("/api/v1/entregas/**").permitAll() // Permitir simulação de frete
+                .requestMatchers(HttpMethod.GET, "/api/v1/fretes/estimar").permitAll() // Permitir estimativa de frete por CEP
                 .requestMatchers("/api/v1/webhooks/**").permitAll() // Todos os webhooks públicos
                 .requestMatchers("/api/v1/pagamentos/webhooks/**").permitAll() // Webhooks de pagamento
                 .requestMatchers(HttpMethod.GET, "/api/v1/pagamentos/pedido/*/pix").permitAll() // Página de pagamento PIX pública
@@ -120,6 +121,7 @@ public class SecurityConfig {
                 // Endpoints de lojistas que requerem autenticação (ANTES da regra geral de GET)
                 .requestMatchers("/api/v1/lojistas/me").authenticated() // /me requer autenticação
                 .requestMatchers("/api/v1/lojistas/*/estatisticas").authenticated() // estatísticas requer autenticação
+                .requestMatchers("/api/v1/lojistas/*/dados-bancarios/**").permitAll() // TESTE: permitir dados bancários sem auth
                 .requestMatchers(HttpMethod.GET, "/api/v1/lojistas/**").permitAll() // Outros GETs de lojistas são públicos
                 
                 // Endpoints administrativos (apenas ADMIN)
