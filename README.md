@@ -2,7 +2,7 @@
 
 # 🛒 WIN Marketplace
 
-### Plataforma de E-commerce Completa com Integração de Pagamentos e Entregas
+### Plataforma de E-commerce Multi-Vendor com Pagamentos e Entregas Integradas
 
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-green?logo=springboot)](https://spring.io/projects/spring-boot)
@@ -11,7 +11,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[Demo](#-demonstração) • [Recursos](#-recursos-principais) • [Instalação](#-instalação-rápida) • [Documentação](docs/README.md) • [API](api-docs/INTEGRATION.md)
+**[📸 Demo](#-demonstração) • [🚀 Quick Start](#-quick-start) • [✨ Features](#-features-destacadas) • [📚 Documentação](docs/README.md)**
 
 </div>
 
@@ -19,105 +19,66 @@
 
 ## 📖 Sobre o Projeto
 
-**WIN Marketplace** é uma plataforma de e-commerce completa e escalável, desenvolvida com as melhores práticas de engenharia de software. O sistema oferece uma solução robusta para gestão de marketplace, incluindo:
+**WIN Marketplace** é uma plataforma completa de e-commerce multi-vendor desenvolvida com as melhores práticas de engenharia de software. Sistema escalável com **integrações reais de pagamento (Pagar.me)** e **entregas (Uber Direct API)**, demonstrando competências em arquitetura full-stack, DevOps e integrações complexas.
 
-- 🏪 **Multi-vendor**: Suporte para múltiplos lojistas
-- 💳 **Pagamentos**: Integração com Pagar.me (PIX, Cartão, Boleto)
-- 🚚 **Entregas**: Integração com Uber Direct API
-- 📦 **Gestão Completa**: Produtos, pedidos, usuários, avaliações
-- 🔐 **Segurança**: Autenticação JWT, bcrypt, proteção CSRF
-- 📊 **Analytics**: Dashboard administrativo com métricas
-- 🎨 **UI Moderna**: Interface responsiva com TailwindCSS e Shadcn/ui
+### 🎯 Diferenciais Técnicos
 
-### 🎯 Por que este projeto?
-
-Este projeto demonstra competências em:
-- **Arquitetura Full-Stack**: Backend robusto com Spring Boot + Frontend moderno com React
-- **Integrações Complexas**: APIs de pagamento (Pagar.me) e logística (Uber Direct)
-- **DevOps**: Containerização com Docker, CI/CD, otimização de recursos
-- **Boas Práticas**: Clean Code, SOLID, Design Patterns, Segurança
-- **Escalabilidade**: Otimizações de banco de dados, cache, indexes
+- 🏗️ **Arquitetura Full-Stack Profissional** - Backend Spring Boot 3.5.6 + Frontend React 19 + PostgreSQL 16
+- 🔌 **Integrações de Produção** - Pagar.me (PIX/Cartão/Boleto) + Uber Direct API + SendGrid
+- 🐳 **DevOps Completo** - Multi-stage Docker builds, health checks, otimização de recursos
+- 🔐 **Segurança Enterprise** - JWT, bcrypt, CSRF protection, validações robustas
+- ⚡ **Performance Otimizada** - Indexes estratégicos, query optimization, fetch strategies
+- 📊 **Multi-tenant** - Sistema preparado para múltiplos lojistas com isolamento de dados
 
 ---
 
 ## 🎬 Demonstração
 
-<!-- Adicione aqui screenshots ou GIFs da sua aplicação -->
+> 📸 *Adicione aqui screenshots ou GIFs da aplicação em funcionamento*
 
-### Frontend
 ```
-🏠 Página Inicial → 🛍️ Catálogo → 🛒 Carrinho → 💳 Checkout → ✅ Confirmação
-```
-
-### Painel Admin
-```
-📊 Dashboard → 📦 Produtos → 👥 Usuários → 🏪 Lojistas → 📈 Relatórios
+🏠 Home → 🛍️ Catálogo → 🛒 Carrinho → 💳 Checkout → 📦 Rastreamento
 ```
 
-> 📸 *Screenshots em breve - [Veja a documentação completa](docs/README.md)*
-
-## 🏗️ Arquitetura
-
-O projeto é composto por **3 serviços independentes**:
-
-| Serviço | Tecnologia | Porta | Container |
-|---------|-----------|-------|-----------|
-| **Backend** | Spring Boot 3.5.6 + Java 21 | 8080 | win-marketplace-backend |
-| **Frontend** | React + Vite + TypeScript | 3000 | win-marketplace-frontend |
-| **Database** | PostgreSQL 16 Alpine | 5432 | win-marketplace-db |
+### Principais Fluxos
+- **Consumidor**: Busca produtos → Adiciona ao carrinho → Checkout com PIX → Acompanha entrega
+- **Lojista**: Cadastra produtos → Gerencia estoque → Processa pedidos → Recebe pagamentos
+- **Admin**: Dashboard analytics → Gestão de usuários → Moderação → Relatórios
 
 ---
 
-## ✨ Recursos Principais
+## ✨ Features Destacadas
 
 <table>
 <tr>
 <td width="50%">
 
-### 🛍️ **Para Consumidores**
-- ✅ Cadastro e autenticação segura
-- ✅ Busca avançada com filtros
-- ✅ Carrinho de compras inteligente
-- ✅ Múltiplas formas de pagamento
-- ✅ Rastreamento de pedidos
-- ✅ Sistema de avaliações
-- ✅ Reset de senha via email
+### 💳 **Pagamentos**
+- PIX instantâneo
+- Cartão de crédito/débito
+- Boleto bancário
+- Split de pagamentos (marketplace)
+
+### 🚚 **Entregas**
+- Integração Uber Direct
+- Cálculo de frete em tempo real
+- Rastreamento de pedidos
+- Geolocalização de lojistas
 
 </td>
 <td width="50%">
 
-### 🏪 **Para Lojistas**
-- ✅ Gerenciamento de produtos
-- ✅ Controle de estoque
-- ✅ Upload de imagens
-- ✅ Gestão de pedidos
-- ✅ Cadastro bancário automático
-- ✅ Dashboard de vendas
-- ✅ Geolocalização da loja
+### 🔐 **Segurança**
+- Autenticação JWT
+- Hashing bcrypt
+- Proteção CSRF
+- Validações robustas
 
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### 👨‍💼 **Para Administradores**
-- ✅ Painel administrativo completo
-- ✅ Gestão de usuários e permissões
-- ✅ Moderação de conteúdo
-- ✅ Relatórios e analytics
-- ✅ Configurações do sistema
-- ✅ Logs e auditoria
-
-</td>
-<td width="50%">
-
-### 🔧 **Técnico**
-- ✅ API RESTful documentada
-- ✅ Containerização Docker
-- ✅ Migrations com Flyway
-- ✅ Otimização de queries
-- ✅ Health checks
-- ✅ Logging estruturado
+### ⚡ **Performance**
+- Indexes otimizados
+- Query optimization
+- Lazy/Eager loading estratégico
+- Docker multi-stage builds
 
 </td>
 </tr>
@@ -125,491 +86,150 @@ O projeto é composto por **3 serviços independentes**:
 
 ---
 
-## 🏗️ Arquitetura
-
-### Stack Tecnológica
-
-| Camada | Tecnologia | Versão |
-|--------|-----------|--------|
-| **Backend** | Java (Eclipse Temurin) | 21 LTS |
-| | Spring Boot | 3.5.6 |
-| | Spring Security | 6.5.5 |
-| | Maven | 3.9.5 |
-| | MapStruct | 1.5.5 |
-| **Frontend** | React | 19 |
-| | TypeScript | 5.x |
-| | Vite | 5.x |
-| | TailwindCSS | 3.x |
-| | Shadcn/ui | Latest |
-| **Database** | PostgreSQL | 16 Alpine |
-| | Flyway | Latest |
-| **DevOps** | Docker | Latest |
-| | Docker Compose | 2.x |
-| | Nginx | Latest |
-
----
-
-## 🚀 Instalação Rápida
+## 🚀 Quick Start
 
 ### Pré-requisitos
-
 - [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/install/)
 - Portas disponíveis: `3000`, `5432`, `8080`
 
-### Executar Aplicação
+### Rodar o Projeto
 
 ```bash
-# 1. Clone o repositório
+# Clone e acesse o projeto
 git clone https://github.com/ArthurJsph/win-grupo1.git
 cd win-grupo1
 
-# 2. Configure as variáveis de ambiente
-cp .env.example .env
-# Edite .env com suas configurações (opcional para desenvolvimento)
-
-# 3. Inicie todos os serviços
+# Suba todos os serviços
 docker-compose up -d
 
-# 4. Verifique o status
-docker-compose ps
-
-# 5. Acompanhe os logs (opcional)
-docker-compose logs -f
+# Crie o primeiro admin
+./scripts/create-admin.ps1  # Windows
+./scripts/create-admin.sh   # Linux/Mac
 ```
 
-### Acessar Aplicação
+### 🌐 Acessar
 
-- 🌐 **Frontend**: http://localhost:3000
-- 🔌 **Backend API**: http://localhost:8080
-- 🗄️ **Database**: `localhost:5432` (user: `postgres`, pass: `postgres123`)
-
-### Criar Primeiro Admin
-
-```powershell
-# Windows (PowerShell)
-.\scripts\create-admin.ps1
-
-# Linux/Mac (Bash)
-./scripts/create-admin.sh
-```
-
-**Credenciais padrão**: `admin@winmarketplace.com` / `Admin@2025`
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8080
+- **Credenciais Admin**: `admin@winmarketplace.com` / `Admin@2025`
 
 📖 **[Guia Completo de Instalação](docs/getting-started/first-admin.md)**
 
 ---
 
-## 📋 Execução Independente
+## 🛠️ Stack Tecnológica
 
-Cada serviço pode ser executado de forma independente:
-
-```bash
-# Apenas banco de dados
-docker-compose up -d postgres
-
-# Apenas backend (requer banco)
-docker-compose up -d backend
-
-# Apenas frontend
-docker-compose up -d frontend
-
-# Backend + Banco
-docker-compose up -d postgres backend
-```
+| Camada | Tecnologias |
+|--------|------------|
+| **Backend** | Java 21, Spring Boot 3.5.6, Spring Security 6.5.5, Maven 3.9.5, MapStruct |
+| **Frontend** | React 19, TypeScript, Vite, TailwindCSS, Shadcn/ui |
+| **Database** | PostgreSQL 16, Flyway Migrations |
+| **DevOps** | Docker, Docker Compose, Multi-stage builds |
+| **Integrações** | Pagar.me, Uber Direct API, SendGrid |
 
 ---
 
-## 🛠️ Tecnologias
+## 🏗️ Arquitetura
 
-### Backend
-- **Java 21** (LTS - Eclipse Temurin)
-- **Spring Boot 3.5.6**
-  - Spring Data JPA
-  - Spring Security 6.5.5
-  - Spring Web
-- **Maven 3.9.5**
-- **MapStruct 1.5.5** (DTO mapping)
-- **PostgreSQL Driver**
-- **Hibernate**
+```
+┌─────────────────────────────────────────────────────────┐
+│                    NGINX Reverse Proxy                   │
+└─────────────────────────────────────────────────────────┘
+           │                                  │
+    ┌──────▼──────┐                  ┌───────▼────────┐
+    │   Frontend  │                  │    Backend     │
+    │  React 19   │ ◄─── REST ────► │ Spring Boot 3.5│
+    │   (Port 3000)│                 │   (Port 8080)  │
+    └─────────────┘                  └────────┬───────┘
+                                              │
+                                     ┌────────▼────────┐
+                                     │   PostgreSQL 16 │
+                                     │   (Port 5432)   │
+                                     └─────────────────┘
+```
 
-### Frontend
-- **React 19**
-- **TypeScript**
-- **Vite**
-- **TailwindCSS**
-- **Shadcn/ui** (componentes)
-- **React Router**
-- **Axios**
-
-### Database
-- **PostgreSQL 16** (Alpine)
-- **Flyway** (migrations)
-
-### DevOps
-- **Docker & Docker Compose**
-- **Multi-stage builds**
-- **Health checks**
-- **Volume persistence**
+**Serviços Dockerizados**:
+- `win-marketplace-frontend` - Interface do usuário
+- `win-marketplace-backend` - API REST e lógica de negócio
+- `win-marketplace-db` - Banco de dados com persistência
 
 ---
 
 ## 📁 Estrutura do Projeto
 
 ```
-win-grupo1/
-├── backend/                    # Spring Boot Application (Sistema API)
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/win/marketplace/
-│   │   │   │   ├── controller/      # REST Controllers
-│   │   │   │   ├── model/           # JPA Entities
-│   │   │   │   ├── repository/      # Spring Data Repos
-│   │   │   │   ├── service/         # Business Logic
-│   │   │   │   ├── dto/             # Data Transfer Objects
-│   │   │   │   ├── mapper/          # MapStruct Mappers
-│   │   │   │   └── util/            # Utilities (PasswordHashGenerator)
-│   │   │   └── resources/
-│   │   │       ├── application.yml
-│   │   │       ├── application-docker.yml
-│   │   │       └── db/migration/    # Flyway migrations
-│   │   └── test/
-│   ├── pom.xml
-│   └── Dockerfile
-│
-├── win-frontend/               # React Application (Sistema Frontend)
-│   ├── src/
-│   │   ├── components/         # React Components
-│   │   ├── contexts/           # Context API
-│   │   ├── hooks/              # Custom Hooks
-│   │   ├── pages/              # Page Components
-│   │   ├── lib/                # Utilities
-│   │   └── main.tsx
-│   ├── package.json
-│   └── Dockerfile
-│
-├── database/                   # Banco de Dados (Scripts SQL)
-│   ├── init.sql                # Initial DB setup
-│   └── seeds/                  # Dados iniciais
-│       └── seed-categorias.sql
-│
-├── docs/                       # Documentação do Projeto
-│   ├── README.md               # Índice da documentação
-│   ├── SECURITY.md             # Guia de segurança
-│   ├── OPTIMIZATION.md         # Otimizações implementadas
-│   ├── CLEANUP.md              # Limpeza de arquivos
-│   ├── getting-started/        # Primeiros passos
-│   ├── admin/                  # Administração
-│   ├── configuration/          # Configurações
-│   ├── deployment/             # Deploy e execução
-│   ├── development/            # Desenvolvimento
-│   └── architecture/           # Arquitetura e specs
-│
-├── integracoes/                # 🆕 Módulos de Integração Externa
-│   └── README.md               # Guia de integrações (SendGrid, etc)
-│
-├── api-docs/                   # 🆕 API para Consumo Externo
-│   ├── README.md               # Índice da documentação API
-│   ├── INTEGRATION.md          # 🔑 Credenciais + Testes + Endpoints
-│   └── ENDPOINTS.md            # 📋 Referência completa de endpoints
-│
-├── scripts/                    # Scripts auxiliares
-│   ├── create-admin.ps1        # Criar admin (PowerShell)
-│   ├── create-admin.sh         # Criar admin (Bash)
-│   └── seed-categorias.ps1     # Popular categorias
-│
-├── uploads/                    # Arquivos enviados (produtos)
-│   └── .gitkeep
-│
-├── docker-compose.yml          # Orquestração dos serviços
-├── .env                        # Variáveis de ambiente (não versionado)
-├── .env.example                # Template de variáveis
-└── .gitignore                  # Arquivos ignorados pelo git
+win-marketplace/
+├── backend/              # Spring Boot API
+│   ├── src/main/java/   # Controllers, Services, Models, DTOs
+│   └── resources/       # application.yml, migrations
+├── win-frontend/        # React App
+│   └── src/             # Components, Pages, Contexts
+├── docs/                # Documentação técnica
+├── api-docs/            # Documentação da API
+├── scripts/             # Automação (create-admin, seeds)
+└── docker-compose.yml   # Orquestração dos serviços
 ```
+
+📖 **[Estrutura Detalhada](docs/architecture/project-structure.md)**
 
 ---
 
-## 🔧 Comandos Úteis
-
-### Docker
-
-```bash
-# Status dos serviços
-docker-compose ps
-
-# Logs de um serviço
-docker-compose logs -f backend
-
-# Reiniciar um serviço
-docker-compose restart backend
-
-# Parar todos os serviços
-docker-compose down
-
-# Parar e remover volumes (limpar dados)
-docker-compose down -v
-
-# Reconstruir imagens
-docker-compose build
-
-# Rebuild e reiniciar
-docker-compose up -d --build
-```
-
-### Backend (Local)
-
-```bash
-cd backend
-
-# Build
-./mvnw clean package -DskipTests
-
-# Executar
-./mvnw spring-boot:run
-
-# Executar com profile docker
-./mvnw spring-boot:run -Dspring-boot.run.profiles=docker
-
-# Testes
-./mvnw test
-```
-
-### Frontend (Local)
-
-```bash
-cd win-frontend
-
-# Instalar dependências
-npm install
-
-# Desenvolvimento
-npm run dev
-
-# Build para produção
-npm run build
-
-# Preview da build
-npm run preview
-```
-
----
-
-## 🔒 Configuração
-
-### Configuração Básica
-
-O sistema funciona imediatamente após o `docker-compose up`, mas para funcionalidades completas:
-
-#### 📧 **Configuração de Email (Opcional - Para Reset de Senha)**
-
-O sistema suporta **SendGrid** (recomendado) ou **Gmail**:
-
-**Opção 1: SendGrid (Profissional - RECOMENDADO)**
-```bash
-# 1. Criar conta grátis em: https://signup.sendgrid.com/
-# 2. Copiar .env.sendgrid.template para .env
-cp .env.sendgrid.template .env
-
-# 3. Preencher no .env:
-SENDGRID_API_KEY=SG.sua-api-key-aqui
-MAIL_FROM=seu-email-verificado@gmail.com
-
-# 4. Reiniciar backend
-docker-compose restart backend
-```
-
-**Opção 2: Gmail (Apenas Desenvolvimento)**
-```bash
-# Ver guia completo em: _DOCS/EMAIL_SETUP.md
-MAIL_HOST=smtp.gmail.com
-MAIL_USERNAME=seu-email@gmail.com
-MAIL_PASSWORD=senha-app-16-caracteres
-```
-
-📖 **Guias Completos:**
-- **SendGrid (10 min):** [docs/configuration/email-sendgrid.md](docs/configuration/email-sendgrid.md)
-- **SendGrid Detalhado:** [docs/configuration/email-sendgrid-detailed.md](docs/configuration/email-sendgrid-detailed.md)
-
-#### 🔑 **Criar Conta Admin (Primeira Configuração)**
-
-Para acessar o painel administrativo, você precisa criar uma conta admin.
-
-**📖 Guia Completo:** [docs/getting-started/first-admin.md](docs/getting-started/first-admin.md)
-
-**Método Rápido (PowerShell/Windows):**
-```powershell
-# 1. Gerar hash da senha
-Invoke-RestMethod -Uri "http://localhost:8080/api/v1/dev/hash-password" `
-  -Method Post -ContentType "application/json" `
-  -Body '{"senha":"Admin@2025","email":"admin@winmarketplace.com","nome":"Administrador"}' `
-  | Select-Object -ExpandProperty hash
-
-# 2. Copiar o hash e inserir no banco
-docker exec -it win-marketplace-db psql -U postgres -d win_marketplace -c "
-INSERT INTO usuarios (id, email, senha, nome, role, ativo, criado_em, atualizado_em)
-VALUES (gen_random_uuid(), 'admin@winmarketplace.com', 'COLE_O_HASH_AQUI', 'Administrador', 'ADMIN', true, NOW(), NOW());
-"
-```
-
-**Ou use o script automatizado:**
-```powershell
-# Windows: .\scripts\create-admin.ps1
-# Linux/Mac: ./scripts/create-admin.sh
-```
-- **Gmail:** `_DOCS/EMAIL_SETUP.md`
-
-> ✅ **12.000 emails grátis/mês** com SendGrid  
-> ⚠️ Gmail limita a 500 emails/dia
-
----
-
-### Variáveis de Ambiente (.env)
-
-```env
-# PostgreSQL
-POSTGRES_DB=win_marketplace
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres123
-
-# Backend
-SPRING_PROFILES_ACTIVE=docker
-SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/win_marketplace
-
-# Email (SendGrid - Opcional)
-SENDGRID_API_KEY=
-MAIL_FROM=
-FRONTEND_URL=http://localhost:3000
-
-# Frontend
-VITE_API_URL=http://localhost:8080
-NODE_ENV=development
-```
-
-⚠️ **Atenção:** Altere as credenciais para produção!
-
----
-
-## 🐛 Troubleshooting
-
-### Porta em uso
-
-```bash
-# Windows - ver processo usando a porta
-netstat -ano | findstr :8080
-
-# Matar processo pelo PID
-taskkill /PID <PID> /F
-```
-
-### Container não inicia
-
-```bash
-# Ver logs detalhados
-docker-compose logs -f <service-name>
-
-# Verificar healthcheck do banco
-docker inspect win-marketplace-db | grep -A 10 Health
-
-# Reiniciar serviço
-docker-compose restart <service-name>
-```
-
-### Problemas de build
-
-```bash
-# Limpar cache do Docker
-docker system prune -a
-
-# Rebuild forçado
-docker-compose build --no-cache
-
-# Remover volumes antigos
-docker volume prune
-```
-
----
-
-## 📚 Documentação Completa
-
-### 🚀 Para Desenvolvedores
-
-#### Integração e API
-- **[📘 api-docs/INTEGRATION.md](./api-docs/INTEGRATION.md)** - 🔑 **Credenciais + Endpoints + Testes** (INÍCIO AQUI!)
-- **[📋 api-docs/ENDPOINTS.md](./api-docs/ENDPOINTS.md)** - Referência completa de todos os endpoints
-- **[📚 api-docs/README.md](./api-docs/README.md)** - Índice da documentação API
-
-#### Primeiros Passos
-- **[🎯 docs/getting-started/first-admin.md](./docs/getting-started/first-admin.md)** - Criar primeiro admin (5 min)
-- **[⚡ docs/getting-started/quick-reference.md](./docs/getting-started/quick-reference.md)** - Comandos rápidos
-
-### ⚙️ Configuração
-
-#### Email e Segurança
-- **[📧 docs/configuration/email-sendgrid.md](./docs/configuration/email-sendgrid.md)** - Setup SendGrid (10 min) ⚡
-- **[📧 docs/configuration/email-sendgrid-detailed.md](./docs/configuration/email-sendgrid-detailed.md)** - Guia completo SendGrid
-- **[📧 docs/configuration/email-gmail.md](./docs/configuration/email-gmail.md)** - Configuração Gmail (dev)
-- **[🔐 docs/SECURITY.md](./docs/SECURITY.md)** - Guia de segurança e boas práticas
-
-#### Administração
-- **[🔑 docs/admin/password-hash.md](./docs/admin/password-hash.md)** - Gerador de hash de senha
-- **[💡 docs/admin/hash-examples.md](./docs/admin/hash-examples.md)** - 10 exemplos práticos
-
-### 🐳 Deploy e Execução
-- **[🐳 docs/deployment/docker.md](./docs/deployment/docker.md)** - Executar com Docker
-- **[🐳 docs/deployment/docker-commands.md](./docs/deployment/docker-commands.md)** - Comandos Docker
-- **[💻 docs/deployment/local-development.md](./docs/deployment/local-development.md)** - Desenvolvimento local
-
-### 🏗️ Arquitetura
-- **[📐 docs/architecture/project-structure.md](./docs/architecture/project-structure.md)** - Estrutura do projeto
-- **[📋 docs/architecture/specifications.md](./docs/architecture/specifications.md)** - Especificações e requisitos
-
-### ⚡ Otimização
-- **[✨ docs/OPTIMIZATION.md](./docs/OPTIMIZATION.md)** - Resumo de otimizações
-- **[🧹 docs/CLEANUP.md](./docs/CLEANUP.md)** - Limpeza de arquivos
-
-### 🔌 Integrações
-- **[🔌 integracoes/README.md](./integracoes/README.md)** - Guia de integrações externas (SendGrid, etc)
+## 📚 Documentação
+
+### 📘 Para Desenvolvedores
+- **[🔑 API - Credenciais & Endpoints](api-docs/INTEGRATION.md)** - Guia completo de integração
+- **[📋 Referência de Endpoints](api-docs/ENDPOINTS.md)** - Todos os endpoints documentados
+- **[🎯 Criar Primeiro Admin](docs/getting-started/first-admin.md)** - Setup inicial (5 min)
+- **[⚡ Comandos Rápidos](docs/getting-started/quick-reference.md)** - Referência rápida
+
+### ⚙️ Configuração & Deploy
+- **[📧 Configurar Email SendGrid](docs/configuration/email-sendgrid.md)** - Setup de email (10 min)
+- **[🐳 Deploy com Docker](docs/deployment/docker.md)** - Guia completo Docker
+- **[💻 Desenvolvimento Local](docs/deployment/local-development.md)** - Rodar sem Docker
+- **[🔐 Segurança](docs/SECURITY.md)** - Boas práticas e políticas
+
+### 🏗️ Arquitetura & Otimizações
+- **[📐 Estrutura do Projeto](docs/architecture/project-structure.md)** - Organização do código
+- **[✨ Otimizações Aplicadas](docs/OPTIMIZATION.md)** - Performance e melhorias
 
 ---
 
 ## 🤝 Contribuindo
 
+Contribuições são bem-vindas! Por favor:
+
 1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+2. Crie uma branch (`git checkout -b feature/MinhaFeature`)
+3. Commit suas mudanças (`git commit -m 'feat: adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/MinhaFeature`)
 5. Abra um Pull Request
+
+📖 Leia o **[Guia de Contribuição](CONTRIBUTING.md)** completo
 
 ---
 
 ## 📝 Licença
 
-Este projeto está sob a licença MIT.
+Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 ---
 
-## 👥 Equipe
+## 👨‍💻 Autor
 
-**WIN - Grupo 1**
-
----
-
-## � Documentação
-
-- **[📖 Documentação Completa](docs/README.md)** - Índice de toda documentação
-- **[🚀 Criar Admin](docs/getting-started/first-admin.md)** - Primeiro acesso
-- **[⚙️ Configurar Email](docs/configuration/email-sendgrid.md)** - SendGrid setup
-- **[🐳 Docker](docs/deployment/docker.md)** - Guia Docker completo
-- **[🏗️ Arquitetura](docs/architecture/project-structure.md)** - Estrutura do código
+**Arthur Joseph**  
+📧 Email: [agenoralencaar@gmail.com](mailto:agenoralencaar@gmail.com)  
+🔗 GitHub: [@ArthurJsph](https://github.com/ArthurJsph)
 
 ---
 
-## �📞 Suporte
+## 🙏 Agradecimentos
 
-Para problemas ou dúvidas:
-- **[📚 Consulte a documentação](docs/README.md)**
-- Abra uma [issue](https://github.com/ArthurJsph/win-grupo1/issues)
-- Verifique os logs: `docker-compose logs -f`
+Desenvolvido como projeto acadêmico pela **Equipe WIN - Grupo 1**
 
 ---
 
-**Desenvolvido com ❤️ pela equipe WIN**
+<div align="center">
+
+**⭐ Se este projeto foi útil, considere dar uma estrela!**
+
+</div>
