@@ -89,9 +89,11 @@ public class DadosBancariosService {
         dadosBancariosMap.put("type", dadosBancarios.getTipoConta());
 
         // Chamar API Pagar.me
+        // IMPORTANTE: Usar dados do TITULAR da conta, não do lojista
+        // O documento do recipient DEVE ser o mesmo da conta bancária
         Map<String, Object> resultado = pagarMeService.criarRecipient(
-            lojista.getRazaoSocial(),
-            lojista.getCnpj(),
+            dadosBancarios.getTitularNome(),
+            dadosBancarios.getTitularDocumento(),
             lojista.getUsuario().getEmail(),
             dadosBancarios.getTitularTipo(),
             dadosBancariosMap
