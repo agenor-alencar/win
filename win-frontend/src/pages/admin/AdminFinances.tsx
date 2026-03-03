@@ -188,8 +188,7 @@ const AdminFinances: React.FC = () => {
   });
 
   const exportFinancialReport = () => {
-    console.log("Exporting financial report...");
-    // Implement export functionality
+    // TODO: Implement export functionality
   };
 
   return (
