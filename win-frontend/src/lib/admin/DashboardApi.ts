@@ -148,15 +148,17 @@ class DashboardApiService extends AdminApi {
   }
 
   /**
-   * Traduz status do pedido para português
+   * Traduz status do pedido para português (padronizado com OrderApi)
    */
   private translateOrderStatus(status: string): string {
     const statusMap: { [key: string]: string } = {
       PENDENTE: "Pendente",
+      AGUARDANDO_PAGAMENTO: "Aguardando Pagamento",
       CONFIRMADO: "Confirmado",
-      PREPARANDO: "Preparando",
-      PRONTO: "Pronto",
-      EM_TRANSITO: "Em entrega",
+      EM_PREPARACAO: "Em Preparação",
+      PREPARANDO: "Em Preparação", // Alias para EM_PREPARACAO
+      PRONTO: "Confirmado", // Alias para CONFIRMADO
+      EM_TRANSITO: "Em Trânsito",
       ENTREGUE: "Entregue",
       CANCELADO: "Cancelado",
     };

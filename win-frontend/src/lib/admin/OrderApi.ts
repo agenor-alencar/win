@@ -62,11 +62,11 @@ class OrderApiService extends AdminApi {
   }
 
   /**
-   * Lista todos os pedidos
+   * Lista todos os pedidos (Apenas ADMIN)
    */
   async getAllOrders(): Promise<Order[]> {
     try {
-      const response = await api.get<Order[]>(`${this.baseUrl}/pedidos/listar`);
+      const response = await api.get<Order[]>(`${this.baseUrl}/pedidos`);
       return response.data;
     } catch (error) {
       this.handleError(error, "Erro ao buscar pedidos");

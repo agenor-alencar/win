@@ -123,7 +123,7 @@ const AdminDashboard: React.FC = () => {
       title: "Total Usuários",
       value: dashboardData.totalUsers.toString(),
       change: { 
-        value: fullStats?.variacaoPedidosHoje || 0, 
+        value: Math.abs(fullStats?.variacaoPedidosHoje || 0).toFixed(1), 
         type: (fullStats?.variacaoPedidosHoje || 0) >= 0 ? "increase" as const : "decrease" as const, 
         period: "vs ontem" 
       },
@@ -147,7 +147,7 @@ const AdminDashboard: React.FC = () => {
       title: "Pedidos Hoje",
       value: dashboardData.todayOrders.toString(),
       change: { 
-        value: Math.abs(fullStats?.variacaoPedidosHoje || 0), 
+        value: Math.abs(fullStats?.variacaoPedidosHoje || 0).toFixed(1), 
         type: (fullStats?.variacaoPedidosHoje || 0) >= 0 ? "increase" as const : "decrease" as const, 
         period: "vs ontem" 
       },
@@ -162,7 +162,7 @@ const AdminDashboard: React.FC = () => {
         maximumFractionDigits: 2,
       })}`,
       change: {
-        value: Math.abs(fullStats?.variacaoReceitaMes || 0),
+        value: Math.abs(fullStats?.variacaoReceitaMes || 0).toFixed(1),
         type: (fullStats?.variacaoReceitaMes || 0) >= 0 ? "increase" as const : "decrease" as const,
         period: "vs mês anterior",
       },
