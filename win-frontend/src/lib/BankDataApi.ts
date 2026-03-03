@@ -19,31 +19,20 @@ export interface DadosBancariosRequest {
  * Response DTO com dados mascarados
  */
 export interface DadosBancariosResponse {
-  id: number;
-  lojistaId: number;
+  id: string;
+  lojistaId: string;
   titularNome: string;
-  titularDocumento: string; // Mascarado: ***.456.789-**
+  titularDocumentoMascarado: string; // Mascarado: ***.456.789-**
   titularTipo: string;
   codigoBanco: string;
-  nomeBanco?: string;
-  agencia: string;
-  agenciaDv?: string;
-  conta: string; // Mascarado: ****5-6
-  contaDv?: string;
+  nomeBanco: string;
+  agenciaMascarada: string;
+  contaMascarada: string;
   tipoConta: string;
   validado: boolean;
+  recipientCriado: boolean;
   criadoEm: string;
   atualizadoEm: string;
-}
-
-/**
- * Resposta da API após cadastro/atualização
- */
-export interface CadastroResponse {
-  mensagem: string;
-  dadosBancarios: DadosBancariosResponse;
-  recipientId?: string;
-  status: "sucesso" | "pendente" | "erro";
 }
 
 /**
@@ -57,8 +46,8 @@ export const BankDataApi = {
   cadastrarDadosBancarios: async (
     lojistaId: number,
     dados: DadosBancariosRequest
-  ): Promise<CadastroResponse> => {
-    const response = await api.post<CadastroResponse>(
+  ): Promise<DadosBancariosResponse> => {
+    const response = await api.post<DadosBancariosResponse>(
       `/v1/lojistas/${lojistaId}/dados-bancarios`,
       dados
     );
@@ -80,8 +69,8 @@ export const BankDataApi = {
   /**
    * Recria o recipient no Pagar.me (caso tenha falhado anteriormente)
    */
-  recriarRecipient: async (lojistaId: number): Promise<CadastroResponse> => {
-    const response = await api.post<CadastroResponse>(
+  recriarRecipient: async (lojistaId: number): Promise<DadosBancariosResponse> => {
+    const response = await api.post<DadosBancariosResponse>(
       `/v1/lojistas/${lojistaId}/dados-bancarios/recriar-recipient`
     );
     return response.data;

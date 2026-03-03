@@ -95,6 +95,7 @@ export default function MerchantSettings() {
     holderName: "",
     holderDocument: "",
     holderType: "individual" as "individual" | "company",
+    isPrimary: true,
   });
 
   const [showNewAccountForm, setShowNewAccountForm] = useState(false);
@@ -168,13 +169,13 @@ export default function MerchantSettings() {
       
       success(
         "Dados bancários salvos!",
-        response.status === "sucesso" 
+        response.recipientCriado 
           ? "Recipient criado automaticamente no Pagar.me" 
           : "Dados salvos. Recipient será criado em breve"
       );
       
       // Atualizar dados bancários
-      setDadosBancarios(response.dadosBancarios);
+      setDadosBancarios(response);
       
       // Limpar formulário e fechar
       setShowNewAccountForm(false);
@@ -189,6 +190,7 @@ export default function MerchantSettings() {
         holderName: "",
         holderDocument: "",
         holderType: "individual",
+        isPrimary: true,
       });
     } catch (err: any) {
       console.error("Erro ao salvar dados bancários:", err);
@@ -887,6 +889,7 @@ export default function MerchantSettings() {
                               holderName: "",
                               holderDocument: "",
                               holderType: "individual",
+                              isPrimary: true,
                             });
                           }}
                           disabled={isSavingBank}
