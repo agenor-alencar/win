@@ -6,6 +6,9 @@
 # 🔐 SEGURANÇA - NUNCA COMMITAR
 # ========================================
 .env
+.env.vps
+.env.example
+.env.storage.example
 .env.local
 .env.*.local
 .env.vps
