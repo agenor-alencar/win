@@ -239,24 +239,40 @@ export default function AdminSettings() {
             {activeTab === "financial" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-[#111827]">
+                  <h3 className="text-lg font-semibold text-[#111827] flex items-center gap-2">
+                    <BanknoteIcon className="w-6 h-6 text-[#3DBEAB]" />
                     Modelo Financeiro
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Configure as taxas e regras financeiras do marketplace
+                    Configure as taxas e regras financeiras do marketplace. Estas configurações afetam diretamente o split de pagamento com o Pagar.me.
                   </p>
                 </div>
 
+                {/* Alerta Importante */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800">
-                    <strong>Atenção:</strong> A soma da comissão WIN e repasse ao lojista deve ser sempre 100%
-                  </p>
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0">
+                      <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-blue-900 mb-1">Como funciona o Split de Pagamento</h4>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• A comissão WIN + repasse ao lojista deve sempre somar <strong>100%</strong></li>
+                        <li>• O <strong>lojista recebe</strong> sua porcentagem sobre o valor dos produtos</li>
+                        <li>• O <strong>marketplace recebe</strong> a comissão + 100% do valor do frete</li>
+                        <li>• No Pagar.me, o split é processado automaticamente ao aprovar o pagamento</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Taxa de Comissão WIN (%)
+                      <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
                       type="number"
@@ -272,29 +288,31 @@ export default function AdminSettings() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Percentual de comissão da plataforma sobre cada venda
+                      💰 Percentual que o marketplace retém sobre o <strong>valor dos produtos</strong> vendidos
                     </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Taxa de Repasse ao Lojista (%)
+                      <span className="text-gray-400 ml-1">(automático)</span>
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       value={settings.taxaRepasseLojista}
                       readOnly
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed text-gray-600"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Calculado automaticamente (100% - Comissão WIN)
+                      🏪 Calculado automaticamente: <strong>100% - Comissão WIN</strong>
                     </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Valor Médio por Entrega - Motorista (R$)
+                      <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
                       type="number"
@@ -307,13 +325,14 @@ export default function AdminSettings() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Valor pago ao motorista por entrega realizada
+                      🚚 Valor fixo pago ao motorista por entrega realizada via <strong>Uber Flash</strong>
                     </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Taxa de Processamento de Pagamento (%)
+                      <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
                       type="number"
@@ -327,13 +346,14 @@ export default function AdminSettings() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Taxa adicional para processamento de pagamentos
+                      💳 Taxa adicional cobrada pelos gateways de pagamento (Pagar.me, etc)
                     </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Prazo de Repasse ao Lojista (dias)
+                      <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
                       type="number"
@@ -346,35 +366,86 @@ export default function AdminSettings() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Dias úteis após entrega confirmada (D+N)
+                      📅 Dias úteis após entrega confirmada para repasse ao lojista (<strong>D+N</strong>)
                     </p>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">
-                    Exemplo de Cálculo - Pedido de R$ 100,00
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Valor do Pedido:</span>
-                      <span className="font-medium">R$ 100,00</span>
+                <div className="bg-gradient-to-br from-blue-50 to-green-50 p-6 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <BanknoteIcon className="w-5 h-5 text-blue-600" />
+                    <h4 className="text-base font-semibold text-gray-900">
+                      Simulador de Split - Pedido de R$ 100,00
+                    </h4>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {/* Valor Total */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-lg">
+                      <span className="text-gray-700 font-medium">💰 Valor Total do Pedido</span>
+                      <span className="font-bold text-lg">R$ 100,00</span>
                     </div>
-                    <div className="flex justify-between text-blue-600">
-                      <span>Comissão WIN ({settings.taxaComissaoWin}%):</span>
-                      <span className="font-medium">R$ {(100 * settings.taxaComissaoWin / 100).toFixed(2)}</span>
+
+                    {/* Divisor */}
+                    <div className="flex items-center gap-2 px-3">
+                      <div className="flex-1 border-t border-gray-300"></div>
+                      <span className="text-xs text-gray-500 font-medium">SPLIT DE PAGAMENTO</span>
+                      <div className="flex-1 border-t border-gray-300"></div>
                     </div>
-                    <div className="flex justify-between text-green-600">
-                      <span>Repasse Lojista ({settings.taxaRepasseLojista}%):</span>
-                      <span className="font-medium">R$ {(100 * settings.taxaRepasseLojista / 100).toFixed(2)}</span>
+
+                    {/* Comissão Marketplace */}
+                    <div className="flex justify-between items-center bg-blue-100 p-3 rounded-lg border border-blue-300">
+                      <div className="flex flex-col">
+                        <span className="text-blue-800 font-medium">🏢 Comissão WIN Marketplace</span>
+                        <span className="text-xs text-blue-600">Receita da plataforma sobre produtos</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-lg text-blue-700">R$ {(100 * settings.taxaComissaoWin / 100).toFixed(2)}</div>
+                        <div className="text-xs text-blue-600">{settings.taxaComissaoWin.toFixed(2)}%</div>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-orange-600">
-                      <span>Pagamento Motorista:</span>
-                      <span className="font-medium">R$ {settings.valorEntregaMotorista.toFixed(2)}</span>
+
+                    {/* Repasse Lojista */}
+                    <div className="flex justify-between items-center bg-green-100 p-3 rounded-lg border border-green-300">
+                      <div className="flex flex-col">
+                        <span className="text-green-800 font-medium">🏪 Repasse ao Lojista</span>
+                        <span className="text-xs text-green-600">Valor líquido para o vendedor</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-lg text-green-700">R$ {(100 * settings.taxaRepasseLojista / 100).toFixed(2)}</div>
+                        <div className="text-xs text-green-600">{settings.taxaRepasseLojista.toFixed(2)}%</div>
+                      </div>
                     </div>
-                    <div className="flex justify-between pt-2 border-t border-gray-300">
-                      <span>Prazo de Repasse:</span>
-                      <span className="font-medium">D+{settings.diasRepasse}</span>
+
+                    {/* Valor Entrega */}
+                    <div className="flex justify-between items-center bg-orange-100 p-3 rounded-lg border border-orange-300">
+                      <div className="flex flex-col">
+                        <span className="text-orange-800 font-medium">🚚 Pagamento ao Motorista</span>
+                        <span className="text-xs text-orange-600">Valor fixo por entrega (Uber Flash)</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-lg text-orange-700">R$ {settings.valorEntregaMotorista.toFixed(2)}</div>
+                        <div className="text-xs text-orange-600">por entrega</div>
+                      </div>
+                    </div>
+
+                    {/* Informações Adicionais */}
+                    <div className="flex flex-col gap-2 pt-3 border-t border-gray-300">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">📅 Prazo de Repasse:</span>
+                        <span className="font-medium text-gray-900">D+{settings.diasRepasse} dias úteis</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">💳 Taxa de Processamento:</span>
+                        <span className="font-medium text-gray-900">{settings.taxaProcessamentoPagamento.toFixed(2)}%</span>
+                      </div>
+                    </div>
+
+                    {/* Nota Importante */}
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3">
+                      <p className="text-xs text-yellow-800">
+                        <strong>⚠️ Nota:</strong> No caso de pedidos com frete, o marketplace recebe também 100% do valor do frete além da comissão sobre os produtos.
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -302,21 +302,24 @@ public class PagamentoService {
         }
 
         // Buscar configurações do sistema para split de pagamento
-        Configuracao config = configuracaoRepository.findAll().stream()
-            .findFirst()
-            .orElse(null);
+        Configuracao config = configuracaoRepository.findConfigAtiva()
+            .orElseGet(() -> {
+                log.warn("⚠️ Configuração ativa não encontrada. Usando valores padrão.");
+                return new Configuracao(); // Usa valores padrão da entidade
+            });
         
-        String recipientIdMarketplace = null;
+        String recipientIdMarketplace = config.getPagarmeRecipientIdMarketplace();
         String recipientIdLojista = null;
-        BigDecimal percentualComissao = new BigDecimal("12.00"); // Padrão 12% se não configurado
+        BigDecimal percentualComissao = config.getTaxaComissaoWin();
         
-        if (config != null && config.getPagarmeRecipientIdMarketplace() != null) {
-            recipientIdMarketplace = config.getPagarmeRecipientIdMarketplace();
-            percentualComissao = config.getTaxaComissaoWin();
-            log.info("📊 Configuração: Marketplace recipient={}, Comissão={}%", 
-                recipientIdMarketplace, percentualComissao);
-        } else {
-            log.warn("⚠️ Configuração de split não encontrada. Split será desabilitado.");
+        log.info("📊 Configuração do sistema:");
+        log.info("   └─ Taxa de comissão WIN: {}%", percentualComissao);
+        log.info("   └─ Taxa de repasse lojista: {}%", config.getTaxaRepasseLojista());
+        log.info("   └─ Marketplace recipient ID: {}", 
+            recipientIdMarketplace != null ? recipientIdMarketplace : "NÃO CONFIGURADO");
+        
+        if (recipientIdMarketplace == null) {
+            log.warn("⚠️ Recipient ID do marketplace não configurado. Split será desabilitado.");
         }
         
         // Buscar lojista do primeiro item do pedido (assumindo pedidos de um único lojista)
