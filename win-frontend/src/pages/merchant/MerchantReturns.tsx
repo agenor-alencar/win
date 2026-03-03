@@ -30,119 +30,102 @@ import {
   Phone,
   Calendar,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
 import { MerchantLayout } from "@/components/MerchantLayout";
-import { api } from "../../lib/Api";
-
-// Mock data
-const returnRequests = [
-  {
-    id: "DEV001",
-    orderId: "WIN001",
-    customer: {
-      name: "Maria Silva",
-      phone: "(11) 99999-1234",
-      address: "Rua das Flores, 123 - Centro",
-    },
-    item: {
-      name: "Parafuso Phillips 3x20mm - Pacote com 100 unidades",
-      price: 12.5,
-      quantity: 2,
-      image: "/placeholder.svg",
-      sku: "PAR-001",
-    },
-    reason: "Produto com defeito",
-    description:
-      "Os parafusos vieram enferrujados e alguns estão tortos. Não é possível utilizar.",
-    status: "pendente",
-    requestDate: "2024-01-15 14:30",
-    photos: ["/placeholder.svg", "/placeholder.svg"],
-    timeRemaining: "36h 24min",
-  },
-  {
-    id: "DEV002",
-    orderId: "WIN002",
-    customer: {
-      name: "João Santos",
-      phone: "(11) 99999-5678",
-      address: "Av. Principal, 456 - Vila Nova",
-    },
-    item: {
-      name: "Furadeira de Impacto 650W",
-      price: 189.9,
-      quantity: 1,
-      image: "/placeholder.svg",
-      sku: "FUR-002",
-    },
-    reason: "Arrependimento da compra",
-    description: "Comprei por impulso, mas não preciso mais do produto.",
-    status: "aprovado",
-    requestDate: "2024-01-14 10:15",
-    approvedDate: "2024-01-14 16:20",
-    photos: ["/placeholder.svg"],
-    deliveryFee: 12.5,
-  },
-  {
-    id: "DEV003",
-    orderId: "WIN003",
-    customer: {
-      name: "Ana Costa",
-      phone: "(11) 99999-9012",
-      address: "Rua do Comércio, 789 - Centro",
-    },
-    item: {
-      name: "Chave de Fenda 6mm",
-      price: 18.9,
-      quantity: 1,
-      image: "/placeholder.svg",
-      sku: "CHA-003",
-    },
-    reason: "Produto diferente do anunciado",
-    description:
-      "A chave veio com tamanho diferente do especificado no anúncio.",
-    status: "recusado",
-    requestDate: "2024-01-13 09:45",
-    rejectedDate: "2024-01-13 15:30",
-    rejectionReason:
-      "Produto está dentro das especificações corretas conforme descrição.",
-    photos: ["/placeholder.svg"],
-  },
-  {
-    id: "DEV004",
-    orderId: "WIN004",
-    customer: {
-      name: "Pedro Lima",
-      phone: "(11) 99999-3456",
-      address: "Rua Nova, 321 - Jardim",
-    },
-    item: {
-      name: "Martelo de Unha 500g",
-      price: 25.0,
-      quantity: 1,
-      image: "/placeholder.svg",
-      sku: "MAR-004",
-    },
-    reason: "Produto com defeito",
-    description: "O cabo do martelo está solto e perigoso para uso.",
-    status: "concluido",
-    requestDate: "2024-01-10 11:20",
-    approvedDate: "2024-01-10 14:15",
-    completedDate: "2024-01-12 16:45",
-    resolution: "Produto trocado",
-    photos: ["/placeholder.svg"],
-  },
-];
+import { merchantApi, Devolucao } from "@/lib/merchant/MerchantApi";
+import { useToast } from "@/hooks/use-toast";
 
 export default function MerchantReturns() {
   const [selectedTab, setSelectedTab] = useState("pendente");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedReturn, setSelectedReturn] = useState(null);
+  const [selectedReturn, setSelectedReturn] = useState<any>(null);
   const [responseMessage, setResponseMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [returns, setReturns] = useState<Devolucao[]>([]);
+  const [lojistaId, setLojistaId] = useState<string>("");
   const { success, error: notifyError } = useNotification();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadReturnsData();
+  }, [selectedTab]);
+
+  const loadReturnsData = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar lojista logado
+      const lojista = await merchantApi.getMerchantProfile();
+      setLojistaId(lojista.id);
+
+      // Buscar devoluções com base na aba selecionada
+      let returnsData: Devolucao[];
+      if (selectedTab === "todos") {
+        returnsData = await merchantApi.getMerchantReturns(lojista.id);
+      } else {
+        const statusMap: Record<string, any> = {
+          pendente: "PENDENTE",
+          aprovado: "APROVADA",
+          recusado: "RECUSADA",
+          concluido: "CONCLUIDA",
+        };
+        returnsData = await merchantApi.getMerchantReturnsByStatus(
+          lojista.id,
+          statusMap[selectedTab]
+        );
+      }
+
+      setReturns(returnsData);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar devoluções",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async (returnId: string) => {
+    try {
+      await merchantApi.updateReturnStatus(returnId, lojistaId, {
+        status: "APROVADA",
+        observacao: responseMessage || "Devolução aprovada",
+      });
+      success("Devolução aprovada!", "Cliente será notificado");
+      setSelectedReturn(null);
+      setResponseMessage("");
+      loadReturnsData();
+    } catch (error: any) {
+      notifyError("Erro", error.message);
+    }
+  };
+
+  const handleReject = async (returnId: string, reason: string) => {
+    if (!reason.trim()) {
+      notifyError("Motivo obrigatório", "Informe o motivo da recusa");
+      return;
+    }
+    try {
+      await merchantApi.updateReturnStatus(returnId, lojistaId, {
+        status: "RECUSADA",
+        observacao: reason,
+      });
+      success("Devolução recusada", "Cliente será notificado");
+      setSelectedReturn(null);
+      setResponseMessage("");
+      loadReturnsData();
+    } catch (error: any) {
+      notifyError("Erro", error.message);
+    }
+  };
 
   const getStatusInfo = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status.toLowerCase();
+    switch (normalizedStatus) {
       case "pendente":
         return {
           label: "Aguardando Análise",
@@ -150,6 +133,7 @@ export default function MerchantReturns() {
           bg: "#FFF7ED",
           icon: Clock,
         };
+      case "aprovada":
       case "aprovado":
         return {
           label: "Aprovado",
@@ -157,6 +141,7 @@ export default function MerchantReturns() {
           bg: "#F0FDF4",
           icon: CheckCircle,
         };
+      case "recusada":
       case "recusado":
         return {
           label: "Recusado",
@@ -164,6 +149,7 @@ export default function MerchantReturns() {
           bg: "#FEF2F2",
           icon: XCircle,
         };
+      case "concluida":
       case "concluido":
         return {
           label: "Concluído",
@@ -181,24 +167,8 @@ export default function MerchantReturns() {
     }
   };
 
-  const handleApprove = (returnId: string) => {
-    success(
-      "Devolução aprovada!",
-      "Cliente será notificado e poderá solicitar retirada",
-    );
-    // Update return status logic here
-  };
-
-  const handleReject = (returnId: string, reason: string) => {
-    if (!reason.trim()) {
-      notifyError("Motivo obrigatório", "Informe o motivo da recusa");
-      return;
-    }
-    success("Devolução recusada", "Cliente será notificado sobre a decisão");
-    setSelectedReturn(null);
-    setResponseMessage("");
-    // Update return status logic here
-  };
+  // Formatar devoluções para exibição
+  const returnRequests = returns.map(devolucao => merchantApi.formatReturn(devolucao));
 
   const filteredReturns = returnRequests.filter((returnRequest) => {
     const matchesTab =

@@ -621,12 +621,12 @@ export default function MerchantSettings() {
                               {dadosBancarios.nomeBanco || `Banco ${dadosBancarios.codigoBanco}`}
                             </h4>
                             <p className="text-sm text-gray-600">
-                              Ag: {dadosBancarios.agencia}{dadosBancarios.agenciaDv ? `-${dadosBancarios.agenciaDv}` : ""} | 
-                              Conta: {dadosBancarios.conta}{dadosBancarios.contaDv ? `-${dadosBancarios.contaDv}` : ""}
+                              Ag: {dadosBancarios.agenciaMascarada} | 
+                              Conta: {dadosBancarios.contaMascarada}
                               {" "}({dadosBancarios.tipoConta})
                             </p>
                             <p className="text-sm text-gray-500">
-                              {dadosBancarios.titularNome} - {dadosBancarios.titularDocumento}
+                              {dadosBancarios.titularNome} - {dadosBancarios.titularDocumentoMascarado}
                             </p>
                             {dadosBancarios.validado && (
                               <div className="flex items-center mt-2">
@@ -878,6 +878,7 @@ export default function MerchantSettings() {
                             })
                           }
                           className="h-4 w-4 text-[#3DBEAB] border-gray-300 rounded focus:ring-[#3DBEAB]"
+                          aria-label="Definir como conta principal"
                         />
                         <Label htmlFor="isPrimary" className="text-sm">
                           Definir como conta principal para recebimentos

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,98 +36,132 @@ import {
   Users,
   ShoppingBag,
   AlertCircle,
-  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { MerchantLayout } from "@/components/MerchantLayout";
-
-// Mock data
-const salesData = [
-  { day: "Seg", value: 1200 },
-  { day: "Ter", value: 1890 },
-  { day: "Qua", value: 2300 },
-  { day: "Qui", value: 1650 },
-  { day: "Sex", value: 2800 },
-  { day: "Sab", value: 3200 },
-  { day: "Dom", value: 2100 },
-];
-
-const recentOrders = [
-  {
-    id: "WIN001",
-    customer: "Maria Silva",
-    total: 89.9,
-    time: "há 5 min",
-    status: "pendente",
-  },
-  {
-    id: "WIN002",
-    customer: "João Santos",
-    total: 156.5,
-    time: "há 12 min",
-    status: "preparando",
-  },
-  {
-    id: "WIN003",
-    customer: "Ana Costa",
-    total: 67.3,
-    time: "há 25 min",
-    status: "pronto",
-  },
-];
-
-const notifications = [
-  {
-    id: 1,
-    type: "order",
-    message: "Novo pedido #WIN001 recebido",
-    time: "há 2 min",
-  },
-  {
-    id: 2,
-    type: "review",
-    message: "Nova avaliação 5⭐ de Maria S.",
-    time: "há 15 min",
-  },
-  {
-    id: 3,
-    type: "stock",
-    message: "Produto XYZ com estoque baixo",
-    time: "há 1h",
-  },
-];
+import { merchantApi, DashboardData } from "@/lib/merchant/MerchantApi";
+import { useToast } from "@/hooks/use-toast";
 
 export default function MerchantDashboard() {
   const [timeRange, setTimeRange] = useState("week");
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const data = await merchantApi.getDashboardData();
+      setDashboardData(data);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar dashboard",
+        description: error.message || "Não foi possível carregar os dados",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <MerchantLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-[#3DBEAB]" />
+        </div>
+      </MerchantLayout>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <MerchantLayout>
+        <div className="flex flex-col items-center justify-center h-96">
+          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+          <p className="text-gray-600">Erro ao carregar dados</p>
+          <Button onClick={loadDashboardData} className="mt-4">Tentar novamente</Button>
+        </div>
+      </MerchantLayout>
+    );
+  }
+
+  const { lojista, estatisticas, salesData, pedidos } = dashboardData;
+
+  const recentOrders = pedidos
+    .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
+    .slice(0, 3)
+    .map(order => {
+      const timeElapsed = Math.floor((Date.now() - new Date(order.criadoEm).getTime()) / 60000);
+      return {
+        id: order.numeroPedido,
+        customer: order.usuario?.nome || "Cliente",
+        total: order.total,
+        time: timeElapsed < 60 ? `há ${timeElapsed} min` : `há ${Math.floor(timeElapsed / 60)}h`,
+        status: order.status.toLowerCase(),
+      };
+    });
+
+  const notifications: Array<{id: number; type: string; message: string; time: string}> = [];
+  if (estatisticas.totalPedidosPendentes > 0) {
+    notifications.push({
+      id: 1,
+      type: "order",
+      message: `${estatisticas.totalPedidosPendentes} pedido(s) pendente(s)`,
+      time: "agora",
+    });
+  }
+  const lowStock = dashboardData.produtos.filter(p => p.estoque < 10 && p.ativo);
+  if (lowStock.length > 0) {
+    notifications.push({
+      id: 2,
+      type: "stock",
+      message: `${lowStock.length} produto(s) com estoque baixo`,
+      time: "recente",
+    });
+  }
+  if (estatisticas.percentualVariacaoVendas > 0) {
+    notifications.push({
+      id: 3,
+      type: "review",
+      message: `Vendas +${estatisticas.percentualVariacaoVendas.toFixed(1)}% vs ontem`,
+      time: "hoje",
+    });
+  }
 
   const kpis = [
     {
-      title: "Pedidos de Hoje",
-      value: "12",
-      change: "+3 desde ontem",
+      title: "Vendas de Hoje",
+      value: estatisticas.vendasHoje.toString(),
+      change: `${estatisticas.percentualVariacaoVendas > 0 ? '+' : ''}${estatisticas.percentualVariacaoVendas.toFixed(0)}% vs ontem`,
       icon: ShoppingBag,
       color: "#3DBEAB",
       bgColor: "#F0FDFA",
     },
     {
-      title: "Faturamento do Mês",
-      value: "R$ 8.450",
-      change: "+15% vs mês anterior",
+      title: "Receita de Hoje",
+      value: `R$ ${estatisticas.receitaHoje.toFixed(2).replace('.', ',')}`,
+      change: `${estatisticas.percentualVariacaoReceita > 0 ? '+' : ''}${estatisticas.percentualVariacaoReceita.toFixed(0)}% vs ontem`,
       icon: DollarSign,
       color: "#2D9CDB",
       bgColor: "#F0F9FF",
     },
     {
-      title: "Média de Avaliação",
-      value: "4.8",
-      change: "+0.2 esta semana",
-      icon: Star,
+      title: "Produtos Ativos",
+      value: estatisticas.totalProdutosAtivos.toString(),
+      change: `${estatisticas.totalProdutosInativos} inativos`,
+      icon: Package,
       color: "#F59E0B",
       bgColor: "#FFFBEB",
     },
     {
       title: "Pedidos Pendentes",
-      value: "3",
-      change: "Aguardando preparo",
+      value: estatisticas.totalPedidosPendentes.toString(),
+      change: "Aguardando atendimento",
       icon: Clock,
       color: "#EF4444",
       bgColor: "#FEF2F2",
@@ -143,10 +177,10 @@ export default function MerchantDashboard() {
             <Store className="h-6 w-6 text-[#3DBEAB]" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Ferragens Silva
+                {lojista.nomeFantasia}
               </h1>
               <p style={{ fontSize: "12px", color: "#666666" }}>
-                Loja ativa • Última atualização há 2 min
+                {lojista.ativo ? 'Loja ativa' : 'Loja inativa'} • Atualizado agora
               </p>
             </div>
           </div>
@@ -155,7 +189,7 @@ export default function MerchantDashboard() {
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5 text-gray-600" />
               <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
-                3
+                {notifications.length}
               </Badge>
             </Button>
 
@@ -270,7 +304,7 @@ export default function MerchantDashboard() {
                       fontSize: "12px",
                     }}
                   />
-                  <Bar dataKey="value" fill="#3DBEAB" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="receita" fill="#3DBEAB" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

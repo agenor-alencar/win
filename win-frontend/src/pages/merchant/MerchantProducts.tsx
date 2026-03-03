@@ -75,52 +75,6 @@ interface Category {
   nome: string;
 }
 
-// Mock data
-const products = [
-  {
-    id: 1,
-    name: "Parafuso Phillips 3x20mm - Pacote com 100 unidades",
-    price: 12.5,
-    stock: 250,
-    category: "Ferragens",
-    status: "active",
-    image: "/placeholder.svg",
-    description: "Parafusos Phillips de alta qualidade para uso geral",
-    sku: "PAR-001",
-  },
-  {
-    id: 2,
-    name: "Furadeira de Impacto 650W",
-    price: 189.9,
-    stock: 15,
-    category: "Ferramentas",
-    status: "active",
-    image: "/placeholder.svg",
-    description: "Furadeira profissional com mandril de 13mm",
-    sku: "FUR-002",
-  },
-  {
-    id: 3,
-    name: "Chave de Fenda 6mm",
-    price: 18.9,
-    stock: 0,
-    category: "Ferramentas",
-    status: "inactive",
-    image: "/placeholder.svg",
-    description: "Chave de fenda com cabo emborrachado",
-    sku: "CHA-003",
-  },
-];
-
-const categories = [
-  "Ferragens",
-  "Ferramentas",
-  "Elétrica",
-  "Hidráulica",
-  "Tintas",
-  "Materiais de Construção",
-];
-
 export default function MerchantProducts() {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);

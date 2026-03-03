@@ -34,90 +34,69 @@ import {
   Loader2,
 } from "lucide-react";
 import { MerchantLayout } from "@/components/MerchantLayout";
-import api from "@/shared/api";
+import { merchantApi, DashboardData } from "@/lib/merchant/MerchantApi";
 import { useToast } from "@/hooks/use-toast";
 
-interface EstatisticasLojista {
-  vendasHoje: number;
-  vendasOntem: number;
-  receitaHoje: number;
-  receitaOntem: number;
-  pedidosPendentes: number;
-  produtosAtivos: number;
-  produtosInativos: number;
-  percentualVariacaoVendas: number;
-  percentualVariacaoReceita: number;
-}
+export default function MerchantDashboardNew() {
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const { toast } = useToast();
 
-// Mock data
-const salesData = [
-  { day: "Seg", vendas: 12, receita: 1200 },
-  { day: "Ter", vendas: 18, receita: 1890 },
-  { day: "Qua", vendas: 23, receita: 2300 },
-  { day: "Qui", vendas: 16, receita: 1650 },
-  { day: "Sex", vendas: 28, receita: 2800 },
-  { day: "Sab", vendas: 32, receita: 3200 },
-  { day: "Dom", vendas: 25, receita: 2500 },
-];
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
-const recentOrders = [
-  {
-    id: "#12345",
-    customer: "João Silva",
-    product: "Parafuso Phillips 3x20mm",
-    amount: 125.9,
-    status: "pending",
-    date: "2024-01-15",
-  },
-  {
-    id: "#12346",
-    customer: "Maria Santos",
-    product: "Fechadura Digital",
-    amount: 459.9,
-    status: "completed",
-    date: "2024-01-15",
-  },
-  {
-    id: "#12347",
-    customer: "Carlos Lima",
-    product: "Broca 10mm",
-    amount: 89.5,
-    status: "processing",
-    date: "2024-01-14",
-  },
-  {
-    id: "#12348",
-    customer: "Ana Costa",
-    product: "Tinta Látex 18L",
-    amount: 189.9,
-    status: "completed",
-    date: "2024-01-14",
-  },
-];
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const data = await merchantApi.getDashboardData();
+      setDashboardData(data);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar dashboard",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const topProducts = [
-  {
-    name: "Parafuso Phillips 3x20mm",
-    sales: 156,
-    revenue: 1250.4,
-    stock: 850,
-  },
-  {
-    name: "Fechadura Digital Smart",
-    sales: 89,
-    revenue: 4590.0,
-    stock: 23,
-  },
-  {
-    name: "Broca Aço Rápido 10mm",
-    sales: 134,
-    revenue: 890.5,
-    stock: 156,
-  },
-  {
-    name: "Tinta Látex Premium 18L",
-    sales: 67,
-    revenue: 2340.3,
+  if (loading) {
+    return (
+      <MerchantLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-[#3DBEAB]" />
+        </div>
+      </MerchantLayout>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <MerchantLayout>
+        <div className="flex flex-col items-center justify-center h-96">
+          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+          <p className="text-gray-600">Erro ao carregar dados</p>
+          <Button onClick={loadDashboardData} className="mt-4">Tentar novamente</Button>
+        </div>
+      </MerchantLayout>
+    );
+  }
+
+  const { lojista, estatisticas, salesData, topProducts, pedidos } = dashboardData;
+
+  const recentOrders = pedidos
+    .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
+    .slice(0, 4)
+    .map(order => ({
+      id: order.numeroPedido,
+      customer: order.usuario?.nome || "Cliente",
+      product: order.itens[0]?.nomeProduto || "Produto",
+      amount: order.total,
+      status: order.status.toLowerCase() === 'pendente' ? 'pending' : order.status.toLowerCase() === 'confirmado' ? 'processing' : 'completed',
+      date: new Date(order.criadoEm).toLocaleDateString('pt-BR'),
+    }));
     stock: 45,
   },
 ];
