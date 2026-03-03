@@ -153,7 +153,21 @@ public class PagarMeService {
                 // Calcular valores do split
                 int valorProdutosCentavos = valorCentavos - valorFreteCentavos;
                 
-                // Split 1: Marketplace recebe comissão dos produtos + frete integral
+                // Split 1: Lojista recebe o valor dos produtos (antes da comissão)
+                Map<String, Object> splitLojista = new HashMap<>();
+                splitLojista.put("recipient_id", recipientIdLojista);
+                splitLojista.put("amount", valorProdutosCentavos); // Todo o valor dos produtos vai para o lojista
+                splitLojista.put("type", "flat"); // valor fixo
+                
+                // Options do split do lojista
+                Map<String, Object> optionsLojista = new HashMap<>();
+                optionsLojista.put("liable", true);  // lojista é responsável pelo valor
+                optionsLojista.put("charge_processing_fee", false); // marketplace paga a taxa de processamento
+                optionsLojista.put("charge_remainder_fee", false); // não cobra diferença
+                splitLojista.put("options", optionsLojista);
+                splits.add(splitLojista);
+                
+                // Split 2: Marketplace recebe comissão dos produtos + frete integral
                 int comissaoCentavos = (int) Math.round(valorProdutosCentavos * percentualComissao.doubleValue() / 100);
                 int splitMarketplace = comissaoCentavos + valorFreteCentavos;
                 
@@ -161,31 +175,25 @@ public class PagarMeService {
                 splitMarket.put("recipient_id", recipientIdMarketplace);
                 splitMarket.put("amount", splitMarketplace);
                 splitMarket.put("type", "flat"); // valor fixo
-                splitMarket.put("options", Map.of(
-                    "liable", true,      // responsável por chargeback
-                    "charge_processing_fee", true  // paga taxa de processamento
-                ));
+                
+                // Options do split do marketplace
+                Map<String, Object> optionsMarket = new HashMap<>();
+                optionsMarket.put("liable", true);      // responsável por chargeback
+                optionsMarket.put("charge_processing_fee", true);  // paga taxa de processamento
+                optionsMarket.put("charge_remainder_fee", true); // cobra diferença se houver
+                splitMarket.put("options", optionsMarket);
                 splits.add(splitMarket);
-                
-                // Split 2: Lojista recebe o restante (produtos - comissão)
-                int splitLojista = valorProdutosCentavos - comissaoCentavos;
-                
-                Map<String, Object> splitLoj = new HashMap<>();
-                splitLoj.put("recipient_id", recipientIdLojista);
-                splitLoj.put("amount", splitLojista);
-                splitLoj.put("type", "flat");
-                splitLoj.put("options", Map.of(
-                    "liable", false,     // não responsável por chargeback
-                    "charge_processing_fee", false  // não paga taxa
-                ));
-                splits.add(splitLoj);
                 
                 payment.put("split", splits);
                 
-                log.info("💰 Split configurado - Marketplace: R$ {} ({}% + frete), Lojista: R$ {}",
-                    splitMarketplace / 100.0, percentualComissao, splitLojista / 100.0);
+                log.info("💰 Split configurado:");
+                log.info("   └─ Lojista ({}): R$ {} (produtos)", recipientIdLojista, valorProdutosCentavos / 100.0);
+                log.info("   └─ Marketplace ({}): R$ {} ({}% comissão + frete)", 
+                    recipientIdMarketplace, splitMarketplace / 100.0, percentualComissao);
             } else {
                 log.warn("⚠️ Split NÃO configurado - Recipients não informados");
+                log.warn("   └─ Marketplace recipient: {}", recipientIdMarketplace != null ? recipientIdMarketplace : "NÃO CONFIGURADO");
+                log.warn("   └─ Lojista recipient: {}", recipientIdLojista != null ? recipientIdLojista : "NÃO CONFIGURADO");
             }
             
             payments.add(payment);
