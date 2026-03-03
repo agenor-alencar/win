@@ -113,11 +113,6 @@ app:
       medium-width: 800
       medium-height: 800
 
-# Mercado Pago Configuration
-abacatepay:
-  api-key: ${ABACATEPAY_API_KEY:}
-  api-url: ${ABACATEPAY_API_URL:https://api.abacatepay.com}  # Access Token do Mercado Pago
-
 # Uber Direct API Configuration
 uber:
   client:

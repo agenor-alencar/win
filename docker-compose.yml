@@ -161,8 +161,6 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://winmarketplace.com.br:8080}
-      # Frontend não precisa de chave pública do Abacate Pay
-      # O checkout é feito via redirecionamento para URL segura
     container_name: win-marketplace-frontend
     environment:
       NODE_ENV: ${NODE_ENV:-production}
