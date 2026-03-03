@@ -286,10 +286,11 @@ const AdminFinances: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center space-x-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="filter-period" className="block text-sm font-medium text-gray-700 mb-1">
                 Período
               </label>
               <select
+                id="filter-period"
                 value={filterPeriod}
                 onChange={(e) => setFilterPeriod(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"
@@ -302,10 +303,11 @@ const AdminFinances: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="filter-type" className="block text-sm font-medium text-gray-700 mb-1">
                 Tipo de Transação
               </label>
               <select
+                id="filter-type"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3DBEAB] focus:border-transparent"

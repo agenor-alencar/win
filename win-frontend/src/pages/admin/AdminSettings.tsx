@@ -270,11 +270,12 @@ export default function AdminSettings() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="taxa-comissao-win" className="block text-sm font-medium text-gray-700 mb-2">
                       Taxa de Comissão WIN (%)
                       <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
+                      id="taxa-comissao-win"
                       type="number"
                       step="0.01"
                       min="0"
@@ -293,11 +294,12 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="taxa-repasse-lojista" className="block text-sm font-medium text-gray-700 mb-2">
                       Taxa de Repasse ao Lojista (%)
                       <span className="text-gray-400 ml-1">(automático)</span>
                     </label>
                     <input
+                      id="taxa-repasse-lojista"
                       type="number"
                       step="0.01"
                       value={settings.taxaRepasseLojista}
@@ -310,11 +312,12 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="valor-entrega-motorista" className="block text-sm font-medium text-gray-700 mb-2">
                       Valor Médio por Entrega - Motorista (R$)
                       <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
+                      id="valor-entrega-motorista"
                       type="number"
                       step="0.01"
                       min="0"
@@ -330,11 +333,12 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="taxa-processamento" className="block text-sm font-medium text-gray-700 mb-2">
                       Taxa de Processamento de Pagamento (%)
                       <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
+                      id="taxa-processamento"
                       type="number"
                       step="0.01"
                       min="0"
@@ -351,11 +355,12 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="dias-repasse" className="block text-sm font-medium text-gray-700 mb-2">
                       Prazo de Repasse ao Lojista (dias)
                       <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
+                      id="dias-repasse"
                       type="number"
                       min="0"
                       max="30"
@@ -461,10 +466,11 @@ export default function AdminSettings() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="taxa-entrega-padrao" className="block text-sm font-medium text-gray-700 mb-2">
                       Taxa de Entrega Padrão (R$)
                     </label>
                     <input
+                      id="taxa-entrega-padrao"
                       type="number"
                       step="0.01"
                       value={settings.taxaEntregaPadrao}
@@ -476,10 +482,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="frete-gratis-acima" className="block text-sm font-medium text-gray-700 mb-2">
                       Frete Grátis a partir de (R$)
                     </label>
                     <input
+                      id="frete-gratis-acima"
                       type="number"
                       step="0.01"
                       value={settings.freteGratisAcimaDe}
@@ -491,10 +498,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="limite-aprovacao" className="block text-sm font-medium text-gray-700 mb-2">
                       Limite Aprovação Automática (R$)
                     </label>
                     <input
+                      id="limite-aprovacao"
                       type="number"
                       step="0.01"
                       value={settings.limiteAprovacaoAutomatica}
@@ -506,10 +514,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="distancia-maxima" className="block text-sm font-medium text-gray-700 mb-2">
                       Distância Máxima Entrega (km)
                     </label>
                     <input
+                      id="distancia-maxima"
                       type="number"
                       value={settings.distanciaMaximaEntregaKm}
                       onChange={(e) =>
@@ -520,10 +529,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="timeout-pedido" className="block text-sm font-medium text-gray-700 mb-2">
                       Timeout de Pedido (min)
                     </label>
                     <input
+                      id="timeout-pedido"
                       type="number"
                       value={settings.timeoutPedidoMinutos}
                       onChange={(e) =>
@@ -556,10 +566,11 @@ export default function AdminSettings() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="tempo-preparacao-minimo" className="block text-sm font-medium text-gray-700 mb-2">
                       Tempo de Preparação Mínimo (min)
                     </label>
                     <input
+                      id="tempo-preparacao-minimo"
                       type="number"
                       min="5"
                       value={settings.tempoPreparacaoMinimo}
@@ -574,10 +585,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="tempo-preparacao-maximo" className="block text-sm font-medium text-gray-700 mb-2">
                       Tempo de Preparação Máximo (min)
                     </label>
                     <input
+                      id="tempo-preparacao-maximo"
                       type="number"
                       max="180"
                       value={settings.tempoPreparacaoMaximo}
@@ -592,10 +604,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="raio-maximo-entrega" className="block text-sm font-medium text-gray-700 mb-2">
                       Raio Máximo de Entrega (km)
                     </label>
                     <input
+                      id="raio-maximo-entrega"
                       type="number"
                       step="0.1"
                       value={settings.raioMaximoEntregaKm}
@@ -610,10 +623,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="timeout-busca-motorista" className="block text-sm font-medium text-gray-700 mb-2">
                       Timeout Busca Motorista (min)
                     </label>
                     <input
+                      id="timeout-busca-motorista"
                       type="number"
                       value={settings.timeoutBuscaMotoristaMicro}
                       onChange={(e) =>
@@ -827,10 +841,11 @@ export default function AdminSettings() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="duracao-sessao" className="block text-sm font-medium text-gray-700 mb-2">
                       Duração da Sessão (minutos)
                     </label>
                     <input
+                      id="duracao-sessao"
                       type="number"
                       value={settings.duracaoSessaoMinutos}
                       onChange={(e) =>
@@ -841,10 +856,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="tentativas-login" className="block text-sm font-medium text-gray-700 mb-2">
                       Tentativas de Login Máximas
                     </label>
                     <input
+                      id="tentativas-login"
                       type="number"
                       value={settings.tentativasLoginMaximas}
                       onChange={(e) =>
@@ -855,10 +871,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="bloqueio-temporario" className="block text-sm font-medium text-gray-700 mb-2">
                       Bloqueio Temporário (minutos)
                     </label>
                     <input
+                      id="bloqueio-temporario"
                       type="number"
                       value={settings.bloqueioTemporarioMinutos}
                       onChange={(e) =>
@@ -913,10 +930,11 @@ export default function AdminSettings() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="termos-uso-versao" className="block text-sm font-medium text-gray-700 mb-2">
                       Versão Termos de Uso
                     </label>
                     <input
+                      id="termos-uso-versao"
                       type="text"
                       value={settings.termosUsoVersao}
                       onChange={(e) =>
@@ -927,10 +945,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="politica-privacidade-versao" className="block text-sm font-medium text-gray-700 mb-2">
                       Versão Política de Privacidade
                     </label>
                     <input
+                      id="politica-privacidade-versao"
                       type="text"
                       value={settings.politicaPrivacidadeVersao}
                       onChange={(e) =>
@@ -941,10 +960,11 @@ export default function AdminSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="politica-cookies-versao" className="block text-sm font-medium text-gray-700 mb-2">
                       Versão Política de Cookies
                     </label>
                     <input
+                      id="politica-cookies-versao"
                       type="text"
                       value={settings.politicaCookiesVersao}
                       onChange={(e) =>

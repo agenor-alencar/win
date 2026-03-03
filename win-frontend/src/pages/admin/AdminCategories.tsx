@@ -306,12 +306,16 @@ const AdminCategories: React.FC = () => {
                             <button
                               onClick={() => handleEdit(category)}
                               className="text-blue-600 hover:text-blue-900 mr-4"
+                              aria-label="Editar categoria"
+                              title="Editar categoria"
                             >
                               <PencilIcon className="h-5 w-5 inline" />
                             </button>
                             <button
                               onClick={() => handleDelete(category.id)}
                               className="text-red-600 hover:text-red-900"
+                              aria-label="Excluir categoria"
+                              title="Excluir categoria"
                             >
                               <TrashIcon className="h-5 w-5 inline" />
                             </button>
@@ -348,12 +352,16 @@ const AdminCategories: React.FC = () => {
                               <button
                                 onClick={() => handleEdit(subCategory)}
                                 className="text-blue-600 hover:text-blue-900 mr-4"
+                                aria-label="Editar subcategoria"
+                                title="Editar subcategoria"
                               >
                                 <PencilIcon className="h-5 w-5 inline" />
                               </button>
                               <button
                                 onClick={() => handleDelete(subCategory.id)}
                                 className="text-red-600 hover:text-red-900"
+                                aria-label="Excluir subcategoria"
+                                title="Excluir subcategoria"
                               >
                                 <TrashIcon className="h-5 w-5 inline" />
                               </button>
@@ -406,10 +414,11 @@ const AdminCategories: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="category-icon" className="block text-sm font-medium text-gray-700 mb-2">
               Ícone
             </label>
             <select
+              id="category-icon"
               value={formData.icone}
               onChange={(e) => setFormData({ ...formData, icone: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
