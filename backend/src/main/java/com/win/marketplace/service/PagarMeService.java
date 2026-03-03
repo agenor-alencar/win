@@ -438,7 +438,13 @@ public class PagarMeService {
             bankAccount.put("holder_type", tipo); // "individual" ou "company"
             bankAccount.put("bank", dadosBancarios.get("bank_code")); // Código do banco
             bankAccount.put("branch_number", dadosBancarios.get("agencia")); // Agência
-            bankAccount.put("branch_check_digit", dadosBancarios.get("agencia_dv")); // DV da agência
+            
+            // Só enviar agencia_dv se não for null/vazio (alguns bancos não têm DV de agência)
+            String agenciaDv = dadosBancarios.get("agencia_dv");
+            if (agenciaDv != null && !agenciaDv.trim().isEmpty()) {
+                bankAccount.put("branch_check_digit", agenciaDv);
+            }
+            
             bankAccount.put("account_number", dadosBancarios.get("conta")); // Número da conta
             bankAccount.put("account_check_digit", dadosBancarios.get("conta_dv")); // DV da conta
             
