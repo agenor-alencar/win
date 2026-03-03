@@ -1,8 +1,60 @@
+<div align="center">
+
 # 🛒 WIN Marketplace
 
-Sistema de marketplace desenvolvido com Spring Boot, React e PostgreSQL.
+### Plataforma de E-commerce Completa com Integração de Pagamentos e Entregas
 
-> 📚 **[Documentação Completa](docs/README.md)** | 🔑 **[Criar Admin](docs/getting-started/first-admin.md)** | ⚙️ **[Configurar Email](docs/configuration/email-sendgrid.md)**
+[![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-green?logo=springboot)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+[Demo](#-demonstração) • [Recursos](#-recursos-principais) • [Instalação](#-instalação-rápida) • [Documentação](docs/README.md) • [API](api-docs/INTEGRATION.md)
+
+</div>
+
+---
+
+## 📖 Sobre o Projeto
+
+**WIN Marketplace** é uma plataforma de e-commerce completa e escalável, desenvolvida com as melhores práticas de engenharia de software. O sistema oferece uma solução robusta para gestão de marketplace, incluindo:
+
+- 🏪 **Multi-vendor**: Suporte para múltiplos lojistas
+- 💳 **Pagamentos**: Integração com Pagar.me (PIX, Cartão, Boleto)
+- 🚚 **Entregas**: Integração com Uber Direct API
+- 📦 **Gestão Completa**: Produtos, pedidos, usuários, avaliações
+- 🔐 **Segurança**: Autenticação JWT, bcrypt, proteção CSRF
+- 📊 **Analytics**: Dashboard administrativo com métricas
+- 🎨 **UI Moderna**: Interface responsiva com TailwindCSS e Shadcn/ui
+
+### 🎯 Por que este projeto?
+
+Este projeto demonstra competências em:
+- **Arquitetura Full-Stack**: Backend robusto com Spring Boot + Frontend moderno com React
+- **Integrações Complexas**: APIs de pagamento (Pagar.me) e logística (Uber Direct)
+- **DevOps**: Containerização com Docker, CI/CD, otimização de recursos
+- **Boas Práticas**: Clean Code, SOLID, Design Patterns, Segurança
+- **Escalabilidade**: Otimizações de banco de dados, cache, indexes
+
+---
+
+## 🎬 Demonstração
+
+<!-- Adicione aqui screenshots ou GIFs da sua aplicação -->
+
+### Frontend
+```
+🏠 Página Inicial → 🛍️ Catálogo → 🛒 Carrinho → 💳 Checkout → ✅ Confirmação
+```
+
+### Painel Admin
+```
+📊 Dashboard → 📦 Produtos → 👥 Usuários → 🏪 Lojistas → 📈 Relatórios
+```
+
+> 📸 *Screenshots em breve - [Veja a documentação completa](docs/README.md)*
 
 ## 🏗️ Arquitetura
 
@@ -16,35 +68,134 @@ O projeto é composto por **3 serviços independentes**:
 
 ---
 
-## 🚀 Início Rápido
+## ✨ Recursos Principais
+
+<table>
+<tr>
+<td width="50%">
+
+### 🛍️ **Para Consumidores**
+- ✅ Cadastro e autenticação segura
+- ✅ Busca avançada com filtros
+- ✅ Carrinho de compras inteligente
+- ✅ Múltiplas formas de pagamento
+- ✅ Rastreamento de pedidos
+- ✅ Sistema de avaliações
+- ✅ Reset de senha via email
+
+</td>
+<td width="50%">
+
+### 🏪 **Para Lojistas**
+- ✅ Gerenciamento de produtos
+- ✅ Controle de estoque
+- ✅ Upload de imagens
+- ✅ Gestão de pedidos
+- ✅ Cadastro bancário automático
+- ✅ Dashboard de vendas
+- ✅ Geolocalização da loja
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 👨‍💼 **Para Administradores**
+- ✅ Painel administrativo completo
+- ✅ Gestão de usuários e permissões
+- ✅ Moderação de conteúdo
+- ✅ Relatórios e analytics
+- ✅ Configurações do sistema
+- ✅ Logs e auditoria
+
+</td>
+<td width="50%">
+
+### 🔧 **Técnico**
+- ✅ API RESTful documentada
+- ✅ Containerização Docker
+- ✅ Migrations com Flyway
+- ✅ Otimização de queries
+- ✅ Health checks
+- ✅ Logging estruturado
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🏗️ Arquitetura
+
+### Stack Tecnológica
+
+| Camada | Tecnologia | Versão |
+|--------|-----------|--------|
+| **Backend** | Java (Eclipse Temurin) | 21 LTS |
+| | Spring Boot | 3.5.6 |
+| | Spring Security | 6.5.5 |
+| | Maven | 3.9.5 |
+| | MapStruct | 1.5.5 |
+| **Frontend** | React | 19 |
+| | TypeScript | 5.x |
+| | Vite | 5.x |
+| | TailwindCSS | 3.x |
+| | Shadcn/ui | Latest |
+| **Database** | PostgreSQL | 16 Alpine |
+| | Flyway | Latest |
+| **DevOps** | Docker | Latest |
+| | Docker Compose | 2.x |
+| | Nginx | Latest |
+
+---
+
+## 🚀 Instalação Rápida
 
 ### Pré-requisitos
 
-- Docker e Docker Compose instalados
-- Portas 3000, 5432 e 8080 disponíveis
+- [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/install/)
+- Portas disponíveis: `3000`, `5432`, `8080`
 
-### Executar Todos os Serviços
+### Executar Aplicação
 
 ```bash
-# Clonar o repositório
+# 1. Clone o repositório
 git clone https://github.com/ArthurJsph/win-grupo1.git
 cd win-grupo1
 
-# Iniciar todos os serviços
+# 2. Configure as variáveis de ambiente
+cp .env.example .env
+# Edite .env com suas configurações (opcional para desenvolvimento)
+
+# 3. Inicie todos os serviços
 docker-compose up -d
 
-# Verificar status
+# 4. Verifique o status
 docker-compose ps
 
-# Ver logs
+# 5. Acompanhe os logs (opcional)
 docker-compose logs -f
 ```
 
-### Acessar a Aplicação
+### Acessar Aplicação
 
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8080
-- **Database:** localhost:5432 (user: postgres, password: postgres123)
+- 🌐 **Frontend**: http://localhost:3000
+- 🔌 **Backend API**: http://localhost:8080
+- 🗄️ **Database**: `localhost:5432` (user: `postgres`, pass: `postgres123`)
+
+### Criar Primeiro Admin
+
+```powershell
+# Windows (PowerShell)
+.\scripts\create-admin.ps1
+
+# Linux/Mac (Bash)
+./scripts/create-admin.sh
+```
+
+**Credenciais padrão**: `admin@winmarketplace.com` / `Admin@2025`
+
+📖 **[Guia Completo de Instalação](docs/getting-started/first-admin.md)**
 
 ---
 

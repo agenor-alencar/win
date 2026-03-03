@@ -8,11 +8,16 @@
 .env
 .env.local
 .env.*.local
+.env.vps
+.env.vps.*
+.env.production
 *.key
 *.pem
 *.p12
 secrets/
 credentials/
+config/application-prod.yml
+config/application-local.yml
 
 # ========================================
 # 🗄️ BANCO DE DADOS
