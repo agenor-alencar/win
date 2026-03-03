@@ -5,6 +5,8 @@ export interface Order {
   numeroPedido: string;
   usuarioId: string;
   usuarioNome: string;
+  lojistaId: string;
+  lojistaNome: string;
   motoristaId?: string;
   motoristaNome?: string;
   status: string;
@@ -81,10 +83,8 @@ class OrderApiService extends AdminApi {
       const orders = await this.getAllOrders();
       
       return orders.map((pedido) => {
-        // Extrair nome da loja do primeiro item (se existir)
-        const lojaNome = pedido.itens && pedido.itens.length > 0 
-          ? pedido.itens[0].lojistaFantasia || "Loja"
-          : "Loja";
+        // Nome da loja
+        const lojaNome = pedido.lojistaNome || "Loja";
 
         // Calcular tempo estimado de entrega
         const deliveryTime = this.calculateDeliveryTime(pedido);

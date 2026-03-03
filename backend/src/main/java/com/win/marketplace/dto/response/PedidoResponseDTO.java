@@ -13,6 +13,8 @@ public record PedidoResponseDTO(
     String numeroPedido,
     UUID usuarioId,
     String usuarioNome,
+    UUID lojistaId,
+    String lojistaNome,
     UUID motoristaId,
     String motoristaNome,
     String status,
