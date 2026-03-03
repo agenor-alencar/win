@@ -14,6 +14,7 @@ export { productApi } from "./ProductApi";
 export { dashboardApi } from "./DashboardApi";
 export { deliveryApi } from "./DeliveryApi";
 export { financeApi } from "./FinanceApi";
+export { driverApi } from "./DriverApi";
 
 // Types - User
 export type {
@@ -57,3 +58,10 @@ export type {
   EntregaListItem,
   StatusEntrega,
 } from "./DeliveryApi";
+
+// Types - Driver
+export type {
+  Driver,
+  DriverFormatted,
+  DriverStats,
+} from "./DriverApi";

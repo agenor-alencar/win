@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../components/admin/AdminLayout";
 import { DataTable, Column, Action } from "../../components/admin/DataTable";
 import { AdminModal } from "../../components/admin/AdminModal";
@@ -11,11 +11,57 @@ import {
   ClockIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
+import { driverApi, type DriverFormatted } from "@/lib/admin";
+import { useNotification } from "@/contexts/NotificationContext";
 
 const AdminDrivers: React.FC = () => {
-  const [selectedDriver, setSelectedDriver] = useState<any>(null);
+  const { success, error } = useNotification();
+  const [selectedDriver, setSelectedDriver] = useState<DriverFormatted | null>(null);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [showDocumentsModal, setShowDocumentsModal] = useState(false);
+  const [drivers, setDrivers] = useState<DriverFormatted[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    aprovados: 0,
+    pendentes: 0,
+    recusados: 0,
+    total: 0,
+  });
+
+  useEffect(() => {
+    loadDrivers();
+  }, []);
+
+  const loadDrivers = async () => {
+    try {
+      setLoading(true);
+      const [formattedDrivers, driverStats] = await Promise.all([
+        driverApi.getFormattedDrivers(),
+        driverApi.getStats(),
+      ]);
+
+      setDrivers(formattedDrivers);
+      setStats(driverStats);
+    } catch (err: any) {
+      console.error("Erro ao carregar motoristas:", err);
+      error(err.message || "Erro ao carregar motoristas");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleDriverStatus = async (driver: DriverFormatted) => {
+    try {
+      await driverApi.toggleDriverStatus(driver.id, !driver.ativo);
+      success(
+        `Motorista ${driver.ativo ? "desativado" : "ativado"} com sucesso`
+      );
+      loadDrivers();
+    } catch (err: any) {
+      console.error("Erro ao alterar status do motorista:", err);
+      error(err.message || "Erro ao alterar status do motorista");
+    }
+  };
 
   const columns: Column[] = [
     { key: "id", label: "ID", sortable: true },
@@ -55,167 +101,6 @@ const AdminDrivers: React.FC = () => {
     { key: "createdAt", label: "Cadastro", sortable: true },
   ];
 
-  const drivers = [
-    {
-      id: "3001",
-      name: "Carlos Silva",
-      phone: "(11) 99999-9999",
-      vehicle: "Honda CG 160",
-      status: "Aprovado",
-      rating: "4.8",
-      deliveries: 256,
-      createdAt: "15/01/2024",
-      email: "carlos@email.com",
-      cpf: "123.456.789-00",
-      cnh: "12345678901",
-      address: "Rua das Entregas, 123 - São Paulo, SP",
-      documents: {
-        cnh: {
-          number: "12345678901",
-          validity: "15/06/2028",
-          category: "A",
-          status: "Aprovado",
-          image: "/docs/cnh-carlos.jpg",
-        },
-        selfie: {
-          status: "Aprovado",
-          image: "/docs/selfie-carlos.jpg",
-        },
-        vehicle: {
-          plate: "ABC-1234",
-          model: "Honda CG 160",
-          year: "2022",
-          color: "Vermelha",
-          status: "Aprovado",
-          documents: "/docs/vehicle-carlos.pdf",
-        },
-      },
-      performance: {
-        monthDeliveries: 42,
-        monthEarnings: 2850,
-        averageTime: "28 min",
-        completionRate: 98.5,
-        rating: 4.8,
-        totalDeliveries: 256,
-      },
-      availability: {
-        monday: { start: "08:00", end: "18:00", available: true },
-        tuesday: { start: "08:00", end: "18:00", available: true },
-        wednesday: { start: "08:00", end: "18:00", available: true },
-        thursday: { start: "08:00", end: "18:00", available: true },
-        friday: { start: "08:00", end: "18:00", available: true },
-        saturday: { start: "09:00", end: "15:00", available: true },
-        sunday: { start: "", end: "", available: false },
-      },
-    },
-    {
-      id: "3002",
-      name: "João Oliveira",
-      phone: "(11) 88888-8888",
-      vehicle: "Yamaha Factor 125",
-      status: "Pendente",
-      rating: "0.0",
-      deliveries: 0,
-      createdAt: "20/07/2024",
-      email: "joao@email.com",
-      cpf: "987.654.321-00",
-      cnh: "09876543210",
-      address: "Av. dos Motoqueiros, 456 - São Paulo, SP",
-      documents: {
-        cnh: {
-          number: "09876543210",
-          validity: "10/12/2026",
-          category: "A",
-          status: "Pendente",
-          image: "/docs/cnh-joao.jpg",
-        },
-        selfie: {
-          status: "Pendente",
-          image: "/docs/selfie-joao.jpg",
-        },
-        vehicle: {
-          plate: "XYZ-5678",
-          model: "Yamaha Factor 125",
-          year: "2021",
-          color: "Azul",
-          status: "Pendente",
-          documents: "/docs/vehicle-joao.pdf",
-        },
-      },
-      performance: {
-        monthDeliveries: 0,
-        monthEarnings: 0,
-        averageTime: "0 min",
-        completionRate: 0,
-        rating: 0,
-        totalDeliveries: 0,
-      },
-      availability: {
-        monday: { start: "07:00", end: "19:00", available: true },
-        tuesday: { start: "07:00", end: "19:00", available: true },
-        wednesday: { start: "07:00", end: "19:00", available: true },
-        thursday: { start: "07:00", end: "19:00", available: true },
-        friday: { start: "07:00", end: "19:00", available: true },
-        saturday: { start: "08:00", end: "16:00", available: true },
-        sunday: { start: "", end: "", available: false },
-      },
-    },
-    {
-      id: "3003",
-      name: "Pedro Santos",
-      phone: "(11) 77777-7777",
-      vehicle: "Honda Biz 125",
-      status: "Recusado",
-      rating: "0.0",
-      deliveries: 0,
-      createdAt: "18/07/2024",
-      email: "pedro@email.com",
-      cpf: "456.789.123-00",
-      cnh: "56789012345",
-      address: "Rua da Rejeição, 789 - São Paulo, SP",
-      documents: {
-        cnh: {
-          number: "56789012345",
-          validity: "20/01/2025",
-          category: "A",
-          status: "Recusado",
-          image: "/docs/cnh-pedro.jpg",
-          rejectionReason: "Documento vencido",
-        },
-        selfie: {
-          status: "Recusado",
-          image: "/docs/selfie-pedro.jpg",
-          rejectionReason: "Foto não confere com a CNH",
-        },
-        vehicle: {
-          plate: "DEF-9012",
-          model: "Honda Biz 125",
-          year: "2019",
-          color: "Preta",
-          status: "Aprovado",
-          documents: "/docs/vehicle-pedro.pdf",
-        },
-      },
-      performance: {
-        monthDeliveries: 0,
-        monthEarnings: 0,
-        averageTime: "0 min",
-        completionRate: 0,
-        rating: 0,
-        totalDeliveries: 0,
-      },
-      availability: {
-        monday: { start: "06:00", end: "20:00", available: true },
-        tuesday: { start: "06:00", end: "20:00", available: true },
-        wednesday: { start: "06:00", end: "20:00", available: true },
-        thursday: { start: "06:00", end: "20:00", available: true },
-        friday: { start: "06:00", end: "20:00", available: true },
-        saturday: { start: "07:00", end: "17:00", available: true },
-        sunday: { start: "", end: "", available: false },
-      },
-    },
-  ];
-
   const actions: Action[] = [
     {
       label: "Ver Detalhes",
@@ -234,30 +119,11 @@ const AdminDrivers: React.FC = () => {
       color: "secondary",
     },
     {
-      label: "Aprovar",
-      onClick: (driver) => {
-        console.log("Approve driver:", driver.id);
-      },
+      label: "Ativar/Desativar",
+      onClick: handleToggleDriverStatus,
       color: "primary",
     },
-    {
-      label: "Recusar",
-      onClick: (driver) => {
-        console.log("Reject driver:", driver.id);
-      },
-      color: "danger",
-    },
   ];
-
-  const dayNames = {
-    monday: "Segunda-feira",
-    tuesday: "Terça-feira",
-    wednesday: "Quarta-feira",
-    thursday: "Quinta-feira",
-    friday: "Sexta-feira",
-    saturday: "Sábado",
-    sunday: "Domingo",
-  };
 
   return (
     <AdminLayout>
@@ -273,9 +139,13 @@ const AdminDrivers: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <ArrowPathIcon className="w-4 h-4" />
-              <span>Atualizar</span>
+            <button 
+              onClick={loadDrivers}
+              disabled={loading}
+              className="flex items-center space-x-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>{loading ? 'Atualizando...' : 'Atualizar'}</span>
             </button>
             <button className="flex items-center space-x-2 bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-shadow">
               <PlusIcon className="w-4 h-4" />
@@ -293,7 +163,7 @@ const AdminDrivers: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Aprovados</p>
-                <p className="text-xl font-semibold text-[#111827]">267</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.aprovados}</p>
               </div>
             </div>
           </div>
@@ -304,7 +174,7 @@ const AdminDrivers: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Pendentes</p>
-                <p className="text-xl font-semibold text-[#111827]">34</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.pendentes}</p>
               </div>
             </div>
           </div>
@@ -315,7 +185,7 @@ const AdminDrivers: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Recusados</p>
-                <p className="text-xl font-semibold text-[#111827]">18</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.recusados}</p>
               </div>
             </div>
           </div>
@@ -326,7 +196,7 @@ const AdminDrivers: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-gray-600">Total</p>
-                <p className="text-xl font-semibold text-[#111827]">319</p>
+                <p className="text-xl font-semibold text-[#111827]">{stats.total}</p>
               </div>
             </div>
           </div>
@@ -469,32 +339,6 @@ const AdminDrivers: React.FC = () => {
                     </p>
                     <p className="text-xs text-gray-600">Avaliação</p>
                   </div>
-                </div>
-              </div>
-
-              {/* Availability */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Disponibilidade
-                </h4>
-                <div className="space-y-2">
-                  {Object.entries(selectedDriver.availability).map(
-                    ([day, schedule]) => (
-                      <div
-                        key={day}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                      >
-                        <span className="text-sm font-medium">
-                          {dayNames[day as keyof typeof dayNames]}
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          {(schedule as any).available
-                            ? `${(schedule as any).start} - ${(schedule as any).end}`
-                            : "Indisponível"}
-                        </span>
-                      </div>
-                    ),
-                  )}
                 </div>
               </div>
             </div>
