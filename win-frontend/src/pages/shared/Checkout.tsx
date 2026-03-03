@@ -5,7 +5,6 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { api } from "@/lib/Api";
 import { ordersApi } from "@/lib/api/ordersApi";
-import AbacatePayCheckout from "@/components/AbacatePayCheckout";
 import { shippingApi, FreteResponseDTO } from "@/lib/api/shippingApi";
 import { lojistaApi } from "@/lib/api/lojistaApi";
 import {
@@ -1076,39 +1075,6 @@ const Checkout: React.FC = () => {
                     </>
                   )}
                 </button>
-
-                {/* Botão de Pagamento Abacate Pay */}
-                {checkoutUrl && paymentMethod === "pix" && (
-                  <div className="mt-4">
-                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mb-4">
-                      <div className="flex items-start">
-                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <div className="ml-3">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                            Pedido Criado com Sucesso!
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            Clique no botão abaixo para finalizar o pagamento via PIX.
-                          </p>
-                          {pedidoId && (
-                            <p className="text-xs text-gray-500 mt-2">
-                              Pedido: {pedidoId}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <AbacatePayCheckout 
-                      checkoutUrl={checkoutUrl}
-                      billingId={billingId || ""}
-                      amount={billingAmount}
-                      onError={(error) => {
-                        console.error("Erro no checkout:", error);
-                        showError("Erro ao carregar pagamento. Tente novamente.");
-                      }}
-                    />
-                  </div>
-                )}
 
                 {/* Selos de Segurança */}
                 <div className="mt-6 pt-6 border-t">

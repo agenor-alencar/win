@@ -32,7 +32,6 @@ public class PagamentoService {
     private final ConfiguracaoRepository configuracaoRepository;
     private final LojistaRepository lojistaRepository;
     private final PagamentoMapper pagamentoMapper;
-    private final AbacatePayService abacatePayService;
     private final PagarMeService pagarMeService;
 
     @Value("${app.frontend.url:http://localhost:3000}")
@@ -82,6 +81,19 @@ public class PagamentoService {
 
         pagamento.setStatus(Pagamento.StatusPagamento.APROVADO);
         Pagamento savedPagamento = pagamentoRepository.save(pagamento);
+        
+        // Atualizar status do pedido associado
+        if (pagamento.getPedido() != null) {
+            Pedido pedido = pagamento.getPedido();
+            pedido.setStatusPagamento(Pedido.StatusPagamento.APROVADO);
+            pedido.setStatus(Pedido.StatusPedido.CONFIRMADO);
+            if (pedido.getConfirmadoEm() == null) {
+                pedido.setConfirmadoEm(java.time.OffsetDateTime.now());
+            }
+            pedidoRepository.save(pedido);
+            log.info("✅ Pedido confirmado manualmente - Número: {}", pedido.getNumeroPedido());
+        }
+        
         return pagamentoMapper.toResponseDTO(savedPagamento);
     }
 
@@ -94,6 +106,17 @@ public class PagamentoService {
             pagamento.setObservacoes(motivo);
         }
         Pagamento savedPagamento = pagamentoRepository.save(pagamento);
+        
+        // Atualizar status do pedido associado
+        if (pagamento.getPedido() != null) {
+            Pedido pedido = pagamento.getPedido();
+            pedido.setStatusPagamento(Pedido.StatusPagamento.RECUSADO);
+            // Pedido permanece PENDENTE para permitir nova tentativa de pagamento
+            pedidoRepository.save(pedido);
+            log.info("⚠️ Pagamento recusado - Pedido: {}, Motivo: {}", 
+                pedido.getNumeroPedido(), motivo);
+        }
+        
         return pagamentoMapper.toResponseDTO(savedPagamento);
     }
 
@@ -103,6 +126,16 @@ public class PagamentoService {
 
         pagamento.setStatus(Pagamento.StatusPagamento.CANCELADO);
         Pagamento savedPagamento = pagamentoRepository.save(pagamento);
+        
+        // Atualizar status do pedido associado
+        if (pagamento.getPedido() != null) {
+            Pedido pedido = pagamento.getPedido();
+            pedido.setStatusPagamento(Pedido.StatusPagamento.CANCELADO);
+            pedido.setStatus(Pedido.StatusPedido.CANCELADO);
+            pedidoRepository.save(pedido);
+            log.info("❌ Pedido cancelado - Número: {}", pedido.getNumeroPedido());
+        }
+        
         return pagamentoMapper.toResponseDTO(savedPagamento);
     }
 
@@ -123,126 +156,6 @@ public class PagamentoService {
     public List<PagamentoResponseDTO> listarTodos() {
         List<Pagamento> pagamentos = pagamentoRepository.findAll();
         return pagamentoMapper.toResponseDTOList(pagamentos);
-    }
-
-    // ========================================================================
-    // INTEGRAÇÃO ABACATE PAY
-    // ========================================================================
-
-    /**
-     * Cria cobrança PIX via Abacate Pay
-     * 
-     * @param pedidoId ID do pedido
-     * @param email Email do cliente
-     * @return Map com URL de pagamento e informações da cobrança
-     */
-    public Map<String, Object> criarPagamentoPix(
-            UUID pedidoId,
-            String cpf,
-            String email
-    ) {
-        log.info("=== INICIANDO CRIAÇÃO DE COBRANÇA PIX ABACATE PAY ===");
-        log.info("Pedido ID: {}", pedidoId);
-        log.info("Email: {}", email);
-        
-        if (!abacatePayService.isConfigurado()) {
-            throw new IllegalStateException(
-                "Abacate Pay não configurado. Configure ABACATEPAY_API_KEY no .env"
-            );
-        }
-
-        Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
-
-        log.info("Pedido encontrado - Número: {}, Total: R$ {}", 
-            pedido.getNumeroPedido(), pedido.getTotal());
-
-        // Converter valor para centavos
-        Integer valorCentavos = abacatePayService.converterParaCentavos(pedido.getTotal());
-        
-        // Descrição dos itens do pedido
-        StringBuilder descricao = new StringBuilder("Pedido #" + pedido.getNumeroPedido());
-        if (!pedido.getItens().isEmpty()) {
-            descricao.append(" - ");
-            descricao.append(pedido.getItens().size()).append(" item(ns)");
-        }
-
-        // Criar cobrança no Abacate Pay
-        Map<String, Object> cobranca = abacatePayService.criarCobrancaPix(
-            pedidoId.toString(),
-            valorCentavos,
-            email,
-            descricao.toString()
-        );
-
-        log.info("✅ Cobrança criada com sucesso - ID: {}", cobranca.get("id"));
-
-        // Salvar pagamento no banco
-        Pagamento pagamento = new Pagamento();
-        pagamento.setPedido(pedido);
-        pagamento.setMetodoPagamento("PIX");
-        pagamento.setValor(pedido.getTotal());
-        pagamento.setStatus(Pagamento.StatusPagamento.PENDENTE);
-        pagamento.setTransacaoId((String) cobranca.get("id"));
-        pagamentoRepository.save(pagamento);
-
-        log.info("Pagamento registrado no banco - ID: {}", pagamento.getId());
-
-        // Retornar informações da cobrança
-        Map<String, Object> resultado = new HashMap<>();
-        resultado.put("billingId", cobranca.get("id"));
-        resultado.put("checkoutUrl", cobranca.get("url"));
-        resultado.put("status", cobranca.get("status"));
-        resultado.put("amount", cobranca.get("amount"));
-
-        return resultado;
-    }
-
-    /**
-     * Busca cobrança no Abacate Pay pelo ID
-     * 
-     * @param billingId ID da cobrança
-     * @return Dados da cobrança
-     */
-    public Map<String, Object> buscarCobrancaAbacatePay(String billingId) {
-        return abacatePayService.buscarCobranca(billingId);
-    }
-
-    /**
-     * Atualiza status do pagamento via webhook do Abacate Pay
-     * 
-     * @param payload Dados do webhook
-     */
-    public void processarWebhookAbacatePay(Map<String, Object> payload) {
-        try {
-            String event = (String) payload.get("event");
-            log.info("🥑 Webhook Abacate Pay recebido - Evento: {}", event);
-
-            if ("billing.paid".equals(event)) {
-                Map<String, Object> data = (Map<String, Object>) payload.get("data");
-                Map<String, Object> billing = (Map<String, Object>) data.get("billing");
-                
-                if (billing != null) {
-                    String billingId = (String) billing.get("id");
-                    String status = (String) billing.get("status");
-                    
-                    log.info("Cobrança paga - ID: {}, Status: {}", billingId, status);
-                    
-                    // Atualizar status no banco
-                    pagamentoRepository.findByTransacaoId(billingId)
-                        .ifPresent(pagamento -> {
-                            String statusInterno = abacatePayService.traduzirStatus(status);
-                            pagamento.setStatus(Pagamento.StatusPagamento.valueOf(statusInterno));
-                            pagamentoRepository.save(pagamento);
-                            log.info("✅ Status do pagamento atualizado - ID: {}, Status: {}", 
-                                pagamento.getId(), pagamento.getStatus());
-                        });
-                }
-            }
-        } catch (Exception e) {
-            log.error("❌ Erro ao processar webhook Abacate Pay: {}", e.getMessage(), e);
-            throw new RuntimeException("Erro ao processar webhook: " + e.getMessage());
-        }
     }
 
     // ========================================================================
@@ -564,14 +477,24 @@ public class PagamentoService {
                                 log.info("✅ Status do pagamento atualizado - ID: {}, Status: {}", 
                                     pagamento.getId(), pagamento.getStatus());
                                 
-                                // Se o pagamento foi aprovado, atualizar status do pedido
+                                // Se o pagamento foi aprovado, atualizar pedido completo
                                 if ("APROVADO".equals(statusInterno)) {
                                     Pedido pedido = pagamento.getPedido();
                                     if (pedido != null) {
+                                        // Atualizar status de pagamento
                                         pedido.setStatusPagamento(Pedido.StatusPagamento.APROVADO);
-                                         pedidoRepository.save(pedido);
-                                        log.info("✅ Status do pedido atualizado para APROVADO - Pedido: {}", 
-                                            pedido.getNumeroPedido());
+                                        
+                                        // Atualizar status do pedido para CONFIRMADO
+                                        pedido.setStatus(Pedido.StatusPedido.CONFIRMADO);
+                                        
+                                        // Definir data de confirmação
+                                        if (pedido.getConfirmadoEm() == null) {
+                                            pedido.setConfirmadoEm(java.time.OffsetDateTime.now());
+                                        }
+                                        
+                                        pedidoRepository.save(pedido);
+                                        log.info("✅ Pedido confirmado - Número: {}, Status: {}, StatusPagamento: {}", 
+                                            pedido.getNumeroPedido(), pedido.getStatus(), pedido.getStatusPagamento());
                                     }
                                 }
                             } catch (IllegalArgumentException e) {
