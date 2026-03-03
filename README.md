@@ -96,8 +96,8 @@
 
 ```bash
 # Clone e acesse o projeto
-git clone https://github.com/ArthurJsph/win-grupo1.git
-cd win-grupo1
+git clone https://github.com/agenor-alencar/win.git
+cd win
 
 # Suba todos os serviços
 docker-compose up -d
@@ -216,15 +216,15 @@ Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](L
 
 ## 👨‍💻 Autor
 
-**Arthur Joseph**  
+**Agenor Alencar**  
 📧 Email: [agenoralencaar@gmail.com](mailto:agenoralencaar@gmail.com)  
-🔗 GitHub: [@ArthurJsph](https://github.com/ArthurJsph)
+🔗 GitHub: [@AgenorAlencar](https://github.com/agenor-alencar)
 
 ---
 
 ## 🙏 Agradecimentos
 
-Desenvolvido como projeto acadêmico pela **Equipe WIN - Grupo 1**
+Desenvolvido como projeto acadêmico pela **Equipe WIN**
 
 ---
 
