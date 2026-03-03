@@ -75,6 +75,13 @@ export const BankDataApi = {
     );
     return response.data;
   },
+
+  /**
+   * Remove dados bancários cadastrados
+   */
+  removerDadosBancarios: async (lojistaId: number): Promise<void> => {
+    await api.delete(`/v1/lojistas/${lojistaId}/dados-bancarios`);
+  },
 };
 
 /**

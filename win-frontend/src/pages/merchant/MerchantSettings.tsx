@@ -203,6 +203,36 @@ export default function MerchantSettings() {
     }
   };
 
+  const handleDeleteBankData = async () => {
+    if (!lojistaId) {
+      notifyError("Erro", "Lojista não identificado");
+      return;
+    }
+
+    if (!window.confirm("Tem certeza que deseja remover os dados bancários? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+
+    try {
+      await BankDataApi.removerDadosBancarios(lojistaId);
+      
+      success(
+        "Dados bancários removidos!",
+        "Os dados bancários foram removidos com sucesso"
+      );
+      
+      // Limpar estado
+      setDadosBancarios(null);
+      setShowNewAccountForm(false);
+    } catch (err: any) {
+      console.error("Erro ao remover dados bancários:", err);
+      notifyError(
+        "Erro ao remover",
+        err.response?.data?.message || "Não foi possível remover os dados bancários"
+      );
+    }
+  };
+
   const handleSave = async () => {
     setIsLoading(true);
     setTimeout(() => {
@@ -624,6 +654,14 @@ export default function MerchantSettings() {
                           onClick={() => setShowNewAccountForm(true)}
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleDeleteBankData}
+                          className="text-red-600 hover:text-red-700 hover:border-red-300"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

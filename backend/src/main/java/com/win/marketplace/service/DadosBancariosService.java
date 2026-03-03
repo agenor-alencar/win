@@ -149,6 +149,31 @@ public class DadosBancariosService {
     }
 
     /**
+     * Remove dados bancários do lojista
+     */
+    public void removerDadosBancarios(UUID lojistaId) {
+        Lojista lojista = lojistaRepository.findById(lojistaId)
+            .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
+
+        DadosBancarios dadosBancarios = dadosBancariosRepository.findByLojistaId(lojistaId)
+            .orElseThrow(() -> new RuntimeException("Dados bancários não encontrados"));
+
+        log.info("🗑️ Removendo dados bancários do lojista: {}", lojistaId);
+
+        // Limpar recipient ID do lojista
+        if (lojista.getPagarmeRecipientId() != null) {
+            log.info("⚠️ Limpando recipient_id: {}", lojista.getPagarmeRecipientId());
+            lojista.setPagarmeRecipientId(null);
+            lojistaRepository.save(lojista);
+        }
+
+        // Deletar dados bancários
+        dadosBancariosRepository.delete(dadosBancarios);
+        
+        log.info("✅ Dados bancários removidos com sucesso");
+    }
+
+    /**
      * Converte entidade para DTO de resposta (com dados mascarados)
      */
     private DadosBancariosResponseDTO toResponseDTO(DadosBancarios dadosBancarios, Lojista lojista) {

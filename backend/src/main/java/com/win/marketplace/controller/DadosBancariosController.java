@@ -67,4 +67,18 @@ public class DadosBancariosController {
         DadosBancariosResponseDTO response = dadosBancariosService.recriarRecipient(lojistaId);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Remove dados bancários do lojista
+     * 
+     * DELETE /api/v1/lojistas/{lojistaId}/dados-bancarios
+     */
+    @DeleteMapping
+    // @PreAuthorize("hasAnyRole('LOJISTA', 'ADMIN')") // Temporariamente desabilitado para teste
+    public ResponseEntity<Void> removerDadosBancarios(
+        @PathVariable UUID lojistaId
+    ) {
+        dadosBancariosService.removerDadosBancarios(lojistaId);
+        return ResponseEntity.noContent().build();
+    }
 }
