@@ -82,12 +82,25 @@ interface DashboardStats {
   averageTicket: number;
 }
 
+interface LojistaEstatisticas {
+  vendasHoje: number;
+  vendasOntem: number;
+  receitaHoje: number;
+  receitaOntem: number;
+  totalPedidosPendentes: number;
+  totalProdutosAtivos: number;
+  totalProdutosInativos: number;
+  percentualVariacaoVendas: number;
+  percentualVariacaoReceita: number;
+}
+
 const MerchantDashboard: React.FC = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [lojista, setLojista] = useState<Lojista | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [estatisticas, setEstatisticas] = useState<LojistaEstatisticas | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
     activeProducts: 0,
@@ -109,20 +122,26 @@ const MerchantDashboard: React.FC = () => {
       const { data: lojistaData } = await api.get<Lojista>("/v1/lojistas/me");
       setLojista(lojistaData);
 
-      // 2. Buscar produtos do lojista
+      // 2. Buscar estatísticas do lojista (NOVO - dados reais)
+      const { data: estatisticasData } = await api.get<LojistaEstatisticas>(
+        `/v1/lojistas/${lojistaData.id}/estatisticas`
+      );
+      setEstatisticas(estatisticasData);
+
+      // 3. Buscar produtos do lojista
       const { data: productsData } = await api.get<Product[]>(
         `/v1/produtos/lojista/${lojistaData.id}`
       );
       setProducts(productsData);
 
-      // 3. Buscar pedidos do lojista usando o novo endpoint otimizado
+      // 4. Buscar pedidos do lojista usando o novo endpoint otimizado
       const { data: ordersData } = await api.get<Order[]>(
         `/v1/pedidos/lojista/${lojistaData.id}`
       );
       
       setOrders(ordersData);
 
-      // 4. Calcular estatísticas
+      // 5. Calcular estatísticas complementares
       const activeProducts = productsData.filter((p) => p.ativo).length;
       const lowStockProducts = productsData.filter((p) => p.estoque < 10 && p.ativo).length;
       const totalRevenue = ordersData.reduce((sum, order) => sum + order.total, 0);
@@ -151,55 +170,71 @@ const MerchantDashboard: React.FC = () => {
 
   const kpiData: KPIData[] = [
     {
-      title: "Total de Produtos",
-      value: stats.totalProducts.toString(),
-      change: stats.activeProducts > 0 ? Math.round((stats.activeProducts / stats.totalProducts) * 100) : 0,
-      isPositive: stats.activeProducts > stats.totalProducts / 2,
-      icon: Package,
-      link: "/merchant/products",
+      title: "Vendas Hoje",
+      value: (estatisticas?.vendasHoje || 0).toString(),
+      change: Math.round(estatisticas?.percentualVariacaoVendas || 0),
+      isPositive: (estatisticas?.percentualVariacaoVendas || 0) >= 0,
+      icon: TrendingUp,
+      link: "/merchant/orders",
     },
     {
-      title: "Vendas Totais",
+      title: "Receita Hoje",
       value: new Intl.NumberFormat("pt-BR", {
         style: "currency",
         currency: "BRL",
-      }).format(stats.totalRevenue),
-      change: 0,
-      isPositive: true,
+      }).format(estatisticas?.receitaHoje || 0),
+      change: Math.round(estatisticas?.percentualVariacaoReceita || 0),
+      isPositive: (estatisticas?.percentualVariacaoReceita || 0) >= 0,
       icon: DollarSign,
       link: "/merchant/financial",
     },
     {
-      title: "Pedidos",
-      value: stats.totalOrders.toString(),
+      title: "Pedidos Pendentes",
+      value: (estatisticas?.totalPedidosPendentes || 0).toString(),
       change: 0,
       isPositive: true,
       icon: ShoppingCart,
       link: "/merchant/orders",
     },
     {
-      title: "Ticket Médio",
-      value: new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }).format(stats.averageTicket),
-      change: 0,
+      title: "Produtos Ativos",
+      value: (estatisticas?.totalProdutosAtivos || 0).toString(),
+      change: estatisticas?.totalProdutosAtivos && estatisticas?.totalProdutosInativos 
+        ? Math.round((estatisticas.totalProdutosAtivos / (estatisticas.totalProdutosAtivos + estatisticas.totalProdutosInativos)) * 100)
+        : 78,
       isPositive: true,
-      icon: TrendingUp,
-      link: "/merchant/financial",
+      icon: Package,
+      link: "/merchant/products",
     },
   ];
 
-  // Dados para o gráfico de vendas (últimos 7 dias - mock temporário)
-  const salesData = [
-    { name: "Seg", vendas: 0, receita: 0 },
-    { name: "Ter", vendas: 0, receita: 0 },
-    { name: "Qua", vendas: 0, receita: 0 },
-    { name: "Qui", vendas: 0, receita: 0 },
-    { name: "Sex", vendas: 0, receita: 0 },
-    { name: "Sáb", vendas: 0, receita: 0 },
-    { name: "Dom", vendas: Math.floor(stats.totalOrders / 7), receita: Math.floor(stats.totalRevenue / 7) },
-  ];
+  // Dados para o gráfico de vendas (últimos 7 dias - calculado com dados reais)
+  const salesData = React.useMemo(() => {
+    const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const hoje = new Date();
+    const dadosPorDia = Array.from({ length: 7 }, (_, i) => {
+      const data = new Date(hoje);
+      data.setDate(data.getDate() - (6 - i));
+      const diaSemana = dias[data.getDay()];
+      
+      // Filtrar pedidos do dia
+      const pedidosDoDia = orders.filter(order => {
+        const dataPedido = new Date(order.criadoEm);
+        return dataPedido.toDateString() === data.toDateString();
+      });
+
+      const vendas = pedidosDoDia.length;
+      const receita = pedidosDoDia.reduce((sum, order) => sum + order.total, 0);
+
+      return {
+        name: diaSemana,
+        vendas,
+        receita: Math.round(receita),
+      };
+    });
+
+    return dadosPorDia;
+  }, [orders]);
 
   // Top 5 produtos mais vendidos
   const topProducts = products
@@ -383,20 +418,34 @@ const MerchantDashboard: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Produtos Ativos</span>
-                <span className="font-semibold text-gray-900">{stats.activeProducts}</span>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-sm text-gray-600">Vendas de Ontem</span>
+                <span className="font-semibold text-gray-900">{estatisticas?.vendasOntem || 0} pedidos</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-sm text-gray-600">Receita de Ontem</span>
+                <span className="font-semibold text-gray-900">
+                  {formatCurrency(estatisticas?.receitaOntem || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-sm text-gray-600">Produtos Ativos</span>
+                <span className="font-semibold text-green-600">{estatisticas?.totalProdutosAtivos || 0}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-sm text-gray-600">Produtos Inativos</span>
+                <span className="font-semibold text-gray-400">{estatisticas?.totalProdutosInativos || 0}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b">
                 <span className="text-sm text-gray-600">Estoque Baixo</span>
                 <span className="font-semibold text-orange-600">{stats.lowStockProducts}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Ticket Médio</span>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-sm text-gray-600">Ticket Médio (Total)</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(stats.averageTicket)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total de Pedidos</span>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-gray-600">Total de Pedidos (Histórico)</span>
                 <span className="font-semibold text-gray-900">{stats.totalOrders}</span>
               </div>
             </CardContent>
