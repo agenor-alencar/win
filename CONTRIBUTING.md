@@ -26,7 +26,7 @@ Este projeto adere ao [Código de Conduta](CODE_OF_CONDUCT.md). Ao participar, v
 ### 🐛 Reportar Bugs
 
 Antes de criar um relatório de bug:
-- Verifique se o bug já não foi reportado nas [issues](https://github.com/ArthurJsph/win-grupo1/issues)
+- Verifique se o bug já não foi reportado nas [issues](https://github.com/agenor-alencar/win/issues)
 - Verifique se você está usando a versão mais recente
 - Colete informações sobre o problema
 
@@ -68,11 +68,11 @@ Antes de criar uma sugestão de feature:
 ```bash
 # Fork o repositório via GitHub UI
 # Clone seu fork
-git clone https://github.com/seu-usuario/win-marketplace.git
-cd win-marketplace
+git clone https://github.com/seu-usuario/win.git
+cd win
 
 # Adicione o repositório original como upstream
-git remote add upstream https://github.com/ArthurJsph/win-grupo1.git
+git remote add upstream https://github.com/agenor-alencar/win.git
 ```
 
 ### 2. Crie uma Branch
@@ -374,7 +374,7 @@ Use o [template de feature request](.github/ISSUE_TEMPLATE/feature_request.md):
 ## Dúvidas?
 
 - 📖 [Documentação Completa](docs/README.md)
-- 💬 [Discussions](https://github.com/ArthurJsph/win-grupo1/discussions)
+- 💬 [Discussions](https://github.com/agenor-alencar/win/discussions)
 - 📧 Email: agenoralencaar@gmail.com
 
 ---

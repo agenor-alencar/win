@@ -283,7 +283,7 @@ export default function SearchResults() {
 
         {/* Results Grid */}
         {!isSearching && filteredResults.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
             {filteredResults.map((product) => (
               <Card
                 key={product.id}
@@ -295,10 +295,10 @@ export default function SearchResults() {
                       src={product.image}
                       alt={product.name}
                       loading="lazy"
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
+                      className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform"
                     />
                     {product.originalPrice && (
-                      <Badge className="absolute top-2 left-2 bg-red-500">
+                      <Badge className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-red-500 text-[10px] sm:text-xs px-1 sm:px-2 py-0.5">
                         {Math.round(
                           (1 - product.price / product.originalPrice) * 100,
                         )}
@@ -308,45 +308,47 @@ export default function SearchResults() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                      className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-white/80 hover:bg-white h-7 w-7 sm:h-9 sm:w-9"
                       onClick={(e) => e.preventDefault()}
                     >
-                      <Heart className="h-4 w-4" />
+                      <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </Link>
-                <CardContent className="p-4">
+                <CardContent className="p-2 sm:p-3 lg:p-4">
                   <Link to={`/product/${product.id}`}>
-                    <h4 className="font-semibold text-sm mb-2 line-clamp-2 leading-tight">
+                    <h4 className="font-semibold text-xs sm:text-sm mb-1 sm:mb-2 line-clamp-2 leading-tight min-h-[2rem] sm:min-h-[2.5rem]">
                       {product.name}
                     </h4>
-                    <div className="flex items-center text-xs text-muted-foreground mb-2">
+                    <div className="hidden sm:flex items-center text-xs text-muted-foreground mb-2">
                       <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
                       {product.rating}
                       <span className="mx-1">({product.reviews})</span>
                       <span className="mx-2">•</span>
-                      {product.store}
+                      <span className="truncate">{product.store}</span>
                     </div>
                   </Link>
                   <div className="space-y-1">
                     {product.originalPrice && (
-                      <span className="text-sm text-muted-foreground line-through">
+                      <span className="text-[10px] sm:text-sm text-muted-foreground line-through">
                         R$ {product.originalPrice.toFixed(2).replace(".", ",")}
                       </span>
                     )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-primary">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
+                      <span className="text-sm sm:text-base lg:text-lg font-bold text-primary">
                         R$ {product.price.toFixed(2).replace(".", ",")}
                       </span>
                       <Button
                         size="sm"
-                        className="text-xs"
+                        className="text-xs w-full sm:w-auto"
                         onClick={(e) => {
                           e.preventDefault();
                           handleAddToCart(product);
                         }}
                       >
-                        Adicionar
+                        <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="hidden sm:inline">Adicionar</span>
+                        <span className="sm:hidden">+</span>
                       </Button>
                     </div>
                   </div>

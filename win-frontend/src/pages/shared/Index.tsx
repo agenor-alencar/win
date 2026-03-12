@@ -189,7 +189,7 @@ export default function Index() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
               {produtos.map((produto) => (
                 <Card
                   key={produto.id}
@@ -201,19 +201,20 @@ export default function Index() {
                         src={produto.imagemPrincipal || '/placeholder.svg'}
                         alt={produto.nome}
                         loading="lazy"
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
+                        className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}
                       />
                       {produto.estoque === 0 && (
-                        <Badge className="absolute top-2 left-2 bg-red-500">
+                        <Badge className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-red-500 text-[10px] sm:text-xs px-1 sm:px-2 py-0.5">
                           Esgotado
                         </Badge>
                       )}
                       {produto.estoque > 0 && produto.estoque <= 5 && (
-                        <Badge className="absolute top-2 left-2 bg-orange-500">
-                          Últimas {produto.estoque} unidades
+                        <Badge className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-orange-500 text-[10px] sm:text-xs px-1 sm:px-2 py-0.5">
+                          <span className="hidden sm:inline">Últimas {produto.estoque} unidades</span>
+                          <span className="sm:hidden">{produto.estoque} rest.</span>
                         </Badge>
                       )}
                     </div>
@@ -221,18 +222,18 @@ export default function Index() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="absolute top-2 right-2 bg-white/80 hover:bg-white z-10"
+                    className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-white/80 hover:bg-white z-10 h-7 w-7 sm:h-9 sm:w-9"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Heart className="h-4 w-4" />
+                    <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
-                  <CardContent className="p-4">
+                  <CardContent className="p-2 sm:p-3 lg:p-4">
                     <Link to={`/product/${produto.id}`}>
-                      <h4 className="font-semibold text-sm mb-2 line-clamp-2 hover:text-primary cursor-pointer">
+                      <h4 className="font-semibold text-xs sm:text-sm mb-1 sm:mb-2 line-clamp-2 hover:text-primary cursor-pointer min-h-[2rem] sm:min-h-[2.5rem]">
                         {produto.nome}
                       </h4>
                     </Link>
-                    <div className="flex items-center text-xs text-muted-foreground mb-2">
+                    <div className="hidden sm:flex items-center text-xs text-muted-foreground mb-2">
                       {produto.avaliacao && produto.quantidadeAvaliacoes > 0 ? (
                         <>
                           <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
@@ -243,10 +244,10 @@ export default function Index() {
                         <span>Sem avaliações</span>
                       )}
                       <span className="mx-2">•</span>
-                      {produto.nomeLojista}
+                      <span className="truncate">{produto.nomeLojista}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-primary">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
+                      <span className="text-sm sm:text-base lg:text-lg font-bold text-primary">
                         {new Intl.NumberFormat('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
@@ -254,15 +255,16 @@ export default function Index() {
                       </span>
                       <Button
                         size="sm"
-                        className="text-xs"
+                        className="text-xs w-full sm:w-auto"
                         disabled={produto.estoque === 0}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleAddToCart(produto);
                         }}
                       >
-                        <ShoppingCart className="h-4 w-4 mr-1" />
-                        {produto.estoque === 0 ? 'Esgotado' : 'Adicionar'}
+                        <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="hidden sm:inline">{produto.estoque === 0 ? 'Esgotado' : 'Adicionar'}</span>
+                        <span className="sm:hidden">+</span>
                       </Button>
                     </div>
                   </CardContent>
