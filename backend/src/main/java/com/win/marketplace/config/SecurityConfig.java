@@ -2,6 +2,7 @@ package com.win.marketplace.config;
 
 import com.win.marketplace.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -34,6 +35,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${app.dev-tools.enabled:false}")
+    private boolean devToolsEnabled;
+
+    @Value("${app.api-docs.enabled:false}")
+    private boolean apiDocsEnabled;
 
     /**
      * Bean do PasswordEncoder para criptografia de senhas
@@ -98,38 +105,43 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos (não requerem autenticação)
-                .requestMatchers("/", "/index.html", "/favicon.ico").permitAll() // Raiz e recursos estáticos
-                .requestMatchers("/api/v1/auth/**").permitAll() // Todas as rotas de autenticação
-                .requestMatchers("/api/v1/password-reset/**").permitAll() // Reset de senha público
-                .requestMatchers("/api/v1/dev/**").permitAll() // Dev Tools (gerador de hash)
-                .requestMatchers(HttpMethod.GET, "/api/v1/produtos/**").permitAll() // Apenas GET em produtos é público
-                .requestMatchers(HttpMethod.GET, "/api/v1/categoria/**").permitAll() // Apenas GET em categorias é público
-                .requestMatchers(HttpMethod.GET, "/api/v1/banners/**").permitAll() // Apenas GET em banners é público
-                .requestMatchers("/api/v1/external/**").permitAll() // Permitir consulta de CNPJ e CEP
-                .requestMatchers("/api/v1/entregas/**").permitAll() // Permitir simulação de frete
-                .requestMatchers(HttpMethod.GET, "/api/v1/fretes/estimar").permitAll() // Permitir estimativa de frete por CEP
-                .requestMatchers("/api/v1/webhooks/**").permitAll() // Todos os webhooks públicos
-                .requestMatchers("/api/v1/pagamentos/webhooks/**").permitAll() // Webhooks de pagamento
-                .requestMatchers(HttpMethod.GET, "/api/v1/pagamentos/pedido/*/pix").permitAll() // Página de pagamento PIX pública
-                .requestMatchers(HttpMethod.POST, "/api/v1/pagamentos/pedido/*/pix/obter-ou-recriar").permitAll() // Recriar pagamento PIX público
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger público
-                .requestMatchers("/error").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                
-                // Endpoints de lojistas que requerem autenticação (ANTES da regra geral de GET)
-                .requestMatchers("/api/v1/lojistas/me").authenticated() // /me requer autenticação
-                .requestMatchers("/api/v1/lojistas/*/estatisticas").authenticated() // estatísticas requer autenticação
-                .requestMatchers("/api/v1/lojistas/*/dados-bancarios/**").permitAll() // TESTE: permitir dados bancários sem auth
-                .requestMatchers(HttpMethod.GET, "/api/v1/lojistas/**").permitAll() // Outros GETs de lojistas são públicos
-                
-                // Endpoints administrativos (apenas ADMIN)
-                .requestMatchers("/api/v1/auth/promote-to-admin").hasAuthority("ADMIN")
-                
-                // Todos os outros endpoints requerem autenticação
-                .anyRequest().authenticated()
-            )
+            .authorizeHttpRequests(auth -> {
+                auth
+                    .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/login/**", "/api/v1/auth/register").permitAll()
+                    .requestMatchers("/api/v1/password-reset/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/produtos/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/categoria/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/banners/**").permitAll()
+                    .requestMatchers("/api/v1/external/**").permitAll()
+                    .requestMatchers("/api/v1/entregas/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/fretes/estimar").permitAll()
+                    .requestMatchers("/api/v1/webhooks/**").permitAll()
+                    .requestMatchers("/api/v1/pagamentos/webhooks/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/pagamentos/pedido/*/pix").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/pagamentos/pedido/*/pix/obter-ou-recriar").permitAll()
+                    .requestMatchers("/error").permitAll()
+                    .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                    .requestMatchers("/api/v1/lojistas/me").authenticated()
+                    .requestMatchers("/api/v1/lojistas/*/estatisticas").authenticated()
+                    .requestMatchers("/api/v1/lojistas/*/dados-bancarios/**").authenticated()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/lojistas/**").permitAll()
+                    .requestMatchers("/api/v1/auth/promote-to-admin").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                    .requestMatchers("/actuator/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                    .anyRequest().authenticated();
+
+                if (devToolsEnabled) {
+                    auth.requestMatchers("/api/v1/dev/**").permitAll();
+                } else {
+                    auth.requestMatchers("/api/v1/dev/**").denyAll();
+                }
+
+                if (apiDocsEnabled) {
+                    auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll();
+                } else {
+                    auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").denyAll();
+                }
+            })
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();

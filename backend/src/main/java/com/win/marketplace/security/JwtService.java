@@ -3,6 +3,7 @@ package com.win.marketplace.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,11 +23,23 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret:win-marketplace-secret-key-change-in-production-min-256-bits}")
+    @Value("${jwt.secret}")
     private String secretKey;
 
     @Value("${jwt.expiration:86400000}") // 24 horas em milissegundos
     private Long jwtExpiration;
+
+    @PostConstruct
+    public void validateConfiguration() {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("JWT secret não configurado. Defina JWT_SECRET no ambiente.");
+        }
+
+        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException("JWT secret fraco. Use no mínimo 32 bytes (recomendado 64+).");
+        }
+    }
 
     /**
      * Gera um token JWT para um usuário

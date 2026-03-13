@@ -39,10 +39,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (requestPath.equals("/") ||
             requestPath.equals("/index.html") ||
             requestPath.equals("/favicon.ico") ||
-            requestPath.startsWith("/actuator/") || 
+            requestPath.equals("/actuator/health") ||
+            requestPath.equals("/actuator/info") ||
             requestPath.startsWith("/api/v1/webhooks/") ||
-            requestPath.startsWith("/api/v1/auth/") ||
-            requestPath.startsWith("/api/v1/dev/") ||
+            requestPath.equals("/api/v1/auth/login") ||
+            requestPath.startsWith("/api/v1/auth/login/") ||
+            requestPath.equals("/api/v1/auth/register") ||
             requestPath.startsWith("/api/v1/password-reset/") ||
             requestPath.startsWith("/api/v1/produtos") ||
             requestPath.startsWith("/api/v1/categoria") ||
@@ -54,14 +56,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         
         final String authHeader = request.getHeader("Authorization");
-        
-        // Log para debug
-        log.info("Request URL: {} | Authorization Header: {}", request.getRequestURI(), 
-                 authHeader != null ? "Bearer ***" : "NULL");
-        
+
         // Se não houver header Authorization ou não começar com "Bearer ", pula o filtro
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn("Sem token JWT para: {}", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
@@ -79,14 +76,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Extrai os perfis do token
                     List<String> perfis = jwtService.extractPerfis(jwt);
                     
-                    log.info("Token válido para usuário: {} | Perfis: {}", userEmail, perfis);
-                    
                     // Converte perfis em authorities do Spring Security (usando toList() para lista imutável)
                     List<SimpleGrantedAuthority> authorities = perfis.stream()
                             .map(perfil -> new SimpleGrantedAuthority("ROLE_" + perfil))
                             .toList();
-                    
-                    log.info("Authorities criadas: {}", authorities);
 
                     // Criar UserDetails simples para injeção com @AuthenticationPrincipal
                     org.springframework.security.core.userdetails.User userDetailsObj = 
@@ -107,14 +100,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // Define a autenticação no contexto de segurança
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    
-                    log.info("Autenticação configurada com sucesso para: {}", userEmail);
-                } else {
-                    log.warn("Token inválido ou expirado para: {}", userEmail);
                 }
             }
         } catch (Exception e) {
-            log.error("Erro ao processar token JWT: {}", e.getMessage());
+            log.warn("Falha ao validar token JWT para {}", request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);

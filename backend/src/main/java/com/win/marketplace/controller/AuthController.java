@@ -9,6 +9,7 @@ import com.win.marketplace.exception.BusinessException;
 import com.win.marketplace.model.Usuario;
 import com.win.marketplace.repository.UsuarioRepository;
 import com.win.marketplace.security.JwtService;
+import com.win.marketplace.security.LoginAttemptService;
 import com.win.marketplace.service.UsuarioService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,8 +19,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -38,6 +43,7 @@ public class AuthController {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final LoginAttemptService loginAttemptService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -77,9 +83,20 @@ public class AuthController {
      * POST /api/v1/auth/login
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO requestDTO) {
+    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO requestDTO, HttpServletRequest request) {
         log.info("POST /api/v1/auth/login - Login do usuário: {}", requestDTO.email());
-        
+
+        String clientIp = extractClientIp(request);
+        String attemptKey = loginAttemptService.buildKey(requestDTO.email(), clientIp);
+
+        if (loginAttemptService.isBlocked(attemptKey)) {
+            long secondsRemaining = loginAttemptService.blockedSecondsRemaining(attemptKey);
+            throw new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Muitas tentativas de login. Tente novamente em " + secondsRemaining + " segundos"
+            );
+        }
+
         try {
             // Buscar usuário por email com perfis carregados
             Usuario usuario = usuarioRepository.findByEmailWithPerfis(requestDTO.email())
@@ -88,14 +105,18 @@ public class AuthController {
             // Verificar se a senha está correta
             if (!passwordEncoder.matches(requestDTO.senha(), usuario.getSenhaHash())) {
                 log.warn("Tentativa de login com senha incorreta para o email: {}", requestDTO.email());
+                loginAttemptService.registerFailure(attemptKey);
                 throw new BusinessException("Email ou senha incorretos");
             }
             
             // Verificar se o usuário está ativo
             if (!usuario.getAtivo()) {
                 log.warn("Tentativa de login de usuário inativo: {}", requestDTO.email());
+                loginAttemptService.registerFailure(attemptKey);
                 throw new BusinessException("Usuário inativo. Entre em contato com o suporte.");
             }
+
+            loginAttemptService.registerSuccess(attemptKey);
             
             // Extrair perfis diretamente do banco (evita ConcurrentModificationException)
             List<String> perfis = usuarioRepository.findPerfisByEmail(requestDTO.email());
@@ -122,6 +143,7 @@ public class AuthController {
             log.error("Erro de negócio no login: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
+            loginAttemptService.registerFailure(attemptKey);
             log.error("Erro ao fazer login: {}", e.getMessage(), e);
             throw e;
         }
@@ -186,7 +208,7 @@ public class AuthController {
         }
 
         // Delegate to existing logic (now returns JWT)
-        return login(dto);
+        return login(dto, servletRequest);
     }
 
     /**
@@ -194,9 +216,10 @@ public class AuthController {
      * GET /api/v1/auth/me
      */
     @GetMapping("/me")
-    public ResponseEntity<UsuarioResponseDTO> me(@RequestParam String email) {
-        log.info("GET /api/v1/auth/me - Verificando usuário: {}", email);
-        UsuarioResponseDTO response = usuarioService.buscarPorEmail(email);
+    public ResponseEntity<UsuarioResponseDTO> me() {
+        String authenticatedEmail = getAuthenticatedEmail();
+        log.info("GET /api/v1/auth/me - Verificando usuário autenticado: {}", authenticatedEmail);
+        UsuarioResponseDTO response = usuarioService.buscarPorEmail(authenticatedEmail);
         return ResponseEntity.ok(response);
     }
 
@@ -207,11 +230,16 @@ public class AuthController {
      */
     @PostMapping("/reset-password")
     public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO requestDTO) {
-        log.info("POST /api/v1/auth/reset-password - Resetando senha para: {}", requestDTO.email());
+        String authenticatedEmail = getAuthenticatedEmail();
+        log.info("POST /api/v1/auth/reset-password - Usuário autenticado: {}", authenticatedEmail);
+
+        if (!authenticatedEmail.equalsIgnoreCase(requestDTO.email())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não é permitido alterar senha de outro usuário");
+        }
         
         try {
             // Buscar usuário por email
-            Usuario usuario = usuarioRepository.findByEmail(requestDTO.email())
+            Usuario usuario = usuarioRepository.findByEmail(authenticatedEmail)
                     .orElseThrow(() -> new BusinessException("Usuário não encontrado"));
             
             // Atualizar senha
@@ -221,7 +249,7 @@ public class AuthController {
             log.info("Senha alterada com sucesso para o usuário: {}", requestDTO.email());
             return ResponseEntity.ok(Map.of(
                 "message", "Senha alterada com sucesso!",
-                "email", requestDTO.email()
+                "email", authenticatedEmail
             ));
             
         } catch (BusinessException e) {
@@ -239,11 +267,12 @@ public class AuthController {
      * Retorna novo token JWT com perfis atualizados
      */
     @PostMapping("/refresh-token")
-    public ResponseEntity<AuthResponseDTO> refreshToken(@RequestParam String email) {
-        log.info("POST /api/v1/auth/refresh-token - Atualizando token para: {}", email);
+    public ResponseEntity<AuthResponseDTO> refreshToken() {
+        String authenticatedEmail = getAuthenticatedEmail();
+        log.info("POST /api/v1/auth/refresh-token - Atualizando token para: {}", authenticatedEmail);
         
         // Buscar usuário do banco de dados
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmail(authenticatedEmail)
                 .orElseThrow(() -> new BusinessException("Usuário não encontrado"));
 
         if (usuario.getAtivo() == null || !usuario.getAtivo()) {
@@ -257,13 +286,13 @@ public class AuthController {
                 .map(perfil -> perfil.getNome())
                 .toList();
         
-        log.info("Perfis atualizados para {}: {}", email, perfis);
+        log.info("Perfis atualizados para {}: {}", authenticatedEmail, perfis);
 
         // Gerar novo token JWT com perfis atualizados
-        String token = jwtService.generateToken(email, perfis);
+        String token = jwtService.generateToken(authenticatedEmail, perfis);
 
         // Converter usuário para DTO
-        UsuarioResponseDTO usuarioDTO = usuarioService.buscarPorEmail(email);
+        UsuarioResponseDTO usuarioDTO = usuarioService.buscarPorEmail(authenticatedEmail);
 
         // Retornar resposta com novo token
         AuthResponseDTO response = AuthResponseDTO.builder()
@@ -273,7 +302,7 @@ public class AuthController {
                 .expires_in(86400L)
                 .build();
         
-        log.info("Token atualizado com sucesso para usuário: {} com perfis: {}", email, perfis);
+        log.info("Token atualizado com sucesso para usuário: {} com perfis: {}", authenticatedEmail, perfis);
         return ResponseEntity.ok(response);
     }
 
@@ -308,5 +337,30 @@ public class AuthController {
             "message", "Usuário promovido a ADMIN com sucesso",
             "email", email
         ));
+    }
+
+    private String extractClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
+    }
+
+    private String getAuthenticatedEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserDetails userDetails) {
+            return userDetails.getUsername();
+        }
+        if (principal instanceof String principalString) {
+            return principalString;
+        }
+
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Não foi possível identificar o usuário autenticado");
     }
 }
