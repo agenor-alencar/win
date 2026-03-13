@@ -32,6 +32,7 @@ public class PedidoService {
     private final PedidoMapper pedidoMapper;
     private final ObjectMapper objectMapper;
     private final EntregaService entregaService;
+    private final PedidoStatusService pedidoStatusService;
 
     public PedidoResponseDTO criarPedido(PedidoCreateRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(requestDTO.usuarioId())
@@ -176,21 +177,12 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO atualizarStatus(UUID id, Pedido.StatusPedido novoStatus) {
-        Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
-        
-        pedido.setStatus(novoStatus);
-        Pedido savedPedido = pedidoRepository.save(pedido);
+        Pedido savedPedido = pedidoStatusService.transicionarStatus(id, novoStatus);
         return pedidoMapper.toResponseDTO(savedPedido);
     }
 
     public PedidoResponseDTO confirmarPedido(UUID id) {
-        Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
-        
-        pedido.setStatus(Pedido.StatusPedido.CONFIRMADO);
-        pedido.setConfirmadoEm(OffsetDateTime.now());
-        Pedido savedPedido = pedidoRepository.save(pedido);
+        Pedido savedPedido = pedidoStatusService.transicionarStatus(id, Pedido.StatusPedido.CONFIRMADO);
         
         // 🚚 INTEGRAÇÃO UBER DIRECT: Solicitar entrega automaticamente
         // NOTA: Entrega só é solicitada quando lojista marcar como "Pronto para Retirada"
@@ -211,16 +203,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO cancelarPedido(UUID id, String motivo) {
-        Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
-        
-        if (pedido.getStatus() == Pedido.StatusPedido.ENTREGUE) {
-            throw new RuntimeException("Não é possível cancelar um pedido já entregue");
-        }
-        
-        pedido.setStatus(Pedido.StatusPedido.CANCELADO);
-        // Você pode adicionar um campo de observações no pedido para armazenar o motivo
-        Pedido savedPedido = pedidoRepository.save(pedido);
+        Pedido savedPedido = pedidoStatusService.transicionarStatus(id, Pedido.StatusPedido.CANCELADO);
         return pedidoMapper.toResponseDTO(savedPedido);
     }
 
@@ -237,39 +220,14 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO marcarComoPreparando(UUID id) {
-        Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
-        
-        if (pedido.getStatus() != Pedido.StatusPedido.CONFIRMADO) {
-            throw new RuntimeException("Pedido deve estar confirmado para ser marcado como preparando");
-        }
-        
         return atualizarStatus(id, Pedido.StatusPedido.PREPARANDO);
     }
 
     public PedidoResponseDTO marcarComoPronto(UUID id) {
-        Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
-        
-        if (pedido.getStatus() != Pedido.StatusPedido.PREPARANDO) {
-            throw new RuntimeException("Pedido deve estar em preparação para ser marcado como pronto");
-        }
-        
         return atualizarStatus(id, Pedido.StatusPedido.PRONTO);
     }
 
     public PedidoResponseDTO marcarComoEmTransito(UUID id) {
-        Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
-        
-        if (pedido.getStatus() != Pedido.StatusPedido.PRONTO) {
-            throw new RuntimeException("Pedido deve estar pronto para ser marcado como em trânsito");
-        }
-        
-        if (pedido.getMotorista() == null) {
-            throw new RuntimeException("É necessário atribuir um motorista antes de colocar o pedido em trânsito");
-        }
-        
         return atualizarStatus(id, Pedido.StatusPedido.EM_TRANSITO);
     }
 
@@ -289,9 +247,7 @@ public class PedidoService {
             throw new RuntimeException("Código de entrega inválido");
         }
         
-        pedido.setStatus(Pedido.StatusPedido.ENTREGUE);
-        pedido.setEntregueEm(OffsetDateTime.now());
-        Pedido savedPedido = pedidoRepository.save(pedido);
+        Pedido savedPedido = pedidoStatusService.transicionarStatus(id, Pedido.StatusPedido.ENTREGUE);
         return pedidoMapper.toResponseDTO(savedPedido);
     }
 

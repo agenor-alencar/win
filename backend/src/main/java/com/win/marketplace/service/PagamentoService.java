@@ -33,6 +33,7 @@ public class PagamentoService {
     private final LojistaRepository lojistaRepository;
     private final PagamentoMapper pagamentoMapper;
     private final PagarMeService pagarMeService;
+    private final PedidoStatusService pedidoStatusService;
 
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
@@ -86,11 +87,8 @@ public class PagamentoService {
         if (pagamento.getPedido() != null) {
             Pedido pedido = pagamento.getPedido();
             pedido.setStatusPagamento(Pedido.StatusPagamento.APROVADO);
-            pedido.setStatus(Pedido.StatusPedido.CONFIRMADO);
-            if (pedido.getConfirmadoEm() == null) {
-                pedido.setConfirmadoEm(java.time.OffsetDateTime.now());
-            }
             pedidoRepository.save(pedido);
+            pedidoStatusService.transicionarStatus(pedido.getId(), Pedido.StatusPedido.CONFIRMADO);
             log.info("✅ Pedido confirmado manualmente - Número: {}", pedido.getNumeroPedido());
         }
         
@@ -131,8 +129,8 @@ public class PagamentoService {
         if (pagamento.getPedido() != null) {
             Pedido pedido = pagamento.getPedido();
             pedido.setStatusPagamento(Pedido.StatusPagamento.CANCELADO);
-            pedido.setStatus(Pedido.StatusPedido.CANCELADO);
             pedidoRepository.save(pedido);
+            pedidoStatusService.transicionarStatus(pedido.getId(), Pedido.StatusPedido.CANCELADO);
             log.info("❌ Pedido cancelado - Número: {}", pedido.getNumeroPedido());
         }
         
@@ -429,6 +427,9 @@ public class PagamentoService {
                                 if (pedido != null) {
                                     pedido.setStatusPagamento(Pedido.StatusPagamento.APROVADO);
                                     pedidoRepository.save(pedido);
+                                    if (pedido.getStatus() == Pedido.StatusPedido.PENDENTE) {
+                                        pedidoStatusService.transicionarStatus(pedido.getId(), Pedido.StatusPedido.CONFIRMADO);
+                                    }
                                     log.info("✅ Status do pedido atualizado para APROVADO - Pedido: {}", 
                                         pedido.getNumeroPedido());
                                 }
@@ -483,16 +484,10 @@ public class PagamentoService {
                                     if (pedido != null) {
                                         // Atualizar status de pagamento
                                         pedido.setStatusPagamento(Pedido.StatusPagamento.APROVADO);
-                                        
-                                        // Atualizar status do pedido para CONFIRMADO
-                                        pedido.setStatus(Pedido.StatusPedido.CONFIRMADO);
-                                        
-                                        // Definir data de confirmação
-                                        if (pedido.getConfirmadoEm() == null) {
-                                            pedido.setConfirmadoEm(java.time.OffsetDateTime.now());
-                                        }
-                                        
                                         pedidoRepository.save(pedido);
+                                        if (pedido.getStatus() == Pedido.StatusPedido.PENDENTE) {
+                                            pedidoStatusService.transicionarStatus(pedido.getId(), Pedido.StatusPedido.CONFIRMADO);
+                                        }
                                         log.info("✅ Pedido confirmado - Número: {}, Status: {}, StatusPagamento: {}", 
                                             pedido.getNumeroPedido(), pedido.getStatus(), pedido.getStatusPagamento());
                                     }

@@ -53,6 +53,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      * Lista usuários por status ativo/inativo
      */
     List<Usuario> findByAtivo(Boolean ativo);
+
+    @Query("SELECT DISTINCT u FROM Usuario u JOIN u.usuarioPerfis up JOIN up.perfil p WHERE u.ativo = true AND p.nome = :perfilNome")
+    List<Usuario> findByPerfilAtivo(@Param("perfilNome") String perfilNome);
     
     /**
      * Verifica se existe usuário com o email

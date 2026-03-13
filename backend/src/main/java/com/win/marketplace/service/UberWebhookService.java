@@ -41,6 +41,7 @@ public class UberWebhookService {
 
     private final EntregaRepository entregaRepository;
     private final PedidoRepository pedidoRepository;
+    private final PedidoStatusService pedidoStatusService;
     private final ObjectMapper objectMapper;
 
     @Value("${uber.webhook.secret:}")
@@ -210,8 +211,7 @@ public class UberWebhookService {
         // Atualizar status do pedido também
         Pedido pedido = entrega.getPedido();
         if (pedido != null) {
-            pedido.setStatus(Pedido.StatusPedido.EM_TRANSITO);
-            pedidoRepository.save(pedido);
+            pedidoStatusService.transicionarStatus(pedido.getId(), Pedido.StatusPedido.EM_TRANSITO);
         }
     }
 
@@ -230,9 +230,7 @@ public class UberWebhookService {
         // Atualizar status do pedido
         Pedido pedido = entrega.getPedido();
         if (pedido != null) {
-            pedido.setStatus(Pedido.StatusPedido.ENTREGUE);
-            pedido.setEntregueEm(OffsetDateTime.now());
-            pedidoRepository.save(pedido);
+            pedidoStatusService.transicionarStatus(pedido.getId(), Pedido.StatusPedido.ENTREGUE);
         }
         
         // TODO: Enviar notificação ao cliente (email/SMS/push)
@@ -251,8 +249,7 @@ public class UberWebhookService {
         // Atualizar status do pedido
         Pedido pedido = entrega.getPedido();
         if (pedido != null) {
-            pedido.setStatus(Pedido.StatusPedido.CANCELADO);
-            pedidoRepository.save(pedido);
+            pedidoStatusService.transicionarStatus(pedido.getId(), Pedido.StatusPedido.CANCELADO);
         }
         
         // TODO: Notificar lojista e cliente sobre cancelamento
