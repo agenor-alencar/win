@@ -45,8 +45,27 @@ public class PedidoStatusService {
 
         Pedido pedidoAtualizado = pedidoRepository.save(pedido);
 
-        registrarHistorico(pedidoAtualizado, statusAnterior, novoStatus);
-        enviarNotificacoes(pedidoAtualizado, statusAnterior, novoStatus);
+        try {
+            registrarHistorico(pedidoAtualizado, statusAnterior, novoStatus);
+        } catch (Exception exception) {
+            log.error(
+                    "Falha ao registrar histórico de status do pedido {}: {}",
+                    pedidoAtualizado.getNumeroPedido(),
+                    exception.getMessage(),
+                    exception
+            );
+        }
+
+        try {
+            enviarNotificacoes(pedidoAtualizado, statusAnterior, novoStatus);
+        } catch (Exception exception) {
+            log.error(
+                    "Falha ao enviar notificações do pedido {}: {}",
+                    pedidoAtualizado.getNumeroPedido(),
+                    exception.getMessage(),
+                    exception
+            );
+        }
 
         log.info("Status do pedido {} alterado de {} para {}",
                 pedidoAtualizado.getNumeroPedido(), statusAnterior, novoStatus);
