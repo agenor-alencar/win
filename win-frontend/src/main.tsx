@@ -46,6 +46,7 @@ import MerchantDashboard from "./pages/merchant/MerchantDashboardImproved";
 import ProductsPage from "./pages/merchant/ProductsPage";
 import ProductFormPage from "./pages/merchant/ProductFormPage";
 import MerchantOrders from "./pages/merchant/MerchantOrders";
+import MerchantOrderDetails from "./pages/merchant/MerchantOrderDetails";
 import MerchantProfile from "./pages/merchant/MerchantProfile";
 import MerchantAuth from "./pages/merchant/MerchantAuth";
 import MerchantReturns from "./pages/merchant/MerchantReturns";
@@ -238,6 +239,14 @@ const App = () => (
                     element={
                       <ProtectedRoute requiredRoles={["merchant"]}>
                         <MerchantOrders />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/merchant/orders/:orderId"
+                    element={
+                      <ProtectedRoute requiredRoles={["merchant"]}>
+                        <MerchantOrderDetails />
                       </ProtectedRoute>
                     }
                   />

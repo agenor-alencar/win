@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Package, RefreshCw, Search } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
@@ -46,6 +45,7 @@ interface Lojista {
 type FilterTab = "all" | "pending" | "prep" | "ready" | "transit";
 
 export default function MerchantOrders() {
+  const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState<FilterTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -303,6 +303,10 @@ export default function MerchantOrders() {
     }
   };
 
+  const openOrderDetails = (orderId: string) => {
+    navigate(`/merchant/orders/${orderId}`);
+  };
+
   const getShortOrderId = (numeroPedido: string) => {
     const digits = (numeroPedido || "").replace(/\D/g, "");
     if (digits.length >= 5) {
@@ -462,7 +466,11 @@ export default function MerchantOrders() {
             const status = getOrderStatus(order.status);
 
             return (
-              <Card key={order.id} className="rounded-xl border border-gray-200">
+              <Card
+                key={order.id}
+                className="rounded-xl border border-gray-200 cursor-pointer"
+                onDoubleClick={() => openOrderDetails(order.id)}
+              >
                 <CardContent className="p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-1">
@@ -488,102 +496,13 @@ export default function MerchantOrders() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap md:justify-end">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="rounded-xl">
-                            Detalhes
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl rounded-xl">
-                          <DialogHeader>
-                            <DialogTitle>
-                              Pedido {getShortOrderId(order.numeroPedido)}
-                            </DialogTitle>
-                          </DialogHeader>
-
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <p className="text-gray-500">Cliente</p>
-                                <p className="font-medium text-gray-900">
-                                  {order.usuario?.nome || "Cliente"}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Criado em</p>
-                                <p className="font-medium text-gray-900">
-                                  {new Date(order.criadoEm).toLocaleString("pt-BR")}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <p className="text-sm font-semibold text-gray-900">Itens para preparar</p>
-                              {(order.itens || []).map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2"
-                                >
-                                  <div>
-                                    <p className="font-medium text-gray-900">
-                                      {item.produtoNome || item.nomeProduto || "Item sem nome"}
-                                    </p>
-                                    <p className="text-xs text-gray-500">Quantidade: {item.quantidade}</p>
-                                  </div>
-                                  <p className="text-sm font-semibold text-gray-800">
-                                    {new Intl.NumberFormat("pt-BR", {
-                                      style: "currency",
-                                      currency: "BRL",
-                                    }).format(item.subtotal)}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-
-                            <div className="flex items-center justify-between border-t pt-3">
-                              <p className="text-sm text-gray-500">Status atual: {statusLabel(status)}</p>
-                              <p className="text-lg font-bold text-[#3DBEAB]">
-                                {new Intl.NumberFormat("pt-BR", {
-                                  style: "currency",
-                                  currency: "BRL",
-                                }).format(order.total)}
-                              </p>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                              {status === "PENDENTE" && (
-                                <Button className="rounded-xl" onClick={() => confirmOrder(order.id)}>
-                                  Confirmar Pedido
-                                </Button>
-                              )}
-
-                              {status === "CONFIRMADO" && (
-                                <Button className="rounded-xl" onClick={() => openPreparationMode(order)}>
-                                  Iniciar Preparo
-                                </Button>
-                              )}
-
-                              {status === "PREPARANDO" && (
-                                <Button className="rounded-xl" onClick={() => openPreparationMode(order)}>
-                                  Modo Preparo
-                                </Button>
-                              )}
-
-                              {status === "PRONTO" && (
-                                <Badge className="bg-amber-100 text-amber-800 border border-amber-200">
-                                  Aguardando Motorista
-                                </Badge>
-                              )}
-
-                              {status === "EM_TRANSITO" && (
-                                <Badge className="bg-blue-100 text-blue-800 border border-blue-200">
-                                  Em Entrega
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() => openOrderDetails(order.id)}
+                      >
+                        Detalhes
+                      </Button>
 
                       {status === "PENDENTE" && (
                         <Button className="rounded-xl" onClick={() => confirmOrder(order.id)}>
