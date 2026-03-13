@@ -77,7 +77,7 @@ Encerrando...
 No `docker-compose.yml`, certifique-se que está configurado:
 ```yaml
 environment:
-  DEV_TOOLS_ENABLED: true  # ou ${DEV_TOOLS_ENABLED:-true}
+  DEV_TOOLS_ENABLED: true  # habilite apenas temporariamente em ambiente controlado
 ```
 
 #### Endpoints disponíveis:

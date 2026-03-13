@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -91,6 +92,27 @@ public class GlobalExceptionHandler {
                 .build();
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Trata exceções com status HTTP explícito (ex: 401, 403, 429)
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(
+            ResponseStatusException ex,
+            HttpServletRequest request) {
+
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(ex.getReason() != null ? ex.getReason() : status.getReasonPhrase())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(status).body(error);
     }
 
     /**

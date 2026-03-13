@@ -33,6 +33,23 @@ services:
           cpus: '0.25'     # Reservar 0.25 vCPU garantida
           memory: 256M     # Reservar 256MB garantidos
 
+  redis:
+    image: redis:7-alpine
+    container_name: win-marketplace-redis
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - win-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   # Aplicação Spring Boot (Backend)
   backend:
     build:
@@ -43,7 +60,7 @@ services:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-win_marketplace}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: ${HIBERNATE_DDL_AUTO:-update}
       TZ: ${TZ:-America/Sao_Paulo}
       
@@ -52,7 +69,9 @@ services:
       
       # Configuração CORS (adicione seus IPs/domínios separados por vírgula)
       # Inclui localhost, IP do VPS com e sem porta, e variações comuns
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://localhost:3000,https://localhost:5173,https://127.0.0.1:3000,https://137.184.87.106:3000,https://137.184.87.106,https://137.184.87.106:80,https://winmarketplace.com.br,http://winmarketplace.com.br}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
+      SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST:-redis}
+      SPRING_DATA_REDIS_PORT: ${SPRING_DATA_REDIS_PORT:-6379}
       
       # ========================================
       # Configurações de Email
@@ -79,6 +98,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       SECURITY_LOGIN_MAX_ATTEMPTS: ${SECURITY_LOGIN_MAX_ATTEMPTS:-5}
       SECURITY_LOGIN_LOCK_MINUTES: ${SECURITY_LOGIN_LOCK_MINUTES:-15}
+      SECURITY_LOGIN_USE_REDIS: ${SECURITY_LOGIN_USE_REDIS:-true}
       
       # ========================================
       # Mercado Pago Configuration
@@ -133,7 +153,7 @@ services:
       UBER_CLIENT_ID: ${UBER_CLIENT_ID}
       UBER_CLIENT_SECRET: ${UBER_CLIENT_SECRET}
       UBER_API_BASE_URL: ${UBER_API_BASE_URL:-https://sandbox-api.uber.com}
-      UBER_API_ENABLED: ${UBER_API_ENABLED:-true}
+      UBER_API_ENABLED: ${UBER_API_ENABLED:-false}
       
       # ========================================
       # Google Maps API (para geocodificação)
@@ -147,6 +167,8 @@ services:
       - win-network
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
     deploy:
@@ -177,6 +199,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:

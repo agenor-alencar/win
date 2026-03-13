@@ -21,6 +21,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Configuração de segurança do Spring Security com JWT
@@ -42,6 +43,9 @@ public class SecurityConfig {
     @Value("${app.api-docs.enabled:false}")
     private boolean apiDocsEnabled;
 
+    @Value("${app.cors.allowed-origins:}")
+    private String allowedOriginsProperty;
+
     /**
      * Bean do PasswordEncoder para criptografia de senhas
      * Usa BCrypt com strength padrão (10)
@@ -57,31 +61,21 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Permite localhost para desenvolvimento e IP/domínio da VPS para produção
-        String allowedOriginsEnv = System.getenv("ALLOWED_ORIGINS");
+
         List<String> allowedOrigins = new ArrayList<>();
-        
-        // Origens padrão para desenvolvimento local
-        allowedOrigins.add("http://localhost:3000");
-        allowedOrigins.add("http://127.0.0.1:3000");
-        allowedOrigins.add("http://localhost:3001");
-        allowedOrigins.add("http://127.0.0.1:3001");
-        
-        // Origens VPS (IP e domínio, todas as portas comuns)
-        allowedOrigins.add("http://137.184.87.106");
-        allowedOrigins.add("http://137.184.87.106:80");
-        allowedOrigins.add("http://137.184.87.106:3000");
-        allowedOrigins.add("http://winmarketplace.com.br");
-        allowedOrigins.add("https://winmarketplace.com.br");
-        
-        // Adiciona origens personalizadas da variável de ambiente ALLOWED_ORIGINS
-        // Configure no .env: ALLOWED_ORIGINS=http://seu-ip,https://seu-dominio.com
-        if (allowedOriginsEnv != null && !allowedOriginsEnv.trim().isEmpty()) {
-            String[] origins = allowedOriginsEnv.split(",");
-            for (String origin : origins) {
-                allowedOrigins.add(origin.trim());
-            }
+        if (allowedOriginsProperty != null && !allowedOriginsProperty.trim().isEmpty()) {
+            allowedOrigins = Arrays.stream(allowedOriginsProperty.split(","))
+                    .map(String::trim)
+                    .filter(origin -> !origin.isEmpty())
+                    .distinct()
+                    .collect(Collectors.toCollection(ArrayList::new));
+        }
+
+        if (allowedOrigins.isEmpty()) {
+            allowedOrigins.add("http://localhost:3000");
+            allowedOrigins.add("http://127.0.0.1:3000");
+            allowedOrigins.add("http://localhost:5173");
+            allowedOrigins.add("http://127.0.0.1:5173");
         }
         
         configuration.setAllowedOrigins(allowedOrigins);
@@ -127,8 +121,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/v1/lojistas/*/dados-bancarios/**").authenticated()
                     .requestMatchers(HttpMethod.GET, "/api/v1/lojistas/**").permitAll()
                     .requestMatchers("/api/v1/auth/promote-to-admin").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
-                    .requestMatchers("/actuator/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
-                    .anyRequest().authenticated();
+                    .requestMatchers("/actuator/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN");
 
                 if (devToolsEnabled) {
                     auth.requestMatchers("/api/v1/dev/**").permitAll();
@@ -141,6 +134,8 @@ public class SecurityConfig {
                 } else {
                     auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").denyAll();
                 }
+
+                auth.anyRequest().authenticated();
             })
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         

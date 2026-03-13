@@ -28,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Controller para autenticação de usuários com JWT
@@ -99,8 +100,12 @@ public class AuthController {
 
         try {
             // Buscar usuário por email com perfis carregados
-            Usuario usuario = usuarioRepository.findByEmailWithPerfis(requestDTO.email())
-                    .orElseThrow(() -> new BusinessException("Email ou senha incorretos"));
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByEmailWithPerfis(requestDTO.email());
+            if (usuarioOpt.isEmpty()) {
+                loginAttemptService.registerFailure(attemptKey);
+                throw new BusinessException("Email ou senha incorretos");
+            }
+            Usuario usuario = usuarioOpt.get();
             
             // Verificar se a senha está correta
             if (!passwordEncoder.matches(requestDTO.senha(), usuario.getSenhaHash())) {
