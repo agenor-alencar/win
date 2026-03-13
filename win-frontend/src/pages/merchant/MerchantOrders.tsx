@@ -5,6 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Package, RefreshCw, Search } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
 import { MerchantLayout } from "@/components/MerchantLayout";
@@ -35,7 +42,7 @@ interface Lojista {
   nomeFantasia: string;
 }
 
-type FilterTab = "all" | "prep" | "ready" | "transit";
+type FilterTab = "all" | "pending" | "prep" | "ready" | "transit";
 
 export default function MerchantOrders() {
   const [selectedTab, setSelectedTab] = useState<FilterTab>("all");
@@ -133,6 +140,19 @@ export default function MerchantOrders() {
     return () => clearInterval(timer);
   }, [fetchOrders]);
 
+  const confirmOrder = async (orderId: string) => {
+    try {
+      await api.patch(`/v1/pedidos/${orderId}/confirmar`);
+      success("Pedido confirmado!", "Pedido movido para CONFIRMADO");
+      await fetchOrders();
+    } catch (error: any) {
+      notifyError(
+        "Erro",
+        error.response?.data?.message || "Não foi possível confirmar o pedido",
+      );
+    }
+  };
+
   const startPreparingOrder = async (orderId: string) => {
     try {
       await api.patch(`/v1/pedidos/${orderId}/preparando`);
@@ -202,6 +222,7 @@ export default function MerchantOrders() {
 
   const statusLabel = (status: string) => {
     const normalized = getOrderStatus(status);
+    if (normalized === "PENDENTE") return "Pendente";
     if (normalized === "EM_TRANSITO") return "Em Entrega";
     if (normalized === "PREPARANDO") return "Em Preparo";
     if (normalized === "CONFIRMADO") return "Confirmado";
@@ -215,6 +236,7 @@ export default function MerchantOrders() {
 
       const matchesTab =
         selectedTab === "all" ||
+        (selectedTab === "pending" && status === "PENDENTE") ||
         (selectedTab === "prep" && ["CONFIRMADO", "PREPARANDO"].includes(status)) ||
         (selectedTab === "ready" && status === "PRONTO") ||
         (selectedTab === "transit" && status === "EM_TRANSITO");
@@ -231,6 +253,9 @@ export default function MerchantOrders() {
     });
   }, [orders, searchQuery, selectedTab]);
 
+  const pendingCount = orders.filter(
+    (order) => getOrderStatus(order.status) === "PENDENTE",
+  ).length;
   const prepCount = orders.filter((order) =>
     ["CONFIRMADO", "PREPARANDO"].includes(getOrderStatus(order.status)),
   ).length;
@@ -290,9 +315,12 @@ export default function MerchantOrders() {
         </div>
 
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as FilterTab)}>
-          <TabsList className="grid w-full grid-cols-4 bg-[#F8F9FA] rounded-xl">
+          <TabsList className="grid w-full grid-cols-5 bg-[#F8F9FA] rounded-xl">
             <TabsTrigger value="all" className="data-[state=active]:bg-white rounded-xl">
               Todos ({orders.length})
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="data-[state=active]:bg-white rounded-xl">
+              Pendentes ({pendingCount})
             </TabsTrigger>
             <TabsTrigger value="prep" className="data-[state=active]:bg-white rounded-xl">
               Em Preparo ({prepCount})
@@ -337,6 +365,107 @@ export default function MerchantOrders() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap md:justify-end">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="rounded-xl">
+                            Detalhes
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl rounded-xl">
+                          <DialogHeader>
+                            <DialogTitle>
+                              Pedido {getShortOrderId(order.numeroPedido)}
+                            </DialogTitle>
+                          </DialogHeader>
+
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <p className="text-gray-500">Cliente</p>
+                                <p className="font-medium text-gray-900">
+                                  {order.usuario?.nome || "Cliente"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500">Criado em</p>
+                                <p className="font-medium text-gray-900">
+                                  {new Date(order.criadoEm).toLocaleString("pt-BR")}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-sm font-semibold text-gray-900">Itens para preparar</p>
+                              {(order.itens || []).map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2"
+                                >
+                                  <div>
+                                    <p className="font-medium text-gray-900">{item.nomeProduto}</p>
+                                    <p className="text-xs text-gray-500">Quantidade: {item.quantidade}</p>
+                                  </div>
+                                  <p className="text-sm font-semibold text-gray-800">
+                                    {new Intl.NumberFormat("pt-BR", {
+                                      style: "currency",
+                                      currency: "BRL",
+                                    }).format(item.subtotal)}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center justify-between border-t pt-3">
+                              <p className="text-sm text-gray-500">Status atual: {statusLabel(status)}</p>
+                              <p className="text-lg font-bold text-[#3DBEAB]">
+                                {new Intl.NumberFormat("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                }).format(order.total)}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              {status === "PENDENTE" && (
+                                <Button className="rounded-xl" onClick={() => confirmOrder(order.id)}>
+                                  Confirmar Pedido
+                                </Button>
+                              )}
+
+                              {status === "CONFIRMADO" && (
+                                <Button className="rounded-xl" onClick={() => startPreparingOrder(order.id)}>
+                                  Iniciar Preparo
+                                </Button>
+                              )}
+
+                              {status === "PREPARANDO" && (
+                                <Button className="rounded-xl" onClick={() => markAsReady(order.id)}>
+                                  Marcar como Pronto
+                                </Button>
+                              )}
+
+                              {status === "PRONTO" && (
+                                <Badge className="bg-amber-100 text-amber-800 border border-amber-200">
+                                  Aguardando Motorista
+                                </Badge>
+                              )}
+
+                              {status === "EM_TRANSITO" && (
+                                <Badge className="bg-blue-100 text-blue-800 border border-blue-200">
+                                  Em Entrega
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      {status === "PENDENTE" && (
+                        <Button className="rounded-xl" onClick={() => confirmOrder(order.id)}>
+                          Confirmar
+                        </Button>
+                      )}
+
                       {status === "CONFIRMADO" && (
                         <Button className="rounded-xl" onClick={() => startPreparingOrder(order.id)}>
                           Iniciar Preparo
@@ -361,7 +490,7 @@ export default function MerchantOrders() {
                         </Badge>
                       )}
 
-                      {!(["CONFIRMADO", "PREPARANDO", "PRONTO", "EM_TRANSITO"].includes(status)) && (
+                      {!(["PENDENTE", "CONFIRMADO", "PREPARANDO", "PRONTO", "EM_TRANSITO"].includes(status)) && (
                         <Badge variant="secondary">{statusLabel(status)}</Badge>
                       )}
                     </div>
