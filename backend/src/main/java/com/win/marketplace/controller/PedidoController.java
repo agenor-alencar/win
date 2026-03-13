@@ -114,6 +114,18 @@ public class PedidoController {
     }
 
     /**
+     * Listar pedidos pagos pendentes de preparação por lojista - ADMIN ou LOJISTA
+     */
+    @GetMapping("/lojista/{lojistaId}/pendentes-preparacao")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOJISTA')")
+    public ResponseEntity<List<PedidoResponseDTO>> listarPedidosPagosPendentesPreparacaoPorLojista(
+            @PathVariable UUID lojistaId) {
+        List<PedidoResponseDTO> pedidos = pedidoService
+                .listarPedidosPagosPendentesPreparacaoPorLojista(lojistaId);
+        return ResponseEntity.ok(pedidos);
+    }
+
+    /**
      * Listar pedidos por lojista e status - ADMIN ou LOJISTA
      */
     @GetMapping("/lojista/{lojistaId}/status/{status}")

@@ -134,9 +134,9 @@ const MerchantDashboard: React.FC = () => {
       );
       setProducts(productsData);
 
-      // 4. Buscar pedidos do lojista usando o novo endpoint otimizado
+      // 4. Buscar somente pedidos com pagamento aprovado e pendentes de preparação
       const { data: ordersData } = await api.get<Order[]>(
-        `/v1/pedidos/lojista/${lojistaData.id}`
+        `/v1/pedidos/lojista/${lojistaData.id}/pendentes-preparacao`
       );
       
       setOrders(ordersData);

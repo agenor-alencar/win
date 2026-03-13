@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -134,6 +135,23 @@ public class PedidoService {
     @Transactional(readOnly = true)
     public List<PedidoResponseDTO> listarPedidosPorLojista(UUID lojistaId) {
         List<Pedido> pedidos = pedidoRepository.findByLojistaId(lojistaId);
+        return pedidoMapper.toResponseDTOList(pedidos);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PedidoResponseDTO> listarPedidosPagosPendentesPreparacaoPorLojista(UUID lojistaId) {
+        List<Pedido.StatusPedido> statusesPendentesPreparacao = Arrays.asList(
+                Pedido.StatusPedido.PENDENTE,
+                Pedido.StatusPedido.CONFIRMADO,
+                Pedido.StatusPedido.PREPARANDO
+        );
+
+        List<Pedido> pedidos = pedidoRepository.findByLojistaIdAndStatusPagamentoAndStatusIn(
+                lojistaId,
+                Pedido.StatusPagamento.APROVADO,
+                statusesPendentesPreparacao
+        );
+
         return pedidoMapper.toResponseDTOList(pedidos);
     }
 

@@ -110,9 +110,9 @@ export default function MerchantOrders() {
       const { data: lojistaData } = await api.get<Lojista>("/v1/lojistas/me");
       setLojista(lojistaData);
 
-      // 2. Buscar pedidos do lojista usando o novo endpoint otimizado
+      // 2. Buscar somente pedidos com pagamento aprovado e pendentes de preparação
       const { data: ordersData } = await api.get<Order[]>(
-        `/v1/pedidos/lojista/${lojistaData.id}`
+        `/v1/pedidos/lojista/${lojistaData.id}/pendentes-preparacao`
       );
       
       setOrders(ordersData);

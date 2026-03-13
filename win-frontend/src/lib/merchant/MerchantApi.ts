@@ -205,7 +205,7 @@ class MerchantApiService {
   async getMerchantOrders(lojistaId: string): Promise<Order[]> {
     try {
       const response = await api.get<Order[]>(
-        `${this.baseUrl}/pedidos/lojista/${lojistaId}`
+        `${this.baseUrl}/pedidos/lojista/${lojistaId}/pendentes-preparacao`
       );
       return response.data;
     } catch (error: any) {

@@ -62,6 +62,16 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     
     @Query("SELECT DISTINCT p FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.status = :status ORDER BY p.criadoEm DESC")
     List<Pedido> findByLojistaIdAndStatus(@Param("lojistaId") UUID lojistaId, @Param("status") Pedido.StatusPedido status);
+
+    @Query("SELECT DISTINCT p FROM Pedido p JOIN p.itens i " +
+          "WHERE i.lojista.id = :lojistaId " +
+          "AND p.statusPagamento = :statusPagamento " +
+          "AND p.status IN :statuses " +
+          "ORDER BY p.criadoEm DESC")
+    List<Pedido> findByLojistaIdAndStatusPagamentoAndStatusIn(
+           @Param("lojistaId") UUID lojistaId,
+           @Param("statusPagamento") Pedido.StatusPagamento statusPagamento,
+           @Param("statuses") List<Pedido.StatusPedido> statuses);
     
     @Query("SELECT COUNT(DISTINCT p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId")
     long countByLojistaId(@Param("lojistaId") UUID lojistaId);
