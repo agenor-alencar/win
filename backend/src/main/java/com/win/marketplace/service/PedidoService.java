@@ -144,7 +144,9 @@ public class PedidoService {
         List<Pedido.StatusPedido> statusesPendentesPreparacao = Arrays.asList(
                 Pedido.StatusPedido.PENDENTE,
                 Pedido.StatusPedido.CONFIRMADO,
-                Pedido.StatusPedido.PREPARANDO
+                Pedido.StatusPedido.PREPARANDO,
+                Pedido.StatusPedido.PRONTO,
+                Pedido.StatusPedido.EM_TRANSITO
         );
 
         List<Pedido> pedidos = pedidoRepository.findByLojistaIdAndStatusPagamentoAndStatusIn(

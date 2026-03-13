@@ -1,49 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Package,
-  Clock,
-  CheckCircle,
-  Truck,
-  Eye,
-  Calendar,
-  Filter,
-  Search,
-  Store,
-  MapPin,
-  Phone,
-  User,
-  Hash,
-  Copy,
-  Settings,
-  ShoppingBag,
-  RefreshCw,
-} from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Package, RefreshCw, Search } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
 import { MerchantLayout } from "@/components/MerchantLayout";
 import { api } from "@/lib/Api";
 import { useToast } from "@/hooks/use-toast";
 
-// Types
 interface Order {
   id: string;
   numeroPedido: string;
@@ -53,224 +20,226 @@ interface Order {
     email: string;
   };
   status: string;
-  subtotal: number;
-  desconto: number;
-  frete: number;
   total: number;
-  enderecoEntrega?: {
-    logradouro: string;
-    numero: string;
-    complemento?: string;
-    bairro: string;
-    cidade: string;
-    uf: string;
-    cep: string;
-  };
   itens: Array<{
     id: string;
     nomeProduto: string;
     quantidade: number;
-    precoUnitario: number;
     subtotal: number;
   }>;
-  codigoEntrega?: string;
   criadoEm: string;
-  confirmadoEm?: string;
-  entregueEm?: string;
 }
 
 interface Lojista {
   id: string;
   nomeFantasia: string;
-  cnpj: string;
-  ativo: boolean;
 }
 
+type FilterTab = "all" | "prep" | "ready" | "transit";
+
 export default function MerchantOrders() {
-  const [selectedTab, setSelectedTab] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [selectedTab, setSelectedTab] = useState<FilterTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [driverCode, setDriverCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [lojista, setLojista] = useState<Lojista | null>(null);
+
   const { success, error: notifyError } = useNotification();
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const firstLoadRef = useRef(true);
 
-  const fetchOrders = async () => {
+  const playNewOrderSound = () => {
     try {
-      setLoading(true);
+      const AudioContextClass =
+        window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
 
-      // 1. Buscar dados do lojista logado
+      const audioContext = new AudioContextClass();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.25,
+        audioContext.currentTime + 0.02,
+      );
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + 0.22,
+      );
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.22);
+    } catch {
+      // ignora falha de áudio sem quebrar o fluxo
+    }
+  };
+
+  const getOrderStatus = (status: string) => status.toUpperCase();
+
+  const fetchOrders = useCallback(async () => {
+    try {
+      if (firstLoadRef.current) {
+        setLoading(true);
+      }
+
       const { data: lojistaData } = await api.get<Lojista>("/v1/lojistas/me");
       setLojista(lojistaData);
 
-      // 2. Buscar somente pedidos com pagamento aprovado e pendentes de preparação
       const { data: ordersData } = await api.get<Order[]>(
-        `/v1/pedidos/lojista/${lojistaData.id}/pendentes-preparacao`
+        `/v1/pedidos/lojista/${lojistaData.id}/pendentes-preparacao`,
       );
-      
+
+      const newIds = new Set(ordersData.map((order) => order.id));
+      if (!firstLoadRef.current) {
+        const hasNewOrder = ordersData.some(
+          (order) => !knownOrderIdsRef.current.has(order.id),
+        );
+
+        if (hasNewOrder) {
+          playNewOrderSound();
+          toast({
+            title: "Novo pedido recebido",
+            description: "Há novos pedidos na fila do lojista.",
+          });
+        }
+      }
+
+      knownOrderIdsRef.current = newIds;
       setOrders(ordersData);
       setLoading(false);
+      firstLoadRef.current = false;
     } catch (error: any) {
       console.error("Erro ao buscar pedidos:", error);
       toast({
         title: "Erro ao carregar pedidos",
-        description: error.response?.data?.message || "Não foi possível carregar os pedidos",
+        description:
+          error.response?.data?.message || "Não foi possível carregar os pedidos",
         variant: "destructive",
       });
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const generateDeliveryCode = async (orderId: string) => {
-    try {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      // TODO: Implementar endpoint no backend para salvar código de entrega
-      success("Código gerado!", `Código de retirada: ${code}`);
-      console.log(`Generated code ${code} for order ${orderId}`);
-    } catch (error: any) {
-      notifyError("Erro", "Não foi possível gerar o código");
-    }
-  };
-
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    try {
-      await api.patch(`/v1/pedidos/${orderId}/status`, { status: newStatus });
-      success("Status atualizado!", `Pedido atualizado para: ${getStatusLabel(newStatus)}`);
-      await fetchOrders();
-    } catch (error: any) {
-      notifyError("Erro", error.response?.data?.message || "Não foi possível atualizar o status");
-    }
-  };
-
-  const confirmOrder = async (orderId: string) => {
-    try {
-      await api.patch(`/v1/pedidos/${orderId}/confirmar`);
-      success("Pedido confirmado!", "Pedido foi confirmado com sucesso");
-      await fetchOrders();
-    } catch (error: any) {
-      notifyError("Erro", error.response?.data?.message || "Não foi possível confirmar o pedido");
-    }
-  };
+  useEffect(() => {
+    fetchOrders();
+    const timer = setInterval(fetchOrders, 30000);
+    return () => clearInterval(timer);
+  }, [fetchOrders]);
 
   const startPreparingOrder = async (orderId: string) => {
     try {
       await api.patch(`/v1/pedidos/${orderId}/preparando`);
-      success("Preparação iniciada!", "Pedido está sendo preparado");
+      success("Preparação iniciada!", "Pedido movido para PREPARANDO");
       await fetchOrders();
     } catch (error: any) {
-      notifyError("Erro", error.response?.data?.message || "Não foi possível iniciar a preparação");
+      notifyError(
+        "Erro",
+        error.response?.data?.message ||
+          "Não foi possível iniciar o preparo do pedido",
+      );
     }
   };
 
   const markAsReady = async (orderId: string) => {
     try {
       await api.patch(`/v1/pedidos/${orderId}/pronto`);
-      success("Pedido pronto!", "Pedido está pronto para retirada");
+      success("Pedido pronto!", "Pedido movido para PRONTO");
       await fetchOrders();
     } catch (error: any) {
-      notifyError("Erro", error.response?.data?.message || "Não foi possível atualizar o pedido");
+      notifyError(
+        "Erro",
+        error.response?.data?.message || "Não foi possível marcar como pronto",
+      );
     }
   };
 
-  const cancelOrder = async (orderId: string) => {
-    if (!confirm("Tem certeza que deseja cancelar este pedido?")) return;
-    
-    try {
-      await api.patch(`/v1/pedidos/${orderId}/cancelar`);
-      success("Pedido cancelado!", "O pedido foi cancelado");
-      await fetchOrders();
-    } catch (error: any) {
-      notifyError("Erro", error.response?.data?.message || "Não foi possível cancelar o pedido");
+  const getShortOrderId = (numeroPedido: string) => {
+    const digits = (numeroPedido || "").replace(/\D/g, "");
+    if (digits.length >= 5) {
+      return `#${digits.slice(-5)}`;
     }
+    return `#${(numeroPedido || "").slice(-5)}`;
   };
 
-  const confirmPickup = async (orderId: string, code: string) => {
-    if (code.length !== 6) {
-      notifyError("Código inválido", "Digite um código de 6 dígitos");
-      return;
-    }
+  const formatRelativeTime = (createdAt: string) => {
+    const date = new Date(createdAt);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
 
-    try {
-      await api.patch(`/v1/pedidos/${orderId}/entregar`, { codigoEntrega: code });
-      success("Retirada confirmada!", "Pedido em rota de entrega");
-      setDriverCode("");
-      await fetchOrders();
-    } catch (error: any) {
-      notifyError("Erro", error.response?.data?.message || "Código de entrega inválido");
-    }
+    if (diffMin < 1) return "Agora mesmo";
+    if (diffMin < 60) return `Há ${diffMin} minuto${diffMin > 1 ? "s" : ""}`;
+
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24)
+      return `Há ${diffHours} hora${diffHours > 1 ? "s" : ""}`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    return `Há ${diffDays} dia${diffDays > 1 ? "s" : ""}`;
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesTab =
-      selectedTab === "all" ||
-      (selectedTab === "pending" &&
-        ["PENDENTE", "PREPARANDO"].includes(order.status)) ||
-      (selectedTab === "ready" && order.status === "PRONTO") ||
-      (selectedTab === "delivered" &&
-        ["ENTREGUE", "EM_TRANSITO"].includes(order.status));
+  const summarizeItems = (items: Order["itens"]) => {
+    if (!items || items.length === 0) return "Sem itens";
 
-    const matchesSearch =
-      order.numeroPedido.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (order.usuario?.nome || "").toLowerCase().includes(searchQuery.toLowerCase());
+    const base = items
+      .slice(0, 2)
+      .map((item) => `${item.quantidade}x ${item.nomeProduto}`)
+      .join(", ");
 
-    return matchesTab && matchesSearch;
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "PENDENTE":
-        return { bg: "#FEF2F2", text: "#EF4444" };
-      case "CONFIRMADO":
-      case "PREPARANDO":
-        return { bg: "#FFF7ED", text: "#F59E0B" };
-      case "PRONTO":
-        return { bg: "#F0FDF4", text: "#10B981" };
-      case "EM_TRANSITO":
-      case "ENTREGUE":
-        return { bg: "#F0F9FF", text: "#2D9CDB" };
-      case "CANCELADO":
-        return { bg: "#F3F4F6", text: "#6B7280" };
-      default:
-        return { bg: "#F8F9FA", text: "#666666" };
+    if (items.length > 2) {
+      return `${base} +${items.length - 2} item(ns)`;
     }
+
+    return base;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "PENDENTE":
-        return Clock;
-      case "CONFIRMADO":
-      case "PREPARANDO":
-        return Package;
-      case "PRONTO":
-        return CheckCircle;
-      case "EM_TRANSITO":
-      case "ENTREGUE":
-        return Truck;
-      default:
-        return Package;
-    }
+  const statusLabel = (status: string) => {
+    const normalized = getOrderStatus(status);
+    if (normalized === "EM_TRANSITO") return "Em Entrega";
+    if (normalized === "PREPARANDO") return "Em Preparo";
+    if (normalized === "CONFIRMADO") return "Confirmado";
+    if (normalized === "PRONTO") return "Aguardando Motorista";
+    return normalized;
   };
 
-  const getStatusLabel = (status: string) => {
-    const statusMap: Record<string, string> = {
-      PENDENTE: "Pendente",
-      CONFIRMADO: "Confirmado",
-      PREPARANDO: "Preparando",
-      PRONTO: "Pronto",
-      EM_TRANSITO: "Em Trânsito",
-      ENTREGUE: "Entregue",
-      CANCELADO: "Cancelado",
-    };
-    return statusMap[status.toUpperCase()] || status;
-  };
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const status = getOrderStatus(order.status);
+
+      const matchesTab =
+        selectedTab === "all" ||
+        (selectedTab === "prep" && ["CONFIRMADO", "PREPARANDO"].includes(status)) ||
+        (selectedTab === "ready" && status === "PRONTO") ||
+        (selectedTab === "transit" && status === "EM_TRANSITO");
+
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        order.numeroPedido.toLowerCase().includes(q) ||
+        getShortOrderId(order.numeroPedido).toLowerCase().includes(q) ||
+        (order.usuario?.nome || "").toLowerCase().includes(q) ||
+        summarizeItems(order.itens).toLowerCase().includes(q);
+
+      return matchesTab && matchesSearch;
+    });
+  }, [orders, searchQuery, selectedTab]);
+
+  const prepCount = orders.filter((order) =>
+    ["CONFIRMADO", "PREPARANDO"].includes(getOrderStatus(order.status)),
+  ).length;
+  const readyCount = orders.filter(
+    (order) => getOrderStatus(order.status) === "PRONTO",
+  ).length;
+  const transitCount = orders.filter(
+    (order) => getOrderStatus(order.status) === "EM_TRANSITO",
+  ).length;
 
   if (loading) {
     return (
@@ -286,26 +255,19 @@ export default function MerchantOrders() {
   return (
     <MerchantLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Package className="h-6 w-6 text-[#3DBEAB]" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Gestão de Pedidos
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
               <p className="text-sm text-gray-600">
-                Gerencie pedidos e entregas da sua loja
+                Fila operacional da loja {lojista?.nomeFantasia ? `• ${lojista.nomeFantasia}` : ""}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              className="rounded-xl"
-              onClick={fetchOrders}
-            >
+          <div className="flex items-center space-x-3">
+            <Button variant="outline" className="rounded-xl" onClick={fetchOrders}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Atualizar
             </Button>
@@ -317,499 +279,56 @@ export default function MerchantOrders() {
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            <Input
-              placeholder="Buscar por pedido ou cliente..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 rounded-xl"
-            />
-          </div>
-
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger
-              className="w-full md:w-48 h-12 rounded-xl"
-              style={{ borderRadius: "12px" }}
-            >
-              <SelectValue placeholder="Filtrar por status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="pendente">Pendente</SelectItem>
-              <SelectItem value="preparando">Preparando</SelectItem>
-              <SelectItem value="pronto">Pronto</SelectItem>
-              <SelectItem value="entregue">Entregue</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+          <Input
+            placeholder="Buscar por #pedido, cliente ou produto..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            className="pl-10 h-12 rounded-xl"
+          />
         </div>
 
-        {/* Tabs */}
-        <Tabs
-          value={selectedTab}
-          onValueChange={setSelectedTab}
-          className="mb-6"
-        >
-          <TabsList
-            className="grid w-full grid-cols-4"
-            style={{ backgroundColor: "#F8F9FA", borderRadius: "12px" }}
-          >
-            <TabsTrigger
-              value="all"
-              style={{ borderRadius: "12px" }}
-              className="data-[state=active]:bg-white"
-            >
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as FilterTab)}>
+          <TabsList className="grid w-full grid-cols-4 bg-[#F8F9FA] rounded-xl">
+            <TabsTrigger value="all" className="data-[state=active]:bg-white rounded-xl">
               Todos ({orders.length})
             </TabsTrigger>
-            <TabsTrigger
-              value="pending"
-              style={{ borderRadius: "12px" }}
-              className="data-[state=active]:bg-white"
-            >
-              Pendentes (
-              {
-                orders.filter((o) =>
-                  ["pendente", "preparando"].includes(o.status),
-                ).length
-              }
-              )
+            <TabsTrigger value="prep" className="data-[state=active]:bg-white rounded-xl">
+              Em Preparo ({prepCount})
             </TabsTrigger>
-            <TabsTrigger
-              value="ready"
-              style={{ borderRadius: "12px" }}
-              className="data-[state=active]:bg-white"
-            >
-              Prontos ({orders.filter((o) => o.status === "pronto").length})
+            <TabsTrigger value="ready" className="data-[state=active]:bg-white rounded-xl">
+              Prontos ({readyCount})
             </TabsTrigger>
-            <TabsTrigger
-              value="delivered"
-              style={{ borderRadius: "12px" }}
-              className="data-[state=active]:bg-white"
-            >
-              Entregues (
-              {
-                orders.filter((o) =>
-                  ["entregue", "retirado"].includes(o.status),
-                ).length
-              }
-              )
+            <TabsTrigger value="transit" className="data-[state=active]:bg-white rounded-xl">
+              Em Trânsito ({transitCount})
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        {/* Orders List */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredOrders.map((order) => {
-            const StatusIcon = getStatusIcon(order.status);
-            const statusColors = getStatusColor(order.status);
+            const status = getOrderStatus(order.status);
 
             return (
-              <Card
-                key={order.id}
-                style={{ borderRadius: "12px", border: "1px solid #E5E7EB" }}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className="p-3 rounded-full"
-                        style={{ backgroundColor: statusColors.bg }}
-                      >
-                        <StatusIcon
-                          className="h-5 w-5"
-                          style={{ color: statusColors.text }}
-                        />
+              <Card key={order.id} className="rounded-xl border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900">
+                          {getShortOrderId(order.numeroPedido)}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatRelativeTime(order.criadoEm)}
+                        </span>
                       </div>
-                      <div>
-                        <h3
-                          style={{
-                            fontSize: "20px",
-                            fontWeight: "600",
-                            color: "#333333",
-                          }}
-                        >
-                          Pedido #{order.numeroPedido}
-                        </h3>
-                        <p style={{ fontSize: "12px", color: "#666666" }}>
-                          {new Date(order.criadoEm).toLocaleString("pt-BR")}
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center space-x-3">
-                      <Badge
-                        style={{
-                          backgroundColor: statusColors.bg,
-                          color: statusColors.text,
-                          fontSize: "12px",
-                          fontWeight: "500",
-                        }}
-                      >
-                        {order.status.charAt(0).toUpperCase() +
-                          order.status.slice(1)}
-                      </Badge>
-
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedOrder(order)}
-                            style={{ borderRadius: "12px" }}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Detalhes
-                          </Button>
-                        </DialogTrigger>
-
-                        <DialogContent
-                          style={{ borderRadius: "12px", maxWidth: "600px" }}
-                        >
-                          <DialogHeader>
-                            <DialogTitle
-                              style={{ fontSize: "20px", color: "#333333" }}
-                            >
-                              Pedido #{order.id}
-                            </DialogTitle>
-                          </DialogHeader>
-
-                          <div className="space-y-6">
-                            {/* Customer Info */}
-                            <div
-                              className="p-4 rounded-lg"
-                              style={{ backgroundColor: "#F8F9FA" }}
-                            >
-                              <h4
-                                style={{
-                                  fontSize: "16px",
-                                  fontWeight: "600",
-                                  color: "#333333",
-                                  marginBottom: "12px",
-                                }}
-                              >
-                                Dados do Cliente
-                              </h4>
-                              <div className="space-y-2">
-                                <div className="flex items-center">
-                                  <User
-                                    className="h-4 w-4 mr-2"
-                                    style={{ color: "#666666" }}
-                                  />
-                                  <span style={{ fontSize: "14px" }}>
-                                    {order.usuario?.nome || "Cliente"}
-                                  </span>
-                                </div>
-                                <div className="flex items-center">
-                                  <Phone
-                                    className="h-4 w-4 mr-2"
-                                    style={{ color: "#666666" }}
-                                  />
-                                  <span style={{ fontSize: "14px" }}>
-                                    {order.usuario?.email || "N/A"}
-                                  </span>
-                                </div>
-                                <div className="flex items-center">
-                                  <MapPin
-                                    className="h-4 w-4 mr-2"
-                                    style={{ color: "#666666" }}
-                                  />
-                                  <span style={{ fontSize: "14px" }}>
-                                    {order.enderecoEntrega 
-                                      ? `${order.enderecoEntrega.logradouro}, ${order.enderecoEntrega.numero} - ${order.enderecoEntrega.bairro}, ${order.enderecoEntrega.cidade}/${order.enderecoEntrega.uf}`
-                                      : "Endereço não informado"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Order Items */}
-                            <div>
-                              <h4
-                                style={{
-                                  fontSize: "16px",
-                                  fontWeight: "600",
-                                  color: "#333333",
-                                  marginBottom: "12px",
-                                }}
-                              >
-                                Itens do Pedido
-                              </h4>
-                              <div className="space-y-2">
-                                {order.itens?.map((item, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex justify-between items-center p-3 rounded-lg"
-                                    style={{ backgroundColor: "#F8F9FA" }}
-                                  >
-                                    <div>
-                                      <p
-                                        style={{
-                                          fontSize: "14px",
-                                          fontWeight: "500",
-                                        }}
-                                      >
-                                        {item.nomeProduto}
-                                      </p>
-                                      <p
-                                        style={{
-                                          fontSize: "12px",
-                                          color: "#666666",
-                                        }}
-                                      >
-                                        Qtd: {item.quantidade}
-                                      </p>
-                                    </div>
-                                    <p
-                                      style={{
-                                        fontSize: "14px",
-                                        fontWeight: "600",
-                                      }}
-                                    >
-                                      {new Intl.NumberFormat("pt-BR", {
-                                        style: "currency",
-                                        currency: "BRL",
-                                      }).format(item.subtotal)}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                              <div
-                                className="flex justify-between items-center mt-4 p-3 rounded-lg"
-                                style={{ backgroundColor: "#3DBEAB20" }}
-                              >
-                                <p
-                                  style={{
-                                    fontSize: "16px",
-                                    fontWeight: "600",
-                                    color: "#333333",
-                                  }}
-                                >
-                                  Total do Pedido
-                                </p>
-                                <p
-                                  style={{
-                                    fontSize: "20px",
-                                    fontWeight: "700",
-                                    color: "#3DBEAB",
-                                  }}
-                                >
-                                  R$ {order.total.toFixed(2).replace(".", ",")}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Delivery Code Section */}
-                            {order.status === "preparando" && (
-                              <div
-                                className="p-4 rounded-lg"
-                                style={{ backgroundColor: "#E1F5FE" }}
-                              >
-                                <h4
-                                  style={{
-                                    fontSize: "16px",
-                                    fontWeight: "600",
-                                    color: "#333333",
-                                    marginBottom: "12px",
-                                  }}
-                                >
-                                  Marcar como Pronto
-                                </h4>
-                                <Button
-                                  onClick={() => markAsReady(order.id)}
-                                  className="w-full h-12 text-white font-medium"
-                                  style={{
-                                    backgroundColor: "#3DBEAB",
-                                    borderRadius: "12px",
-                                  }}
-                                >
-                                  <CheckCircle className="h-5 w-5 mr-2" />
-                                  Pedido Pronto
-                                </Button>
-                              </div>
-                            )}
-
-                            {order.status === "pronto" && (
-                              <div
-                                className="p-4 rounded-lg"
-                                style={{ backgroundColor: "#F0FDF4" }}
-                              >
-                                <h4
-                                  style={{
-                                    fontSize: "16px",
-                                    fontWeight: "600",
-                                    color: "#333333",
-                                    marginBottom: "12px",
-                                  }}
-                                >
-                                  Código de Retirada
-                                </h4>
-
-                                {order.codigoEntrega ? (
-                                  <div className="space-y-4">
-                                    <div
-                                      className="flex items-center justify-center p-6 rounded-lg"
-                                      style={{ backgroundColor: "#FFFFFF" }}
-                                    >
-                                      <div className="text-center">
-                                        <Hash
-                                          className="h-8 w-8 mx-auto mb-2"
-                                          style={{ color: "#10B981" }}
-                                        />
-                                        <p
-                                          style={{
-                                            fontSize: "32px",
-                                            fontWeight: "700",
-                                            color: "#10B981",
-                                            fontFamily: "monospace",
-                                            letterSpacing: "4px",
-                                          }}
-                                        >
-                                          {order.codigoEntrega}
-                                        </p>
-                                        <p
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#666666",
-                                            marginTop: "8px",
-                                          }}
-                                        >
-                                          Informe este código ao motorista
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                      <p
-                                        style={{
-                                          fontSize: "14px",
-                                          fontWeight: "600",
-                                          color: "#333333",
-                                        }}
-                                      >
-                                        Confirmar Retirada pelo Motorista
-                                      </p>
-                                      <div className="flex space-x-2">
-                                        <Input
-                                          placeholder="Código do motorista (6 dígitos)"
-                                          value={driverCode}
-                                          onChange={(e) =>
-                                            setDriverCode(e.target.value)
-                                          }
-                                          maxLength={6}
-                                          style={{
-                                            borderRadius: "12px",
-                                            fontFamily: "monospace",
-                                            letterSpacing: "2px",
-                                            textAlign: "center",
-                                            fontSize: "18px",
-                                          }}
-                                        />
-                                        <Button
-                                          onClick={() =>
-                                            confirmPickup(order.id, driverCode)
-                                          }
-                                          disabled={driverCode.length !== 6}
-                                          style={{
-                                            backgroundColor: "#2D9CDB",
-                                            borderRadius: "12px",
-                                          }}
-                                        >
-                                          Confirmar
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    onClick={() =>
-                                      generateDeliveryCode(order.id)
-                                    }
-                                    className="w-full h-12 text-white font-medium"
-                                    style={{
-                                      backgroundColor: "#10B981",
-                                      borderRadius: "12px",
-                                    }}
-                                  >
-                                    <Hash className="h-5 w-5 mr-2" />
-                                    Gerar Código de Retirada
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-
-                            {order.status === "entregue" && (
-                              <div
-                                className="p-4 rounded-lg text-center"
-                                style={{ backgroundColor: "#F0F9FF" }}
-                              >
-                                <Truck
-                                  className="h-12 w-12 mx-auto mb-3"
-                                  style={{ color: "#2D9CDB" }}
-                                />
-                                <h4
-                                  style={{
-                                    fontSize: "16px",
-                                    fontWeight: "600",
-                                    color: "#333333",
-                                    marginBottom: "8px",
-                                  }}
-                                >
-                                  Pedido Entregue
-                                </h4>
-                                <p
-                                  style={{ fontSize: "12px", color: "#666666" }}
-                                >
-                                  Código utilizado: {order.codigoEntrega}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#666666",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Cliente
+                      <p className="text-sm text-gray-700 truncate max-w-[760px]">
+                        {summarizeItems(order.itens)}
                       </p>
-                      <p
-                        style={{
-                          fontSize: "16px",
-                          fontWeight: "500",
-                          color: "#333333",
-                        }}
-                      >
-                        {order.usuario?.nome || "Cliente"}
-                      </p>
-                    </div>
 
-                    <div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#666666",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Total
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "20px",
-                          fontWeight: "700",
-                          color: "#3DBEAB",
-                        }}
-                      >
+                      <p className="text-lg font-bold text-[#3DBEAB]">
                         {new Intl.NumberFormat("pt-BR", {
                           style: "currency",
                           currency: "BRL",
@@ -817,25 +336,34 @@ export default function MerchantOrders() {
                       </p>
                     </div>
 
-                    <div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#666666",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Itens
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "16px",
-                          fontWeight: "500",
-                          color: "#333333",
-                        }}
-                      >
-                        {order.itens?.length || 0} produto(s)
-                      </p>
+                    <div className="flex items-center gap-2 flex-wrap md:justify-end">
+                      {status === "CONFIRMADO" && (
+                        <Button className="rounded-xl" onClick={() => startPreparingOrder(order.id)}>
+                          Iniciar Preparo
+                        </Button>
+                      )}
+
+                      {status === "PREPARANDO" && (
+                        <Button className="rounded-xl" onClick={() => markAsReady(order.id)}>
+                          Marcar como Pronto
+                        </Button>
+                      )}
+
+                      {status === "PRONTO" && (
+                        <Badge className="bg-amber-100 text-amber-800 border border-amber-200">
+                          Aguardando Motorista
+                        </Badge>
+                      )}
+
+                      {status === "EM_TRANSITO" && (
+                        <Badge className="bg-blue-100 text-blue-800 border border-blue-200">
+                          Em Entrega
+                        </Badge>
+                      )}
+
+                      {!(["CONFIRMADO", "PREPARANDO", "PRONTO", "EM_TRANSITO"].includes(status)) && (
+                        <Badge variant="secondary">{statusLabel(status)}</Badge>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -846,23 +374,9 @@ export default function MerchantOrders() {
 
         {filteredOrders.length === 0 && (
           <div className="text-center py-12">
-            <Package
-              className="h-16 w-16 mx-auto mb-4"
-              style={{ color: "#E5E7EB" }}
-            />
-            <h3
-              style={{
-                fontSize: "20px",
-                fontWeight: "600",
-                color: "#333333",
-                marginBottom: "8px",
-              }}
-            >
-              Nenhum pedido encontrado
-            </h3>
-            <p style={{ fontSize: "16px", color: "#666666" }}>
-              Não há pedidos que correspondam aos filtros selecionados.
-            </p>
+            <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Nenhum pedido encontrado</h3>
+            <p className="text-gray-600">Não há pedidos para os filtros selecionados.</p>
           </div>
         )}
       </div>
