@@ -15,6 +15,13 @@ import { MerchantLayout } from "@/components/MerchantLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { api } from "@/lib/Api";
 import { useNotification } from "@/contexts/NotificationContext";
 
@@ -122,6 +129,12 @@ export default function MerchantOrderDetails() {
 
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [showPreparationDialog, setShowPreparationDialog] = useState(false);
+  const [prepCheckedItems, setPrepCheckedItems] = useState<Record<string, boolean>>({});
+  const [prepStartedAt, setPrepStartedAt] = useState<number | null>(null);
+  const [prepElapsedSeconds, setPrepElapsedSeconds] = useState(0);
+  const [deliveryCode, setDeliveryCode] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
 
   const loadOrder = useCallback(async () => {
     if (!orderId) return;
@@ -143,6 +156,16 @@ export default function MerchantOrderDetails() {
     loadOrder();
   }, [loadOrder]);
 
+  useEffect(() => {
+    if (!showPreparationDialog || prepStartedAt === null) return;
+
+    const intervalId = window.setInterval(() => {
+      setPrepElapsedSeconds(Math.floor((Date.now() - prepStartedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [showPreparationDialog, prepStartedAt]);
+
   const status = (order?.status || "PENDENTE").toUpperCase();
   const statusInfo = statusConfig[status] || {
     label: status,
@@ -154,7 +177,7 @@ export default function MerchantOrderDetails() {
     [order],
   );
 
-  const executeStatusAction = async (action: "confirmar" | "preparando" | "pronto") => {
+  const executeStatusAction = async (action: "confirmar" | "preparando" | "pronto" | "em-transito") => {
     if (!order) return;
     try {
       await api.patch(`/v1/pedidos/${order.id}/${action}`);
@@ -164,6 +187,130 @@ export default function MerchantOrderDetails() {
       notifyError(
         "Erro",
         error.response?.data?.message || "Não foi possível atualizar o status do pedido",
+      );
+    }
+  };
+
+  const getItemName = (item: OrderItem) => item.produtoNome || "Item sem nome";
+
+  const getPrepItemKey = (item: OrderItem, index: number) => item.id || `${getItemName(item)}-${index}`;
+
+  const formatPrepDuration = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hours > 0) {
+      return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
+  const openPreparationMode = async () => {
+    if (!order) return;
+
+    if (status === "CONFIRMADO") {
+      try {
+        await api.patch(`/v1/pedidos/${order.id}/preparando`);
+      } catch (error: any) {
+        notifyError(
+          "Erro",
+          error.response?.data?.message || "Não foi possível iniciar o preparo",
+        );
+        return;
+      }
+    }
+
+    const initialChecked: Record<string, boolean> = {};
+    (order.itens || []).forEach((item, index) => {
+      initialChecked[getPrepItemKey(item, index)] = false;
+    });
+
+    setPrepCheckedItems(initialChecked);
+    setPrepStartedAt(Date.now());
+    setPrepElapsedSeconds(0);
+    setShowPreparationDialog(true);
+    await loadOrder();
+  };
+
+  const finalizePreparation = async () => {
+    if (!order) return;
+    try {
+      await api.patch(`/v1/pedidos/${order.id}/pronto`);
+      success("Preparo finalizado", `Tempo total: ${formatPrepDuration(prepElapsedSeconds)}`);
+      setShowPreparationDialog(false);
+      await loadOrder();
+    } catch (error: any) {
+      notifyError(
+        "Erro",
+        error.response?.data?.message || "Não foi possível finalizar o preparo",
+      );
+    }
+  };
+
+  const togglePrepItem = (itemKey: string) => {
+    setPrepCheckedItems((current) => ({ ...current, [itemKey]: !current[itemKey] }));
+  };
+
+  const printPreparationTicket = () => {
+    if (!order) return;
+
+    const lines = (order.itens || [])
+      .map((item, index) => {
+        const key = getPrepItemKey(item, index);
+        const checked = prepCheckedItems[key] ? "✅" : "☐";
+        return `${checked} ${item.quantidade}x ${getItemName(item)}`;
+      })
+      .join("\n");
+
+    const printWindow = window.open("", "_blank", "width=640,height=800");
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head><title>Comanda ${order.numeroPedido}</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 24px;">
+          <h2>Comanda de Preparo - Pedido #${order.numeroPedido}</h2>
+          <p><strong>Cliente:</strong> ${order.usuarioNome || "Cliente"}</p>
+          <p><strong>Tempo de preparo:</strong> ${formatPrepDuration(prepElapsedSeconds)}</p>
+          <pre style="font-size: 14px; line-height: 1.5; white-space: pre-wrap;">${lines}</pre>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const markAsDelivered = async () => {
+    if (!order || !deliveryCode.trim()) return;
+
+    try {
+      await api.patch(`/v1/pedidos/${order.id}/entregar?codigoEntrega=${encodeURIComponent(deliveryCode.trim())}`);
+      success("Pedido entregue", "Pedido marcado como entregue com sucesso.");
+      setDeliveryCode("");
+      await loadOrder();
+    } catch (error: any) {
+      notifyError(
+        "Erro",
+        error.response?.data?.message || "Não foi possível marcar como entregue",
+      );
+    }
+  };
+
+  const cancelOrder = async () => {
+    if (!order) return;
+
+    try {
+      const motivo = cancelReason.trim();
+      const query = motivo ? `?motivo=${encodeURIComponent(motivo)}` : "";
+      await api.patch(`/v1/pedidos/${order.id}/cancelar${query}`);
+      success("Pedido cancelado", "Pedido cancelado com sucesso.");
+      setCancelReason("");
+      await loadOrder();
+    } catch (error: any) {
+      notifyError(
+        "Erro",
+        error.response?.data?.message || "Não foi possível cancelar o pedido",
       );
     }
   };
@@ -369,22 +516,137 @@ export default function MerchantOrderDetails() {
                   </Button>
                 )}
                 {status === "CONFIRMADO" && (
-                  <Button className="w-full rounded-xl" onClick={() => executeStatusAction("preparando")}>
-                    Iniciar Preparo
+                  <Button className="w-full rounded-xl" onClick={openPreparationMode}>
+                    Iniciar Preparo (Modo Preparo)
                   </Button>
                 )}
                 {status === "PREPARANDO" && (
-                  <Button className="w-full rounded-xl" onClick={() => executeStatusAction("pronto")}>
-                    Marcar como Pronto
+                  <Button className="w-full rounded-xl" onClick={openPreparationMode}>
+                    Abrir Modo Preparo
                   </Button>
                 )}
-                {!["PENDENTE", "CONFIRMADO", "PREPARANDO"].includes(status) && (
+                {status === "PRONTO" && (
+                  <Button className="w-full rounded-xl" onClick={() => executeStatusAction("em-transito")}>
+                    Marcar como Em Trânsito
+                  </Button>
+                )}
+                {status === "EM_TRANSITO" && (
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Código de entrega"
+                      value={deliveryCode}
+                      onChange={(event) => setDeliveryCode(event.target.value)}
+                      className="rounded-xl"
+                    />
+                    <Button
+                      className="w-full rounded-xl"
+                      onClick={markAsDelivered}
+                      disabled={!deliveryCode.trim()}
+                    >
+                      Marcar como Entregue
+                    </Button>
+                  </div>
+                )}
+
+                {!["ENTREGUE", "CANCELADO"].includes(status) && (
+                  <div className="pt-3 border-t space-y-2">
+                    <Input
+                      placeholder="Motivo do cancelamento (opcional)"
+                      value={cancelReason}
+                      onChange={(event) => setCancelReason(event.target.value)}
+                      className="rounded-xl"
+                    />
+                    <Button variant="outline" className="w-full rounded-xl" onClick={cancelOrder}>
+                      Cancelar Pedido
+                    </Button>
+                  </div>
+                )}
+
+                {["ENTREGUE", "CANCELADO"].includes(status) && (
                   <p className="text-sm text-gray-600">Sem ações disponíveis para este status.</p>
                 )}
               </CardContent>
             </Card>
           </div>
         </div>
+
+        <Dialog open={showPreparationDialog} onOpenChange={setShowPreparationDialog}>
+          <DialogContent className="max-w-2xl rounded-xl">
+            <DialogHeader>
+              <DialogTitle>Modo Preparo - Pedido #{order.numeroPedido}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm bg-[#F8F9FA] rounded-lg px-3 py-2">
+                <span className="text-gray-600">
+                  Cliente: <strong className="text-gray-900">{order.usuarioNome || "Cliente"}</strong>
+                </span>
+                <span className="text-gray-600">
+                  Tempo de preparo: <strong className="text-[#3DBEAB]">{formatPrepDuration(prepElapsedSeconds)}</strong>
+                </span>
+              </div>
+
+              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                {(order.itens || []).map((item, index) => {
+                  const key = getPrepItemKey(item, index);
+                  const checked = !!prepCheckedItems[key];
+                  return (
+                    <label
+                      key={key}
+                      className="flex items-start justify-between gap-3 border border-gray-200 rounded-lg px-3 py-2 cursor-pointer"
+                    >
+                      <div className="flex items-start gap-2">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => togglePrepItem(key)}
+                          className="mt-1"
+                        />
+                        <p className="text-sm font-medium text-gray-900">
+                          {item.quantidade}x {getItemName(item)}
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">
+                        {formatCurrency(item.subtotal)}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between text-sm border-t pt-3">
+                <span className="text-gray-600">
+                  Progresso: {Object.values(prepCheckedItems).filter(Boolean).length}/{(order.itens || []).length} itens
+                </span>
+                <span className="font-semibold text-gray-900">
+                  {(() => {
+                    const total = (order.itens || []).length;
+                    if (total === 0) return "0%";
+                    const checked = Object.values(prepCheckedItems).filter(Boolean).length;
+                    return `${Math.round((checked / total) * 100)}%`;
+                  })()}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 justify-end">
+                <Button variant="outline" className="rounded-xl" onClick={printPreparationTicket}>
+                  Imprimir Comanda
+                </Button>
+                <Button
+                  className="rounded-xl"
+                  onClick={finalizePreparation}
+                  disabled={
+                    (order.itens || []).length === 0 ||
+                    Object.values(prepCheckedItems).filter(Boolean).length !==
+                      (order.itens || []).length
+                  }
+                >
+                  Finalizar Preparo
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </MerchantLayout>
   );
