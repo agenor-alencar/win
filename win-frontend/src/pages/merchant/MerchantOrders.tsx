@@ -30,7 +30,8 @@ interface Order {
   total: number;
   itens: Array<{
     id: string;
-    nomeProduto: string;
+    produtoNome?: string;
+    nomeProduto?: string;
     quantidade: number;
     subtotal: number;
   }>;
@@ -208,9 +209,12 @@ export default function MerchantOrders() {
   const summarizeItems = (items: Order["itens"]) => {
     if (!items || items.length === 0) return "Sem itens";
 
+    const getItemName = (item: Order["itens"][number]) =>
+      item.produtoNome || item.nomeProduto || "Item sem nome";
+
     const base = items
       .slice(0, 2)
-      .map((item) => `${item.quantidade}x ${item.nomeProduto}`)
+      .map((item) => `${item.quantidade}x ${getItemName(item)}`)
       .join(", ");
 
     if (items.length > 2) {
@@ -402,7 +406,9 @@ export default function MerchantOrders() {
                                   className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2"
                                 >
                                   <div>
-                                    <p className="font-medium text-gray-900">{item.nomeProduto}</p>
+                                    <p className="font-medium text-gray-900">
+                                      {item.produtoNome || item.nomeProduto || "Item sem nome"}
+                                    </p>
                                     <p className="text-xs text-gray-500">Quantidade: {item.quantidade}</p>
                                   </div>
                                   <p className="text-sm font-semibold text-gray-800">
