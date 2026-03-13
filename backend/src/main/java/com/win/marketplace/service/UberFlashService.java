@@ -667,8 +667,14 @@ public class UberFlashService {
             // Detalhes da entrega (manifest)
             Map<String, Object> manifest = new HashMap<>();
             manifest.put("reference", request.getPedidoId().toString()); // ID do pedido
-            manifest.put("description", "Pedido Win Marketplace #" + 
-                    request.getPedidoId().toString().substring(0, 8));
+            String descricaoManifesto = "Pedido Win Marketplace #" +
+                    request.getPedidoId().toString().substring(0, 8);
+
+            if (request.getObservacoes() != null && !request.getObservacoes().isBlank()) {
+                descricaoManifesto = descricaoManifesto + " | " + request.getObservacoes();
+            }
+
+            manifest.put("description", descricaoManifesto);
             
             // Adicionar valor total do pedido (em centavos)
             if (request.getValorTotalPedido() != null) {

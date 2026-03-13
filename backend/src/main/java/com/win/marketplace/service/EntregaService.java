@@ -109,10 +109,12 @@ public class EntregaService {
                 .enderecoOrigemCompleto(formatarEnderecoLojista(lojista))
                 .nomeLojista(lojista.getNomeFantasia())
                 .telefoneLojista(lojista.getTelefone())
+                .instrucoesRetirada(montarInstrucoesRetirada(pedido))
                 .enderecoDestinoCompleto(entrega.getEnderecoEntrega())
                 .nomeCliente(entrega.getClienteNome())
                 .telefoneCliente(entrega.getClienteTelefone())
                 .valorCorridaUber(entrega.getValorCorridaUber())
+                .observacoes("Código de retirada do pedido: " + pedido.getCodigoEntrega())
                 // Lat/Long se disponíveis
                 .origemLatitude(entrega.getOrigemLatitude())
                 .origemLongitude(entrega.getOrigemLongitude())
@@ -144,6 +146,14 @@ public class EntregaService {
         }
 
         return response;
+    }
+
+    private String montarInstrucoesRetirada(Pedido pedido) {
+        if (pedido.getCodigoEntrega() == null || pedido.getCodigoEntrega().isBlank()) {
+            return "Coleta no balcão da loja.";
+        }
+
+        return "Coleta no balcão da loja. Código de retirada: " + pedido.getCodigoEntrega();
     }
 
     /**

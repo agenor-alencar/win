@@ -35,6 +35,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     List<Pedido> findByStatus(Pedido.StatusPedido status);
     
     Optional<Pedido> findByNumeroPedido(String numeroPedido);
+
+       boolean existsByCodigoEntrega(String codigoEntrega);
     
     @Query("SELECT p FROM Pedido p WHERE p.usuario.id = :usuarioId AND p.status = :status")
     List<Pedido> findByUsuarioIdAndStatus(@Param("usuarioId") UUID usuarioId, @Param("status") Pedido.StatusPedido status);

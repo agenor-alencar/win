@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 
 @Slf4j
@@ -27,6 +28,7 @@ public class PedidoStatusService {
     private final PedidoStatusHistoricoRepository historicoRepository;
     private final NotificacaoService notificacaoService;
     private final UsuarioRepository usuarioRepository;
+    private final EntregaService entregaService;
 
     public Pedido transicionarStatus(UUID pedidoId, Pedido.StatusPedido novoStatus) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
@@ -50,6 +52,17 @@ public class PedidoStatusService {
         } catch (Exception exception) {
             log.error(
                     "Falha ao registrar histórico de status do pedido {}: {}",
+                    pedidoAtualizado.getNumeroPedido(),
+                    exception.getMessage(),
+                    exception
+            );
+        }
+
+        try {
+            solicitarUberAutomaticamenteQuandoPronto(pedidoAtualizado, novoStatus);
+        } catch (Exception exception) {
+            log.error(
+                    "Falha ao solicitar Uber automaticamente para pedido {}: {}",
                     pedidoAtualizado.getNumeroPedido(),
                     exception.getMessage(),
                     exception
@@ -103,7 +116,11 @@ public class PedidoStatusService {
         }
 
         if (atual == Pedido.StatusPedido.PRONTO && novoStatus == Pedido.StatusPedido.EM_TRANSITO) {
-            if (pedido.getMotorista() == null) {
+            boolean entregaUberSolicitada = pedido.getEntrega() != null
+                    && pedido.getEntrega().getIdCorridaUber() != null
+                    && !pedido.getEntrega().getIdCorridaUber().isBlank();
+
+            if (pedido.getMotorista() == null && !entregaUberSolicitada) {
                 throw new BusinessException("É necessário atribuir um motorista antes de iniciar trânsito");
             }
         }
@@ -124,9 +141,25 @@ public class PedidoStatusService {
             pedido.setConfirmadoEm(OffsetDateTime.now());
         }
 
+        if (novoStatus == Pedido.StatusPedido.PRONTO
+                && (pedido.getCodigoEntrega() == null || pedido.getCodigoEntrega().isBlank())) {
+            pedido.setCodigoEntrega(gerarCodigoEntrega4DigitosUnico());
+        }
+
         if (novoStatus == Pedido.StatusPedido.ENTREGUE) {
             pedido.setEntregueEm(OffsetDateTime.now());
         }
+    }
+
+    private String gerarCodigoEntrega4DigitosUnico() {
+        for (int tentativa = 0; tentativa < 100; tentativa++) {
+            String codigo = String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
+            if (!pedidoRepository.existsByCodigoEntrega(codigo)) {
+                return codigo;
+            }
+        }
+
+        throw new BusinessException("Não foi possível gerar código de retirada único no momento");
     }
 
     private void registrarHistorico(Pedido pedido, Pedido.StatusPedido statusAnterior, Pedido.StatusPedido statusNovo) {
@@ -141,7 +174,10 @@ public class PedidoStatusService {
 
     private void enviarNotificacoes(Pedido pedido, Pedido.StatusPedido statusAnterior, Pedido.StatusPedido statusNovo) {
         String titulo = "Atualização do seu pedido #" + pedido.getNumeroPedido();
-        String mensagemCliente = "Status alterado de " + statusAnterior + " para " + statusNovo + ".";
+        String mensagemCliente = switch (statusNovo) {
+            case PRONTO -> "Seu pedido está pronto e AGUARDANDO MOTORISTA para retirada.";
+            default -> "Status alterado de " + statusAnterior + " para " + statusNovo + ".";
+        };
 
         notificacaoService.enviarNotificacaoPedido(
                 pedido.getUsuario().getId(),
@@ -157,5 +193,14 @@ public class PedidoStatusService {
                     "Pedido " + pedido.getNumeroPedido() + " mudou de " + statusAnterior + " para " + statusNovo + "."
             );
         }
+    }
+
+    private void solicitarUberAutomaticamenteQuandoPronto(Pedido pedido, Pedido.StatusPedido statusNovo) {
+        if (statusNovo != Pedido.StatusPedido.PRONTO) {
+            return;
+        }
+
+        entregaService.solicitarEntrega(pedido.getId());
+        log.info("Solicitação automática da Uber iniciada para pedido {}", pedido.getNumeroPedido());
     }
 }
