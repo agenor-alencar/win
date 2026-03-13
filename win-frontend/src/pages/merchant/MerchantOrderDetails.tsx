@@ -471,7 +471,6 @@ export default function MerchantOrderDetails() {
               </CardHeader>
               <CardContent className="text-sm text-gray-700 space-y-2">
                 <p className="font-semibold text-gray-900">{order.usuarioNome || "Cliente não identificado"}</p>
-                <p>ID: {order.usuarioId || "-"}</p>
               </CardContent>
             </Card>
 
@@ -482,12 +481,56 @@ export default function MerchantOrderDetails() {
                   Pagamento
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-sm text-gray-700 space-y-2">
-                <p>Método: {order.pagamento?.metodoPagamento || "-"}</p>
-                <p>Status: {order.pagamento?.status || "-"}</p>
-                {order.pagamento?.parcelas && <p>Parcelas: {order.pagamento.parcelas}x</p>}
-                {order.pagamento?.transacaoId && <p>Transação: {order.pagamento.transacaoId}</p>}
-                {order.codigoEntrega && <p>Código de entrega: {order.codigoEntrega}</p>}
+              <CardContent className="text-sm text-gray-700 space-y-3">
+                {order.pagamento?.metodoPagamento ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Método</span>
+                    <span className="font-medium text-gray-900">{order.pagamento.metodoPagamento}</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Método</span>
+                    <span className="text-gray-400">—</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Status</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    order.pagamento?.status === "APROVADO" || order.pagamento?.status === "approved"
+                      ? "bg-green-100 text-green-700"
+                      : order.pagamento?.status === "RECUSADO" || order.pagamento?.status === "refused"
+                      ? "bg-red-100 text-red-700"
+                      : order.pagamento?.status === "PROCESSANDO" || order.pagamento?.status === "processing"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-gray-100 text-gray-500"
+                  }`}>
+                    {order.pagamento?.status || "—"}
+                  </span>
+                </div>
+                {order.pagamento?.parcelas && order.pagamento.parcelas > 1 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Parcelas</span>
+                    <span className="font-medium text-gray-900">{order.pagamento.parcelas}x</span>
+                  </div>
+                )}
+                {order.pagamento?.valor != null && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Valor pago</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(order.pagamento.valor)}</span>
+                  </div>
+                )}
+                {order.pagamento?.transacaoId && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Transação</span>
+                    <span className="font-mono text-xs text-gray-700 truncate max-w-[160px]" title={order.pagamento.transacaoId}>{order.pagamento.transacaoId}</span>
+                  </div>
+                )}
+                {order.codigoEntrega && (
+                  <div className="flex justify-between items-center border-t pt-2 mt-1">
+                    <span className="text-gray-500">Código de retirada</span>
+                    <span className="font-mono font-bold text-lg text-[#3DBEAB] tracking-widest">{order.codigoEntrega}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
