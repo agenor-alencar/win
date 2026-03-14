@@ -51,6 +51,16 @@ interface Product {
   ativo: boolean;
 }
 
+interface TopProduct {
+  id: string;
+  nome: string;
+  estoque: number;
+  preco: number;
+  ativo: boolean;
+  quantidadeVendida: number;
+  receita: number;
+}
+
 interface Order {
   id: string;
   numeroPedido: string;
@@ -62,8 +72,11 @@ interface Order {
   statusPagamento?: string;
   criadoEm: string;
   itens: Array<{
-    nomeProduto: string;
+    produtoId?: string;
+    produtoNome?: string;
+    nomeProduto?: string;
     quantidade: number;
+    subtotal?: number;
   }>;
 }
 
@@ -300,6 +313,11 @@ const MerchantDashboard: React.FC = () => {
     },
   ];
 
+  const paidOrders = React.useMemo(
+    () => orders.filter((order) => order.statusPagamento === "APROVADO"),
+    [orders]
+  );
+
   // Dados para o gráfico de vendas (últimos 7 dias - calculado com dados reais)
   const salesData = React.useMemo(() => {
     const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -310,7 +328,7 @@ const MerchantDashboard: React.FC = () => {
       const diaSemana = dias[data.getDay()];
       
       // Filtrar pedidos do dia
-      const pedidosDoDia = orders.filter(order => {
+      const pedidosDoDia = paidOrders.filter(order => {
         const dataPedido = new Date(order.criadoEm);
         return dataPedido.toDateString() === data.toDateString();
       });
@@ -326,13 +344,57 @@ const MerchantDashboard: React.FC = () => {
     });
 
     return dadosPorDia;
-  }, [orders]);
+  }, [paidOrders]);
 
-  // Top 5 produtos mais vendidos
-  const topProducts = products
-    .filter((p) => p.ativo)
-    .sort((a, b) => b.preco * (10 - Math.min(b.estoque, 10)) - a.preco * (10 - Math.min(a.estoque, 10)))
-    .slice(0, 5);
+  // Top 5 produtos mais vendidos com base em pedidos pagos
+  const topProducts = React.useMemo<TopProduct[]>(() => {
+    const productsMap = new Map(products.map((product) => [product.id, product]));
+    const salesMap = new Map<string, TopProduct>();
+
+    paidOrders.forEach((order) => {
+      order.itens?.forEach((item) => {
+        const produtoId = item.produtoId;
+        if (!produtoId) {
+          return;
+        }
+
+        const product = productsMap.get(produtoId);
+        if (!product) {
+          return;
+        }
+
+        const vendaAtual = salesMap.get(produtoId);
+        const quantidade = item.quantidade || 0;
+        const receitaItem = item.subtotal ?? product.preco * quantidade;
+
+        if (vendaAtual) {
+          vendaAtual.quantidadeVendida += quantidade;
+          vendaAtual.receita += receitaItem;
+          return;
+        }
+
+        salesMap.set(produtoId, {
+          id: product.id,
+          nome: product.nome,
+          estoque: product.estoque,
+          preco: product.preco,
+          ativo: product.ativo,
+          quantidadeVendida: quantidade,
+          receita: receitaItem,
+        });
+      });
+    });
+
+    return Array.from(salesMap.values())
+      .sort((a, b) => {
+        if (b.quantidadeVendida !== a.quantidadeVendida) {
+          return b.quantidadeVendida - a.quantidadeVendida;
+        }
+
+        return b.receita - a.receita;
+      })
+      .slice(0, 5);
+  }, [paidOrders, products]);
 
   // Produtos com estoque baixo
   const lowStockProducts = products
@@ -571,9 +633,11 @@ const MerchantDashboard: React.FC = () => {
                           {product.nome}
                         </h4>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>Estoque: {product.estoque}</span>
+                          <span>Vendidos: {product.quantidadeVendida}</span>
                           <span>•</span>
-                          <span>{formatCurrency(product.preco)}</span>
+                          <span>Receita: {formatCurrency(product.receita)}</span>
+                          <span>•</span>
+                          <span>Estoque: {product.estoque}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -634,7 +698,7 @@ const MerchantDashboard: React.FC = () => {
                         </p>
                         <p className="text-sm text-gray-500">
                           {order.itens && order.itens.length > 0
-                            ? order.itens[0].nomeProduto + (order.itens.length > 1 ? ` +${order.itens.length - 1}` : "")
+                            ? (order.itens[0].produtoNome || order.itens[0].nomeProduto || "Produto") + (order.itens.length > 1 ? ` +${order.itens.length - 1}` : "")
                             : "Produtos"}
                         </p>
                       </div>
