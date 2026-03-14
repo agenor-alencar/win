@@ -201,21 +201,42 @@ public class LojistaService {
         LocalDateTime inicioOntem = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.MIN);
         LocalDateTime fimOntem = LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.MAX);
         
-        // Buscar vendas de hoje
-        Long vendasHoje = pedidoRepository.countByLojistaIdAndCriadoEmBetween(lojistaId, inicioHoje, fimHoje);
-        
-        // Buscar vendas de ontem
-        Long vendasOntem = pedidoRepository.countByLojistaIdAndCriadoEmBetween(lojistaId, inicioOntem, fimOntem);
-        
-        // Buscar receita de hoje
-        BigDecimal receitaHoje = pedidoRepository.sumTotalByLojistaIdAndCriadoEmBetween(lojistaId, inicioHoje, fimHoje);
-        
-        // Buscar receita de ontem
-        BigDecimal receitaOntem = pedidoRepository.sumTotalByLojistaIdAndCriadoEmBetween(lojistaId, inicioOntem, fimOntem);
-        
-        // Buscar pedidos pendentes (PENDENTE + PREPARANDO)
-        Long pedidosPendentes = pedidoRepository.countByLojistaIdAndStatusIn(
-            lojistaId, 
+        // Buscar vendas de hoje (apenas pagamento aprovado)
+        Long vendasHoje = pedidoRepository.countByLojistaIdAndStatusPagamentoAndCriadoEmBetween(
+            lojistaId,
+            Pedido.StatusPagamento.APROVADO,
+            inicioHoje,
+            fimHoje
+        );
+
+        // Buscar vendas de ontem (apenas pagamento aprovado)
+        Long vendasOntem = pedidoRepository.countByLojistaIdAndStatusPagamentoAndCriadoEmBetween(
+            lojistaId,
+            Pedido.StatusPagamento.APROVADO,
+            inicioOntem,
+            fimOntem
+        );
+
+        // Buscar receita de hoje (apenas pagamento aprovado)
+        BigDecimal receitaHoje = pedidoRepository.sumTotalByLojistaIdAndStatusPagamentoAndCriadoEmBetween(
+            lojistaId,
+            Pedido.StatusPagamento.APROVADO,
+            inicioHoje,
+            fimHoje
+        );
+
+        // Buscar receita de ontem (apenas pagamento aprovado)
+        BigDecimal receitaOntem = pedidoRepository.sumTotalByLojistaIdAndStatusPagamentoAndCriadoEmBetween(
+            lojistaId,
+            Pedido.StatusPagamento.APROVADO,
+            inicioOntem,
+            fimOntem
+        );
+
+        // Buscar pedidos pendentes pagos (PENDENTE + PREPARANDO)
+        Long pedidosPendentes = pedidoRepository.countByLojistaIdAndStatusPagamentoAndStatusIn(
+            lojistaId,
+            Pedido.StatusPagamento.APROVADO,
             List.of(Pedido.StatusPedido.PENDENTE, Pedido.StatusPedido.PREPARANDO)
         );
         

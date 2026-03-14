@@ -59,6 +59,7 @@ interface Order {
   };
   total: number;
   status: string;
+  statusPagamento?: string;
   criadoEm: string;
   itens: Array<{
     nomeProduto: string;
@@ -103,19 +104,20 @@ const calcularVariacaoPercentual = (valorAtual: number, valorAnterior: number): 
 };
 
 const gerarEstatisticasFallback = (orders: Order[], products: Product[]): LojistaEstatisticas => {
+  const pedidosPagos = orders.filter((order) => order.statusPagamento === "APROVADO");
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
   const inicioOntem = new Date(hoje);
   inicioOntem.setDate(inicioOntem.getDate() - 1);
 
-  const pedidosHoje = orders.filter((order) => {
+  const pedidosHoje = pedidosPagos.filter((order) => {
     const dataPedido = new Date(order.criadoEm);
     dataPedido.setHours(0, 0, 0, 0);
     return dataPedido.getTime() === hoje.getTime();
   });
 
-  const pedidosOntem = orders.filter((order) => {
+  const pedidosOntem = pedidosPagos.filter((order) => {
     const dataPedido = new Date(order.criadoEm);
     dataPedido.setHours(0, 0, 0, 0);
     return dataPedido.getTime() === inicioOntem.getTime();
@@ -131,7 +133,7 @@ const gerarEstatisticasFallback = (orders: Order[], products: Product[]): Lojist
     vendasOntem: pedidosOntem.length,
     receitaHoje,
     receitaOntem,
-    totalPedidosPendentes: orders.filter((order) => ["PENDENTE", "PREPARANDO"].includes(order.status)).length,
+    totalPedidosPendentes: pedidosPagos.filter((order) => ["PENDENTE", "PREPARANDO"].includes(order.status)).length,
     totalProdutosAtivos,
     totalProdutosInativos,
     percentualVariacaoVendas: calcularVariacaoPercentual(pedidosHoje.length, pedidosOntem.length),
@@ -188,14 +190,15 @@ const MerchantDashboard: React.FC = () => {
       // 5. Calcular estatísticas complementares
       const activeProducts = productsData.filter((p) => p.ativo).length;
       const lowStockProducts = productsData.filter((p) => p.estoque < 10 && p.ativo).length;
-      const totalRevenue = ordersData.reduce((sum, order) => sum + order.total, 0);
-      const averageTicket = ordersData.length > 0 ? totalRevenue / ordersData.length : 0;
+      const pedidosPagos = ordersData.filter((order) => order.statusPagamento === "APROVADO");
+      const totalRevenue = pedidosPagos.reduce((sum, order) => sum + order.total, 0);
+      const averageTicket = pedidosPagos.length > 0 ? totalRevenue / pedidosPagos.length : 0;
 
       setStats({
         totalProducts: productsData.length,
         activeProducts,
         lowStockProducts,
-        totalOrders: ordersData.length,
+        totalOrders: pedidosPagos.length,
         totalRevenue,
         averageTicket,
       });
@@ -221,14 +224,15 @@ const MerchantDashboard: React.FC = () => {
 
           const activeProducts = productsData.filter((p) => p.ativo).length;
           const lowStockProducts = productsData.filter((p) => p.estoque < 10 && p.ativo).length;
-          const totalRevenue = ordersData.reduce((sum, order) => sum + order.total, 0);
-          const averageTicket = ordersData.length > 0 ? totalRevenue / ordersData.length : 0;
+          const pedidosPagos = ordersData.filter((order) => order.statusPagamento === "APROVADO");
+          const totalRevenue = pedidosPagos.reduce((sum, order) => sum + order.total, 0);
+          const averageTicket = pedidosPagos.length > 0 ? totalRevenue / pedidosPagos.length : 0;
 
           setStats({
             totalProducts: productsData.length,
             activeProducts,
             lowStockProducts,
-            totalOrders: ordersData.length,
+            totalOrders: pedidosPagos.length,
             totalRevenue,
             averageTicket,
           });

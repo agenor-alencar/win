@@ -94,12 +94,32 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     // Queries para estatísticas do dashboard
     @Query("SELECT COUNT(DISTINCT p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.criadoEm BETWEEN :start AND :end")
     Long countByLojistaIdAndCriadoEmBetween(@Param("lojistaId") UUID lojistaId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("SELECT COUNT(DISTINCT p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.statusPagamento = :statusPagamento AND p.criadoEm BETWEEN :start AND :end")
+    Long countByLojistaIdAndStatusPagamentoAndCriadoEmBetween(
+           @Param("lojistaId") UUID lojistaId,
+           @Param("statusPagamento") Pedido.StatusPagamento statusPagamento,
+           @Param("start") LocalDateTime start,
+           @Param("end") LocalDateTime end);
     
     @Query("SELECT COALESCE(SUM(p.total), 0) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.criadoEm BETWEEN :start AND :end")
     BigDecimal sumTotalByLojistaIdAndCriadoEmBetween(@Param("lojistaId") UUID lojistaId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(p.total), 0) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.statusPagamento = :statusPagamento AND p.criadoEm BETWEEN :start AND :end")
+    BigDecimal sumTotalByLojistaIdAndStatusPagamentoAndCriadoEmBetween(
+           @Param("lojistaId") UUID lojistaId,
+           @Param("statusPagamento") Pedido.StatusPagamento statusPagamento,
+           @Param("start") LocalDateTime start,
+           @Param("end") LocalDateTime end);
     
     @Query("SELECT COUNT(DISTINCT p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.status IN :statuses")
     Long countByLojistaIdAndStatusIn(@Param("lojistaId") UUID lojistaId, @Param("statuses") List<Pedido.StatusPedido> statuses);
+
+    @Query("SELECT COUNT(DISTINCT p) FROM Pedido p JOIN p.itens i WHERE i.lojista.id = :lojistaId AND p.statusPagamento = :statusPagamento AND p.status IN :statuses")
+    Long countByLojistaIdAndStatusPagamentoAndStatusIn(
+           @Param("lojistaId") UUID lojistaId,
+           @Param("statusPagamento") Pedido.StatusPagamento statusPagamento,
+           @Param("statuses") List<Pedido.StatusPedido> statuses);
     
     // ========================================
     // QUERIES OTIMIZADAS PARA DASHBOARD ADMIN

@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MerchantSidebar } from "./MerchantSidebar";
 import { Bell, Search } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { api } from "@/lib/Api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,8 +17,37 @@ interface MerchantLayoutProps {
   children: React.ReactNode;
 }
 
+interface LayoutLojista {
+  id: string;
+}
+
+interface LayoutStats {
+  receitaHoje: number;
+  totalPedidosPendentes: number;
+}
+
 export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [stats, setStats] = useState<LayoutStats | null>(null);
+
+  useEffect(() => {
+    const carregarResumo = async () => {
+      try {
+        const { data: lojista } = await api.get<LayoutLojista>("/v1/lojistas/me");
+        const { data } = await api.get<LayoutStats>(`/v1/lojistas/${lojista.id}/estatisticas`);
+        setStats(data);
+      } catch (error) {
+        console.warn("Não foi possível carregar resumo do cabeçalho do lojista", error);
+      }
+    };
+
+    carregarResumo();
+  }, []);
+
+  const receitaHojeFormatada = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(stats?.receitaHoje || 0);
 
   return (
     <div className="min-h-screen bg-[#F7F9FA]">
@@ -53,14 +83,16 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
                   <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-5 w-5 text-gray-500" />
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
-                      3
+                      {stats?.totalPedidosPendentes || 0}
                     </Badge>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
                   <div className="px-4 py-3 border-b">
                     <h3 className="font-semibold text-gray-900">Notificações</h3>
-                    <p className="text-sm text-gray-500">Você tem 3 notificações não lidas</p>
+                    <p className="text-sm text-gray-500">
+                      {stats?.totalPedidosPendentes || 0} pedido(s) pago(s) aguardando ação
+                    </p>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     <DropdownMenuItem className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
@@ -68,36 +100,10 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
                         <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900">
-                            Novo pedido #12345
+                            Pedidos pendentes pagos
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            há 5 minutos
-                          </p>
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex gap-3">
-                        <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
-                            Produto aprovado
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            há 1 hora
-                          </p>
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex gap-3">
-                        <div className="flex-shrink-0 w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
-                            Estoque baixo
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            há 2 horas
+                            {stats?.totalPedidosPendentes || 0} aguardando atendimento
                           </p>
                         </div>
                       </div>
@@ -115,8 +121,8 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
               {/* Quick Stats */}
               <div className="hidden lg:flex items-center gap-4 pl-4 border-l border-gray-200">
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">Vendas Hoje</p>
-                  <p className="text-sm font-semibold text-gray-900">R$ 2.450,00</p>
+                  <p className="text-xs text-gray-500">Receita Hoje</p>
+                  <p className="text-sm font-semibold text-gray-900">{receitaHojeFormatada}</p>
                 </div>
               </div>
             </div>

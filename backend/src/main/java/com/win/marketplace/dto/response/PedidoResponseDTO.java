@@ -18,6 +18,7 @@ public record PedidoResponseDTO(
     UUID motoristaId,
     String motoristaNome,
     String status,
+    String statusPagamento,
     BigDecimal subtotal,
     BigDecimal desconto,
     BigDecimal frete,
