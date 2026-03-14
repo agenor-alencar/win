@@ -89,7 +89,7 @@ public class LojistaController {
     }
     
     @GetMapping("/{id}/estatisticas")
-    @PreAuthorize("hasAnyAuthority('LOJISTA', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOJISTA')")
     public ResponseEntity<LojistaEstatisticasDTO> buscarEstatisticas(@PathVariable UUID id) {
         LojistaEstatisticasDTO estatisticas = lojistaService.buscarEstatisticas(id);
         return ResponseEntity.ok(estatisticas);

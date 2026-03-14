@@ -94,6 +94,51 @@ interface LojistaEstatisticas {
   percentualVariacaoReceita: number;
 }
 
+const calcularVariacaoPercentual = (valorAtual: number, valorAnterior: number): number => {
+  if (!valorAnterior) {
+    return valorAtual > 0 ? 100 : 0;
+  }
+
+  return ((valorAtual - valorAnterior) / valorAnterior) * 100;
+};
+
+const gerarEstatisticasFallback = (orders: Order[], products: Product[]): LojistaEstatisticas => {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const inicioOntem = new Date(hoje);
+  inicioOntem.setDate(inicioOntem.getDate() - 1);
+
+  const pedidosHoje = orders.filter((order) => {
+    const dataPedido = new Date(order.criadoEm);
+    dataPedido.setHours(0, 0, 0, 0);
+    return dataPedido.getTime() === hoje.getTime();
+  });
+
+  const pedidosOntem = orders.filter((order) => {
+    const dataPedido = new Date(order.criadoEm);
+    dataPedido.setHours(0, 0, 0, 0);
+    return dataPedido.getTime() === inicioOntem.getTime();
+  });
+
+  const receitaHoje = pedidosHoje.reduce((acc, order) => acc + (order.total || 0), 0);
+  const receitaOntem = pedidosOntem.reduce((acc, order) => acc + (order.total || 0), 0);
+  const totalProdutosAtivos = products.filter((product) => product.ativo).length;
+  const totalProdutosInativos = products.length - totalProdutosAtivos;
+
+  return {
+    vendasHoje: pedidosHoje.length,
+    vendasOntem: pedidosOntem.length,
+    receitaHoje,
+    receitaOntem,
+    totalPedidosPendentes: orders.filter((order) => ["PENDENTE", "PREPARANDO"].includes(order.status)).length,
+    totalProdutosAtivos,
+    totalProdutosInativos,
+    percentualVariacaoVendas: calcularVariacaoPercentual(pedidosHoje.length, pedidosOntem.length),
+    percentualVariacaoReceita: calcularVariacaoPercentual(receitaHoje, receitaOntem),
+  };
+};
+
 const MerchantDashboard: React.FC = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -115,31 +160,30 @@ const MerchantDashboard: React.FC = () => {
   }, []);
 
   const fetchDashboardData = async () => {
+    let lojistaId: string | null = null;
+
     try {
       setLoading(true);
 
       // 1. Buscar dados do lojista logado
       const { data: lojistaData } = await api.get<Lojista>("/v1/lojistas/me");
       setLojista(lojistaData);
+      lojistaId = lojistaData.id;
 
-      // 2. Buscar estatísticas do lojista (NOVO - dados reais)
-      const { data: estatisticasData } = await api.get<LojistaEstatisticas>(
-        `/v1/lojistas/${lojistaData.id}/estatisticas`
-      );
-      setEstatisticas(estatisticasData);
+      // 2. Buscar dados reais em paralelo
+      const [estatisticasRes, produtosRes, pedidosRes] = await Promise.all([
+        api.get<LojistaEstatisticas>(`/v1/lojistas/${lojistaData.id}/estatisticas`),
+        api.get<Product[]>(`/v1/produtos/lojista/${lojistaData.id}`),
+        api.get<Order[]>(`/v1/pedidos/lojista/${lojistaData.id}`),
+      ]);
 
-      // 3. Buscar produtos do lojista
-      const { data: productsData } = await api.get<Product[]>(
-        `/v1/produtos/lojista/${lojistaData.id}`
-      );
+      const estatisticasData = estatisticasRes.data;
+      const productsData = produtosRes.data;
+      const ordersData = pedidosRes.data;
+
       setProducts(productsData);
-
-      // 4. Buscar somente pedidos com pagamento aprovado e pendentes de preparação
-      const { data: ordersData } = await api.get<Order[]>(
-        `/v1/pedidos/lojista/${lojistaData.id}/pendentes-preparacao`
-      );
-      
       setOrders(ordersData);
+      setEstatisticas(estatisticasData);
 
       // 5. Calcular estatísticas complementares
       const activeProducts = productsData.filter((p) => p.ativo).length;
@@ -159,11 +203,55 @@ const MerchantDashboard: React.FC = () => {
       setLoading(false);
     } catch (error: any) {
       console.error("Erro ao buscar dados do dashboard:", error);
-      toast({
-        title: "Erro ao carregar dados",
-        description: error.response?.data?.message || "Não foi possível carregar os dados do dashboard",
-        variant: "destructive",
-      });
+
+      if (lojistaId) {
+        try {
+          const [produtosFallback, pedidosFallback] = await Promise.all([
+            api.get<Product[]>(`/v1/produtos/lojista/${lojistaId}`),
+            api.get<Order[]>(`/v1/pedidos/lojista/${lojistaId}`),
+          ]);
+
+          const productsData = produtosFallback.data;
+          const ordersData = pedidosFallback.data;
+          const estatisticasFallback = gerarEstatisticasFallback(ordersData, productsData);
+
+          setProducts(productsData);
+          setOrders(ordersData);
+          setEstatisticas(estatisticasFallback);
+
+          const activeProducts = productsData.filter((p) => p.ativo).length;
+          const lowStockProducts = productsData.filter((p) => p.estoque < 10 && p.ativo).length;
+          const totalRevenue = ordersData.reduce((sum, order) => sum + order.total, 0);
+          const averageTicket = ordersData.length > 0 ? totalRevenue / ordersData.length : 0;
+
+          setStats({
+            totalProducts: productsData.length,
+            activeProducts,
+            lowStockProducts,
+            totalOrders: ordersData.length,
+            totalRevenue,
+            averageTicket,
+          });
+
+          toast({
+            title: "Dashboard parcialmente recuperado",
+            description: "Estatísticas oficiais indisponíveis no momento. Exibindo cálculo com dados reais de pedidos/produtos.",
+            variant: "default",
+          });
+        } catch {
+          toast({
+            title: "Erro ao carregar dados",
+            description: error.response?.data?.message || "Não foi possível carregar os dados do dashboard",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Erro ao carregar dados",
+          description: error.response?.data?.message || "Não foi possível carregar os dados do dashboard",
+          variant: "destructive",
+        });
+      }
       setLoading(false);
     }
   };
