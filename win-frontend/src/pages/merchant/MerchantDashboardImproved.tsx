@@ -403,7 +403,7 @@ const MerchantDashboard: React.FC = () => {
     .slice(0, 5);
 
   // Pedidos recentes (últimos 5)
-  const recentOrders = orders
+  const recentOrders = paidOrders
     .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
     .slice(0, 5);
 
