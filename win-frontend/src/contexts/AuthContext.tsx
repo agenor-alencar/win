@@ -39,7 +39,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
-  login: (email: string, senha: string, role?: string) => Promise<boolean>;
+  login: (email: string, senha: string, role?: string) => Promise<{ success: boolean; error?: string }>;
   register: (userData: RegisterData) => Promise<boolean>;
   logout: () => void;
   updateUser: (updatedUser: User) => void;
@@ -169,20 +169,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const login = async (email: string, senha: string, role?: string): Promise<boolean> => {
+  const login = async (
+    email: string,
+    senha: string,
+    role?: string
+  ): Promise<{ success: boolean; error?: string }> => {
     updateState({ isLoading: true, error: null });
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       // Backend login endpoint is POST /api/v1/auth/login and currently returns the user object.
       // The frontend previously attempted to call /auth/login/${role} and expected a token.
       // Call the canonical endpoint and normalize the response in handleAuthSuccess.
-      const response = await api.post(`/v1/auth/login`, { email, senha });
+      const response = await api.post(`/v1/auth/login`, { email: normalizedEmail, senha });
       handleAuthSuccess(response.data);
-      return true;
+      return { success: true };
     } catch (error: any) {
       console.error("Login failed:", error);
       const errorMessage = error.response?.data?.message || "Erro ao fazer login. Verifique sua conexão.";
       updateState({ isLoading: false, error: errorMessage });
-      return false;
+      return { success: false, error: errorMessage };
     } finally {
       updateState({ isLoading: false });
     }

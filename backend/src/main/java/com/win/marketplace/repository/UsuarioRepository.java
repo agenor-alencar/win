@@ -26,6 +26,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      */
     @Query("SELECT u FROM Usuario u LEFT JOIN FETCH u.usuarioPerfis up LEFT JOIN FETCH up.perfil WHERE u.email = :email")
     Optional<Usuario> findByEmailWithPerfis(@Param("email") String email);
+
+    /**
+     * Busca usuário por email com perfis carregados (case-insensitive)
+     * Usado para autenticação JWT em cenários com variação de caixa no email.
+     */
+    @Query("SELECT u FROM Usuario u LEFT JOIN FETCH u.usuarioPerfis up LEFT JOIN FETCH up.perfil WHERE LOWER(u.email) = LOWER(:email)")
+    Optional<Usuario> findByEmailWithPerfisIgnoreCase(@Param("email") String email);
     
     /**
      * Busca nomes dos perfis de um usuário diretamente
@@ -33,6 +40,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      */
     @Query("SELECT p.nome FROM Usuario u JOIN u.usuarioPerfis up JOIN up.perfil p WHERE u.email = :email")
     List<String> findPerfisByEmail(@Param("email") String email);
+
+    /**
+     * Busca nomes dos perfis por email (case-insensitive)
+     */
+    @Query("SELECT p.nome FROM Usuario u JOIN u.usuarioPerfis up JOIN up.perfil p WHERE LOWER(u.email) = LOWER(:email)")
+    List<String> findPerfisByEmailIgnoreCase(@Param("email") String email);
     
     /**
      * Busca usuário por CPF

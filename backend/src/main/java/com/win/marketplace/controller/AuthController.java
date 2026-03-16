@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -85,10 +86,11 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO requestDTO, HttpServletRequest request) {
-        log.info("POST /api/v1/auth/login - Login do usuário: {}", requestDTO.email());
+        String normalizedEmail = normalizeEmail(requestDTO.email());
+        log.info("POST /api/v1/auth/login - Login do usuário: {}", normalizedEmail);
 
         String clientIp = extractClientIp(request);
-        String attemptKey = loginAttemptService.buildKey(requestDTO.email(), clientIp);
+        String attemptKey = loginAttemptService.buildKey(normalizedEmail, clientIp);
 
         if (loginAttemptService.isBlocked(attemptKey)) {
             long secondsRemaining = loginAttemptService.blockedSecondsRemaining(attemptKey);
@@ -100,7 +102,7 @@ public class AuthController {
 
         try {
             // Buscar usuário por email com perfis carregados
-            Optional<Usuario> usuarioOpt = usuarioRepository.findByEmailWithPerfis(requestDTO.email());
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByEmailWithPerfisIgnoreCase(normalizedEmail);
             if (usuarioOpt.isEmpty()) {
                 loginAttemptService.registerFailure(attemptKey);
                 throw new BusinessException("Email ou senha incorretos");
@@ -109,14 +111,14 @@ public class AuthController {
             
             // Verificar se a senha está correta
             if (!passwordEncoder.matches(requestDTO.senha(), usuario.getSenhaHash())) {
-                log.warn("Tentativa de login com senha incorreta para o email: {}", requestDTO.email());
+                log.warn("Tentativa de login com senha incorreta para o email: {}", normalizedEmail);
                 loginAttemptService.registerFailure(attemptKey);
                 throw new BusinessException("Email ou senha incorretos");
             }
             
             // Verificar se o usuário está ativo
             if (!usuario.getAtivo()) {
-                log.warn("Tentativa de login de usuário inativo: {}", requestDTO.email());
+                log.warn("Tentativa de login de usuário inativo: {}", normalizedEmail);
                 loginAttemptService.registerFailure(attemptKey);
                 throw new BusinessException("Usuário inativo. Entre em contato com o suporte.");
             }
@@ -124,16 +126,16 @@ public class AuthController {
             loginAttemptService.registerSuccess(attemptKey);
             
             // Extrair perfis diretamente do banco (evita ConcurrentModificationException)
-            List<String> perfis = usuarioRepository.findPerfisByEmail(requestDTO.email());
+            List<String> perfis = usuarioRepository.findPerfisByEmailIgnoreCase(normalizedEmail);
             
             // Gerar token JWT
             String token = jwtService.generateToken(usuario.getEmail(), perfis);
             
             // Atualizar último acesso
-            usuarioService.atualizarUltimoAcesso(requestDTO.email());
+            usuarioService.atualizarUltimoAcesso(usuario.getEmail());
             
             // Buscar dados completos do usuário para a resposta
-            UsuarioResponseDTO usuarioResponse = usuarioService.buscarPorEmail(requestDTO.email());
+            UsuarioResponseDTO usuarioResponse = usuarioService.buscarPorEmail(usuario.getEmail());
             
             // Criar resposta com token e dados do usuário
             AuthResponseDTO response = AuthResponseDTO.builder()
@@ -367,5 +369,12 @@ public class AuthController {
         }
 
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Não foi possível identificar o usuário autenticado");
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) {
+            return "";
+        }
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

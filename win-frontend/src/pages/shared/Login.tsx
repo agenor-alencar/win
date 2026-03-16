@@ -285,8 +285,8 @@ export default function Login() {
     setError("");
 
     try {
-      const loginSuccess = await login(email, password);
-      if (loginSuccess) {
+      const loginResult = await login(email, password);
+      if (loginResult.success) {
         success("Login realizado com sucesso!", "Bem-vindo de volta!");
         // Após login, redirecionar baseado no perfil
         const stored = localStorage.getItem("win-user");
@@ -303,7 +303,7 @@ export default function Login() {
           navigate("/");
         }
       } else {
-        const errorMsg = "Email ou senha incorretos";
+        const errorMsg = loginResult.error || "Email ou senha incorretos";
         setError(errorMsg);
         notifyError("Erro no login", errorMsg);
       }
@@ -351,6 +351,9 @@ export default function Login() {
                       placeholder="seu@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       required
                       disabled={isLoading}
                     />
