@@ -297,47 +297,89 @@ export default function Header({ showCategories = true }: HeaderProps) {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t bg-white">
+        <div className="md:hidden border-t bg-white max-h-[calc(100vh-120px)] overflow-y-auto">
           <div className="px-4 py-4 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {categories.map((category) => (
-                <Link
-                  key={category.id}
-                  to={`/category/${category.nome.toLowerCase().replace(/\s+/g, '-')}`}
-                  className="flex items-center p-3 rounded-lg hover:bg-gray-50"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <CategoryIcon iconName={category.icone} className="mr-3 h-5 w-5" />
-                  <span className="text-sm font-medium">{category.nome}</span>
-                </Link>
-              ))}
+            {/* Ações Principais - Venda no WIN destacado */}
+            <div className="bg-gradient-to-r from-[#3DBEAB]/10 to-[#2D9CDB]/10 rounded-lg p-3 border-2 border-[#3DBEAB]">
+              <button
+                onClick={(e) => {
+                  handleVendaClick(e);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center p-3 bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] text-white font-semibold rounded-lg hover:shadow-lg transition-shadow"
+              >
+                <Package className="h-5 w-5 mr-2" />
+                Venda no WIN
+              </button>
             </div>
-            <div className="border-t pt-4 space-y-2">
+
+            {/* Categorias */}
+            <div>
+              <h3 className="text-xs uppercase font-semibold text-gray-500 mb-2 px-2">Categorias</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    to={`/category/${category.nome.toLowerCase().replace(/\s+/g, '-')}`}
+                    className="flex items-center p-3 rounded-lg hover:bg-gray-50 border border-gray-100"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <CategoryIcon iconName={category.icone} className="mr-2 h-4 w-4" />
+                    <span className="text-sm font-medium">{category.nome}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t pt-4" />
+
+            {/* Menu Principal */}
+            <div className="space-y-2">
               <Link
                 to="/meus-favoritos"
                 className="flex items-center p-3 rounded-lg hover:bg-gray-50"
                 onClick={() => setMobileMenuOpen(false)}
                 title="Meus Favoritos"
               >
-                <Heart className="h-5 w-5 mr-3" />
-                <span>Favoritos</span>
+                <Heart className="h-5 w-5 mr-3 text-red-500" />
+                <span className="text-sm font-medium">Favoritos</span>
               </Link>
               <Link
                 to="/deals"
                 className="flex items-center p-3 rounded-lg hover:bg-gray-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Tag className="h-5 w-5 mr-3" />
-                <span>Promoções</span>
+                <Tag className="h-5 w-5 mr-3 text-orange-500" />
+                <span className="text-sm font-medium">Promoções</span>
+              </Link>
+              <Link
+                to="/track"
+                className="flex items-center p-3 rounded-lg hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Truck className="h-5 w-5 mr-3 text-blue-500" />
+                <span className="text-sm font-medium">Rastrear Pedido</span>
               </Link>
               <Link
                 to="/help"
                 className="flex items-center p-3 rounded-lg hover:bg-gray-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Phone className="h-5 w-5 mr-3" />
-                <span>Central de Ajuda</span>
+                <Phone className="h-5 w-5 mr-3 text-green-500" />
+                <span className="text-sm font-medium">Central de Ajuda</span>
               </Link>
+            </div>
+
+            {/* Contato */}
+            <div className="border-t pt-4">
+              <a
+                href="tel:+5561995334141"
+                className="flex items-center justify-center p-3 rounded-lg bg-gray-100 hover:bg-gray-200"
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                <span className="text-sm font-medium">(61) 99533-4141</span>
+              </a>
             </div>
           </div>
         </div>
