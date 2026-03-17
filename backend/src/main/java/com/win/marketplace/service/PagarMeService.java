@@ -214,19 +214,45 @@ public class PagarMeService {
             // Headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBasicAuth(apiKey, ""); // Pagar.me usa Basic Auth com senha vazia
+            
+            // ⚠️ DEBUG: Logando tipo de autenticação
+            if (apiKey != null && !apiKey.isEmpty()) {
+                if (apiKey.startsWith("sk_")) {
+                    // Secret Key (autenticação server-to-server)
+                    headers.setBasicAuth(apiKey, "");
+                    log.debug("✅ Usando Secret Key para autenticação (Basic Auth)");
+                } else if (apiKey.startsWith("acc_")) {
+                    // Account ID - tentar como Bearer token
+                    headers.setBearerAuth(apiKey);
+                    log.debug("✅ Usando Account ID com Bearer Token");
+                } else {
+                    // Fallback: Basic Auth
+                    headers.setBasicAuth(apiKey, "");
+                    log.debug("✅ Formato desconhecido, tentando Basic Auth");
+                }
+            } else {
+                log.warn("⚠️ apiKey não configurada!");
+            }
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
             log.info("💳 Criando cobrança PIX Pagar.me - Pedido: {}, Valor: R$ {}", 
                 pedidoId, valorCentavos / 100.0);
 
-            ResponseEntity<Map> response = restTemplate.exchange(
-                endpoint,
-                HttpMethod.POST,
-                request,
-                Map.class
-            );
+            ResponseEntity<Map> response;
+            try {
+                response = restTemplate.exchange(
+                    endpoint,
+                    HttpMethod.POST,
+                    request,
+                    Map.class
+                );
+            } catch (org.springframework.web.client.HttpClientErrorException ex) {
+                // Capturar erro detalhado
+                log.error("❌ Erro HTTP {} ao chamar Pagar.me: {}", ex.getStatusCode(), ex.getStatusText());
+                log.error("📋 Response Body: {}", ex.getResponseBodyAsString());
+                throw ex;
+            }
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
