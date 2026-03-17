@@ -206,17 +206,6 @@ export const CartSuggestions: React.FC<CartSuggestionsProps> = ({
                     R$ {product.preco.toFixed(2)}
                   </p>
                 </div>
-
-                {/* Botão Adicionar */}
-                <button
-                  onClick={() => handleAddToCart(product)}
-                  disabled={product.estoque <= 0}
-                  className="w-full py-2 bg-gradient-to-r from-[#3DBEAB] to-[#2D9CDB] text-white text-sm rounded-lg hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
-                  title={product.estoque <= 0 ? "Produto indisponível" : "Adicionar ao carrinho"}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="text-xs">{product.estoque <= 0 ? "Indisponível" : "Adicionar"}</span>
-                </button>
               </div>
             </div>
           );

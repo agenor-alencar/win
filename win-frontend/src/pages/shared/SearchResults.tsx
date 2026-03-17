@@ -334,23 +334,9 @@ export default function SearchResults() {
                         R$ {product.originalPrice.toFixed(2).replace(".", ",")}
                       </span>
                     )}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
-                      <span className="text-sm sm:text-base lg:text-lg font-bold text-primary">
-                        R$ {product.price.toFixed(2).replace(".", ",")}
-                      </span>
-                      <Button
-                        size="sm"
-                        className="text-xs w-full sm:w-auto"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleAddToCart(product);
-                        }}
-                      >
-                        <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        <span className="hidden sm:inline">Adicionar</span>
-                        <span className="sm:hidden">+</span>
-                      </Button>
-                    </div>
+                    <span className="text-sm sm:text-base lg:text-lg font-bold text-primary">
+                      R$ {product.price.toFixed(2).replace(".", ",")}
+                    </span>
                   </div>
                 </CardContent>
               </Card>

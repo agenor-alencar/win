@@ -183,15 +183,6 @@ export default function Favorites() {
 
                   <div className="flex items-center space-x-2">
                     <Button
-                      className="flex-1"
-                      size="sm"
-                      onClick={() => handleAddToCart(produto)}
-                      disabled={produto.estoque === 0}
-                    >
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Adicionar
-                    </Button>
-                    <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleRemoveFavorite(produto.id)}

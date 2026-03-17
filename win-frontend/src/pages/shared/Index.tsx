@@ -246,27 +246,12 @@ export default function Index() {
                       <span className="mx-2">•</span>
                       <span className="truncate">{produto.nomeLojista}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
-                      <span className="text-sm sm:text-base lg:text-lg font-bold text-primary">
-                        {new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        }).format(produto.preco)}
-                      </span>
-                      <Button
-                        size="sm"
-                        className="text-xs w-full sm:w-auto"
-                        disabled={produto.estoque === 0}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToCart(produto);
-                        }}
-                      >
-                        <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        <span className="hidden sm:inline">{produto.estoque === 0 ? 'Esgotado' : 'Adicionar'}</span>
-                        <span className="sm:hidden">+</span>
-                      </Button>
-                    </div>
+                    <span className="text-sm sm:text-base lg:text-lg font-bold text-primary">
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      }).format(produto.preco)}
+                    </span>
                   </CardContent>
                 </Card>
               ))}

@@ -363,18 +363,6 @@ export default function Deals() {
                     <div className="text-xs text-gray-500">
                       Apenas {deal.stock} restantes
                     </div>
-
-                    <Button
-                      size="sm"
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddToCart(deal);
-                      }}
-                    >
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Adicionar ao Carrinho
-                    </Button>
                   </div>
                 </CardContent>
               </Card>

@@ -419,18 +419,6 @@ export default function NewArrivals() {
                   <div className="text-xs text-gray-500">
                     Chegou em {formatDate(product.arrivalDate)}
                   </div>
-
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddToCart(product);
-                    }}
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Adicionar ao Carrinho
-                  </Button>
                 </div>
               </CardContent>
             </Card>

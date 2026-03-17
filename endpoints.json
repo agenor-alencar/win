@@ -1,0 +1,912 @@
+{
+  "baseUrl": "http://seu-servidor/api/v1",
+  "version": "1.0",
+  "lastUpdated": "2026-03-17",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {token_jwt}"
+  },
+  "endpoints": {
+    "autenticacao": {
+      "categoria": "🔐 AUTENTICAÇÃO",
+      "endpoints": [
+        {
+          "metodo": "POST",
+          "rota": "/auth/register",
+          "descricao": "Registrar novo usuário",
+          "requerAutenticacao": false,
+          "exemplo": {
+            "body": {
+              "email": "usuario@example.com",
+              "senha": "senha123",
+              "nome": "João Silva"
+            }
+          }
+        },
+        {
+          "metodo": "POST",
+          "rota": "/auth/login",
+          "descricao": "Login com email e senha",
+          "requerAutenticacao": false,
+          "exemplo": {
+            "body": {
+              "email": "usuario@example.com",
+              "senha": "senha123"
+            }
+          }
+        },
+        {
+          "metodo": "POST",
+          "rota": "/auth/login/{role}",
+          "descricao": "Login por tipo de usuário (cliente, lojista, motorista, admin)",
+          "requerAutenticacao": false,
+          "parametros": {
+            "role": "Tipo de usuário"
+          }
+        },
+        {
+          "metodo": "GET",
+          "rota": "/auth/me",
+          "descricao": "Dados do usuário autenticado",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "POST",
+          "rota": "/auth/refresh-token",
+          "descricao": "Renovar token JWT",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "POST",
+          "rota": "/auth/reset-password",
+          "descricao": "Solicitar alteração de senha",
+          "requerAutenticacao": false
+        }
+      ]
+    },
+    "usuario": {
+      "categoria": "👤 USUÁRIO",
+      "permissoes": "Requer ADMIN para maioria",
+      "endpoints": [
+        {
+          "metodo": "POST",
+          "rota": "/usuario/create",
+          "descricao": "Criar novo usuário",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/usuario/list/all",
+          "descricao": "Listar todos os usuários",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/usuario/list/ativos",
+          "descricao": "Listar usuários ativos",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/usuario/list/id/{id}",
+          "descricao": "Buscar usuário por ID",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/usuario/list/email/{email}",
+          "descricao": "Buscar usuário por email",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        }
+      ]
+    },
+    "produtos": {
+      "categoria": "🛍️ PRODUTOS",
+      "endpoints": [
+        {
+          "metodo": "GET",
+          "rota": "/produtos",
+          "descricao": "Listar produtos com paginação",
+          "requerAutenticacao": false,
+          "parametros": {
+            "page": "número da página (padrão: 0)",
+            "size": "itens por página (padrão: 20)"
+          }
+        },
+        {
+          "metodo": "GET",
+          "rota": "/produtos/admin/todos",
+          "descricao": "Listar todos produtos (incluindo inativos)",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/produtos/lojista/{lojistaId}",
+          "descricao": "Produtos de uma lojista específica",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/produtos/categoria/{categoriaId}",
+          "descricao": "Produtos de uma categoria",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/produtos/buscar",
+          "descricao": "Buscar produto por nome/descrição",
+          "requerAutenticacao": false,
+          "parametros": {
+            "q": "termo de busca"
+          }
+        },
+        {
+          "metodo": "GET",
+          "rota": "/produtos/{id}",
+          "descricao": "Detalhes completos de um produto",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/produtos/{id}/imagens",
+          "descricao": "Listar imagens de um produto",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/produtos/mais-vendidos",
+          "descricao": "Produtos mais vendidos",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/produtos/mais-avaliados",
+          "descricao": "Produtos com melhor avaliação",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "POST",
+          "rota": "/produtos/lojista/{lojistaId}",
+          "descricao": "Criar novo produto",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA, ADMIN"
+        },
+        {
+          "metodo": "PUT",
+          "rota": "/produtos/{id}",
+          "descricao": "Editar produto",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA, ADMIN"
+        },
+        {
+          "metodo": "DELETE",
+          "rota": "/produtos/{id}",
+          "descricao": "Deletar produto",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA, ADMIN"
+        }
+      ]
+    },
+    "lojistas": {
+      "categoria": "🏪 LOJISTAS",
+      "endpoints": [
+        {
+          "metodo": "GET",
+          "rota": "/lojistas",
+          "descricao": "Listar todos os lojistas",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/lojistas/ativos",
+          "descricao": "Listar apenas lojistas ativos",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/lojistas/me",
+          "descricao": "Dados da lojista autenticada",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/lojistas/{id}",
+          "descricao": "Detalhes de uma lojista",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/lojistas/usuario/{usuarioId}",
+          "descricao": "Lojista de um usuário específico",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/lojistas/cnpj/{cnpj}",
+          "descricao": "Buscar lojista por CNPJ",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/lojistas/{id}/estatisticas",
+          "descricao": "Estatísticas da lojista",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "PUT",
+          "rota": "/lojistas/{id}",
+          "descricao": "Atualizar dados da lojista",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA, ADMIN"
+        },
+        {
+          "metodo": "POST",
+          "rota": "/lojistas",
+          "descricao": "Criar nova lojista",
+          "requerAutenticacao": false
+        }
+      ]
+    },
+    "pedidos": {
+      "categoria": "📦 PEDIDOS",
+      "endpoints": [
+        {
+          "metodo": "POST",
+          "rota": "/pedidos",
+          "descricao": "Criar novo pedido",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pedidos",
+          "descricao": "Listar pedidos",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pedidos/usuario/{usuarioId}",
+          "descricao": "Pedidos de um usuário",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pedidos/usuario/{usuarioId}/primeira-compra",
+          "descricao": "Verificar se é primeira compra",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pedidos/motorista/{motoristaId}",
+          "descricao": "Pedidos de um motorista",
+          "requerAutenticacao": true,
+          "permissao": "MOTORISTA"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pedidos/status/{status}",
+          "descricao": "Filtrar pedidos por status",
+          "requerAutenticacao": true,
+          "parametros": {
+            "status": "PENDENTE, CONFIRMADO, PREPARANDO, PRONTO, ENTREGANDO, ENTREGUE, CANCELADO"
+          }
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pedidos/lojista/{lojistaId}",
+          "descricao": "Pedidos de uma lojista",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA, ADMIN"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pedidos/lojista/{lojistaId}/pendentes-preparacao",
+          "descricao": "Pedidos pendentes de preparação",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA, ADMIN"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pedidos/{id}",
+          "descricao": "Detalhes completos do pedido",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pedidos/numero/{numeroPedido}",
+          "descricao": "Buscar pedido por número",
+          "requerAutenticacao": true
+        }
+      ]
+    },
+    "pagamentos": {
+      "categoria": "💳 PAGAMENTOS",
+      "endpoints": [
+        {
+          "metodo": "POST",
+          "rota": "/pagamentos/processar",
+          "descricao": "Processar pagamento",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "POST",
+          "rota": "/pagamentos/pagarme/pix/{pedidoId}",
+          "descricao": "Gerar PIX para o pedido",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "POST",
+          "rota": "/pagamentos/pedido/{pedidoId}/pix/obter-ou-recriar",
+          "descricao": "Obter ou recriar PIX do pedido",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pagamentos/pedido/{pedidoId}",
+          "descricao": "Pagamentos de um pedido",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pagamentos/pedido/{pedidoId}/pix",
+          "descricao": "QR Code PIX do pedido",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pagamentos/status/{status}",
+          "descricao": "Filtrar pagamentos por status",
+          "requerAutenticacao": true,
+          "parametros": {
+            "status": "PENDENTE, APROVADO, RECUSADO, CANCELADO"
+          }
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pagamentos/metodo/{metodo}",
+          "descricao": "Filtrar por método de pagamento",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/pagamentos/{orderId}/status",
+          "descricao": "Status de uma ordem",
+          "requerAutenticacao": true
+        }
+      ]
+    },
+    "entregas": {
+      "categoria": "🚚 ENTREGAS",
+      "endpoints": [
+        {
+          "metodo": "POST",
+          "rota": "/entregas/simular-frete",
+          "descricao": "Simular valor do frete",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "POST",
+          "rota": "/entregas/{pedidoId}/solicitar",
+          "descricao": "Solicitar entrega para pedido",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/entregas/pedido/{pedidoId}",
+          "descricao": "Informações de entrega do pedido",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/entregas/{entregaId}/status",
+          "descricao": "Status detalhado da entrega",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/entregas/lojista/minhas",
+          "descricao": "Todas as entregas da lojista",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/entregas/lojista/em-andamento",
+          "descricao": "Entregas em andamento da lojista",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA"
+        },
+        {
+          "metodo": "DELETE",
+          "rota": "/entregas/{entregaId}",
+          "descricao": "Cancelar entrega",
+          "requerAutenticacao": true
+        }
+      ]
+    },
+    "fretes": {
+      "categoria": "🚚 FRETES",
+      "endpoints": [
+        {
+          "metodo": "GET",
+          "rota": "/fretes/estimar",
+          "descricao": "Estimar valor do frete",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "POST",
+          "rota": "/fretes/calcular",
+          "descricao": "Calcular frete",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/fretes/status",
+          "descricao": "Status do frete",
+          "requerAutenticacao": true
+        }
+      ]
+    },
+    "enderecos": {
+      "categoria": "📍 ENDEREÇOS",
+      "endpoints": [
+        {
+          "metodo": "POST",
+          "rota": "/enderecos/usuario/{usuarioId}",
+          "descricao": "Adicionar novo endereço",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/enderecos/usuario/{usuarioId}",
+          "descricao": "Listar endereços do usuário",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/enderecos/usuario/{usuarioId}/principal",
+          "descricao": "Endereço principal do usuário",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/enderecos/{id}",
+          "descricao": "Detalhes do endereço",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "PUT",
+          "rota": "/enderecos/{id}",
+          "descricao": "Atualizar endereço",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "DELETE",
+          "rota": "/enderecos/{id}",
+          "descricao": "Deletar endereço",
+          "requerAutenticacao": true
+        }
+      ]
+    },
+    "favoritos": {
+      "categoria": "⭐ FAVORITOS",
+      "endpoints": [
+        {
+          "metodo": "GET",
+          "rota": "/favoritos/meus",
+          "descricao": "Meus produtos favoritos",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/favoritos/verifica/{produtoId}",
+          "descricao": "Verificar se produto é favorito",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "POST",
+          "rota": "/favoritos",
+          "descricao": "Adicionar produto aos favoritos",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "DELETE",
+          "rota": "/favoritos/{produtoId}",
+          "descricao": "Remover produto dos favoritos",
+          "requerAutenticacao": true
+        }
+      ]
+    },
+    "avaliacoes": {
+      "categoria": "💬 AVALIAÇÕES",
+      "endpoints": [
+        {
+          "metodo": "POST",
+          "rota": "/avaliacoes-produtos/usuario/{usuarioId}",
+          "descricao": "Criar avaliação de produto",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/avaliacoes-produtos/produto/{produtoId}",
+          "descricao": "Avaliações de um produto",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/avaliacoes-produtos/usuario/{usuarioId}",
+          "descricao": "Minhas avaliações",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/avaliacoes-produtos/{id}",
+          "descricao": "Detalhes da avaliação",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/avaliacoes-produtos/lojista/{lojistaId}",
+          "descricao": "Avaliações de uma lojista",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "PUT",
+          "rota": "/avaliacoes-produtos/{id}/usuario/{usuarioId}",
+          "descricao": "Editar avaliação",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "DELETE",
+          "rota": "/avaliacoes-produtos/{id}/usuario/{usuarioId}",
+          "descricao": "Deletar avaliação",
+          "requerAutenticacao": true
+        }
+      ]
+    },
+    "devolucoes": {
+      "categoria": "🔄 DEVOLUÇÕES",
+      "endpoints": [
+        {
+          "metodo": "POST",
+          "rota": "/devolucoes/usuario/{usuarioId}",
+          "descricao": "Criar solicitação de devolução",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/devolucoes/usuario/{usuarioId}",
+          "descricao": "Minhas devoluções",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/devolucoes/{id}",
+          "descricao": "Detalhes da devolução",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/devolucoes/numero/{numeroDevolucao}",
+          "descricao": "Buscar devolução por número",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/devolucoes/lojista/{lojistaId}",
+          "descricao": "Devoluções de uma lojista",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA, ADMIN"
+        },
+        {
+          "metodo": "GET",
+          "rota": "/devolucoes/lojista/{lojistaId}/status/{status}",
+          "descricao": "Devoluções por status da lojista",
+          "requerAutenticacao": true,
+          "permissao": "LOJISTA, ADMIN"
+        }
+      ]
+    },
+    "cupons": {
+      "categoria": "🎟️ CUPONS",
+      "endpoints": [
+        {
+          "metodo": "GET",
+          "rota": "/cupom/list/all",
+          "descricao": "Listar todos os cupons",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/cupom/list/id/{id}",
+          "descricao": "Detalhes do cupom",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/cupom/list/codigo/{codigo}",
+          "descricao": "Buscar cupom por código",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/cupom/validar/{codigo}",
+          "descricao": "Validar cupom",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "POST",
+          "rota": "/cupom/create",
+          "descricao": "Criar cupom",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "PUT",
+          "rota": "/cupom/update/{id}",
+          "descricao": "Editar cupom",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "DELETE",
+          "rota": "/cupom/delete/{id}",
+          "descricao": "Deletar cupom",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        }
+      ]
+    },
+    "categorias": {
+      "categoria": "🏷️ CATEGORIAS",
+      "endpoints": [
+        {
+          "metodo": "GET",
+          "rota": "/categoria",
+          "descricao": "Listar categorias",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/categoria/list/all",
+          "descricao": "Listar todas as categorias",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/categoria/list/principais",
+          "descricao": "Categorias principais",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/categoria/list/sub/{categoriaPaiId}",
+          "descricao": "Subcategorias",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/categoria/list/id/{id}",
+          "descricao": "Detalhes da categoria",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/categoria/list/nome",
+          "descricao": "Buscar categoria por nome",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "POST",
+          "rota": "/categoria/create",
+          "descricao": "Criar categoria",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "POST",
+          "rota": "/categoria/create/sub/{categoriaPaiId}",
+          "descricao": "Criar subcategoria",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "PUT",
+          "rota": "/categoria/update/{id}",
+          "descricao": "Editar categoria",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        },
+        {
+          "metodo": "DELETE",
+          "rota": "/categoria/delete/{id}",
+          "descricao": "Deletar categoria",
+          "requerAutenticacao": true,
+          "permissao": "ADMIN"
+        }
+      ]
+    },
+    "notificacoes": {
+      "categoria": "🔔 NOTIFICAÇÕES",
+      "endpoints": [
+        {
+          "metodo": "POST",
+          "rota": "/notificacao/create",
+          "descricao": "Criar notificação",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/notificacao/list/usuario/{usuarioId}",
+          "descricao": "Todas as notificações",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/notificacao/list/nao-lidas/usuario/{usuarioId}",
+          "descricao": "Notificações não lidas",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "GET",
+          "rota": "/notificacao/count-nao-lidas/usuario/{usuarioId}",
+          "descricao": "Contar notificações não lidas",
+          "requerAutenticacao": true
+        },
+        {
+          "metodo": "DELETE",
+          "rota": "/notificacao/delete/{id}",
+          "descricao": "Deletar notificação",
+          "requerAutenticacao": true
+        }
+      ]
+    },
+    "apisExternas": {
+      "categoria": "🗺️ APIS EXTERNAS",
+      "endpoints": [
+        {
+          "metodo": "GET",
+          "rota": "/external/cnpj/{cnpj}",
+          "descricao": "Validar e buscar dados de CNPJ",
+          "requerAutenticacao": false
+        },
+        {
+          "metodo": "GET",
+          "rota": "/external/cep/{cep}",
+          "descricao": "Buscar endereço por CEP",
+          "requerAutenticacao": false
+        }
+      ]
+    }
+  },
+  "fluxoClientePrimeira": {
+    "titulo": "Fluxo de Uso - Primeiro Acesso",
+    "passos": [
+      {
+        "numero": 1,
+        "acao": "Registrar/Login",
+        "endpoints": ["POST /auth/register", "POST /auth/login"],
+        "descricao": "Usuário se registra ou faz login"
+      },
+      {
+        "numero": 2,
+        "acao": "Listar Lojistas",
+        "endpoints": ["GET /lojistas/ativos"],
+        "descricao": "Ver lojistas disponíveis"
+      },
+      {
+        "numero": 3,
+        "acao": "Ver Categorias",
+        "endpoints": ["GET /categoria/list/principais"],
+        "descricao": "Visualizar categorias principais"
+      },
+      {
+        "numero": 4,
+        "acao": "Ver Produtos",
+        "endpoints": ["GET /produtos", "GET /produtos/lojista/{lojistaId}"],
+        "descricao": "Listar produtos de interesse"
+      },
+      {
+        "numero": 5,
+        "acao": "Ver Avaliações",
+        "endpoints": ["GET /avaliacoes-produtos/produto/{produtoId}"],
+        "descricao": "Consultar avaliações de produtos"
+      },
+      {
+        "numero": 6,
+        "acao": "Adicionar Favoritos",
+        "endpoints": ["POST /favoritos"],
+        "descricao": "Salvar produtos favoritos"
+      },
+      {
+        "numero": 7,
+        "acao": "Adicionar Endereço",
+        "endpoints": ["POST /enderecos/usuario/{usuarioId}"],
+        "descricao": "Cadastrar endereço de entrega"
+      },
+      {
+        "numero": 8,
+        "acao": "Simular Frete",
+        "endpoints": ["POST /entregas/simular-frete"],
+        "descricao": "Ver valor do frete"
+      },
+      {
+        "numero": 9,
+        "acao": "Criar Pedido",
+        "endpoints": ["POST /pedidos"],
+        "descricao": "Realizar compra"
+      },
+      {
+        "numero": 10,
+        "acao": "Gerar PIX",
+        "endpoints": ["POST /pagamentos/pagarme/pix/{pedidoId}"],
+        "descricao": "Gerar QR Code PIX para pagamento"
+      },
+      {
+        "numero": 11,
+        "acao": "Acompanhar Pedido",
+        "endpoints": ["GET /pedidos/{id}", "GET /entregas/{entregaId}/status"],
+        "descricao": "Rastrear status do pedido e entrega"
+      },
+      {
+        "numero": 12,
+        "acao": "Avaliar Compra",
+        "endpoints": ["POST /avaliacoes-produtos/usuario/{usuarioId}"],
+        "descricao": "Deixar avaliação do produto/lojista"
+      },
+      {
+        "numero": 13,
+        "acao": "Devolver Produto",
+        "endpoints": ["POST /devolucoes/usuario/{usuarioId}"],
+        "descricao": "Solicitar devolução se necessário"
+      }
+    ]
+  },
+  "statusPedido": [
+    {
+      "status": "PENDENTE",
+      "descricao": "Pedido criado, aguardando confirmação"
+    },
+    {
+      "status": "CONFIRMADO",
+      "descricao": "Pagamento confirmado"
+    },
+    {
+      "status": "PREPARANDO",
+      "descricao": "Lojista está preparando o pedido"
+    },
+    {
+      "status": "PRONTO",
+      "descricao": "Pedido pronto para coleta"
+    },
+    {
+      "status": "ENTREGANDO",
+      "descricao": "Motorista está fazendo a entrega"
+    },
+    {
+      "status": "ENTREGUE",
+      "descricao": "Pedido entregue ao cliente"
+    },
+    {
+      "status": "CANCELADO",
+      "descricao": "Pedido cancelado"
+    }
+  ],
+  "codigosHttpEsperados": {
+    "200": "OK - Sucesso",
+    "201": "CREATED - Recurso criado com sucesso",
+    "400": "BAD REQUEST - Dados inválidos",
+    "401": "UNAUTHORIZED - Token inválido ou expirado",
+    "403": "FORBIDDEN - Acesso negado",
+    "404": "NOT FOUND - Recurso não encontrado",
+    "500": "INTERNAL SERVER ERROR - Erro no servidor",
+    "422": "UNPROCESSABLE ENTITY - Validação falhou",
+    "429": "TOO MANY REQUESTS - Muitas tentativas (rate limiting)"
+  }
+}
