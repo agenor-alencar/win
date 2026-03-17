@@ -238,6 +238,16 @@ public class PagarMeService {
 
             log.info("💳 Criando cobrança PIX Pagar.me - Pedido: {}, Valor: R$ {}", 
                 pedidoId, valorCentavos / 100.0);
+            
+            // DEBUG: Log do payload completo
+            try {
+                String jsonPayload = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(requestBody);
+                log.info("📤 Payload enviado para Pagar.me:\n{}", jsonPayload);
+            } catch (Exception e) {
+                log.debug("Erro ao converter payload para JSON: {}", e.getMessage());
+            }
 
             ResponseEntity<Map> response;
             try {
