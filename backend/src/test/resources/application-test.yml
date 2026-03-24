@@ -1,0 +1,41 @@
+# Profiles e DataSources para teste
+spring:
+  application:
+    name: marketplace-test
+  
+  # DataSource em-memória (H2)
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: validate  # NÃO auto-create, deixar para Flyway
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  
+  # Flyway para-teste
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    sql-migration-prefix: V
+
+  # Redis (desabilitado para teste, usar mock se necessário)
+  redis:
+    sentinel:
+      enabled: false
+
+# Logging
+logging:
+  level:
+    com.win.marketplace: DEBUG
+    org.springframework.test: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

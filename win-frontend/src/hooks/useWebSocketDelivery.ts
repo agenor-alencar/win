@@ -135,7 +135,7 @@ export function useWebSocketDelivery(
         },
       );
     } catch (err) {
-      console.error('❌ Erro ao criar WebSocket:', err);
+      console.error('❌ Erro ao criar WebSocket:', error);
       setError('Erro ao criar conexão');
       tentarReconectar();
     }
@@ -165,15 +165,9 @@ export function useWebSocketDelivery(
   // Desconectar
   const disconnect = useCallback(() => {
     if (stompClientRef.current && stompClientRef.current.active) {
-      stompClientRef.current.deactivate({
-        onSuccess: () => {
-          console.log('👋 WebSocket desconectado');
-          setIsConnected(false);
-        },
-        onError: () => {
-          setIsConnected(false);
-        },
-      });
+      stompClientRef.current.deactivate();
+      console.log('👋 WebSocket desconectado');
+      setIsConnected(false);
     }
   }, []);
 
