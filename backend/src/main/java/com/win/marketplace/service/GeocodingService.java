@@ -167,7 +167,6 @@ public class GeocodingService {
             }
 
             // 2. Extrair dados de localização
-            String bairro = viaCepData.path("bairro").asText("").trim();
             String cidade = viaCepData.path("localidade").asText("").trim();
             String estado = viaCepData.path("uf").asText("").trim();
 
@@ -274,13 +273,16 @@ public class GeocodingService {
                 headers.set("User-Agent", "WinMarketplace/2.0");
                 HttpEntity<String> entity = new HttpEntity<>(headers);
 
-                ResponseEntity<String> response = restTemplate.exchange(
-                        url, HttpMethod.GET, entity, String.class);
+                if (url != null) {
+                    @SuppressWarnings("null")
+                    ResponseEntity<String> response = restTemplate.exchange(
+                            url, HttpMethod.GET, entity, String.class);
 
-                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                    JsonNode result = objectMapper.readTree(response.getBody());
-                    log.info("✅ ViaCEP respondeu com sucesso: {}", result.toString());
-                    return result;
+                    if (response != null && response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                        JsonNode result = objectMapper.readTree(response.getBody());
+                        log.info("✅ ViaCEP respondeu com sucesso: {}", result.toString());
+                        return result;
+                    }
                 }
             } catch (RestClientException e) {
                 log.error("❌ Erro ViaCEP (tentativa {}): {} - {}", tentativa, e.getClass().getSimpleName(), e.getMessage());
@@ -321,6 +323,7 @@ public class GeocodingService {
             headers.set("Accept-Language", "pt-BR,pt;q=0.9");
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
+            @SuppressWarnings("null")
             ResponseEntity<String> response = restTemplate.exchange(
                     url, HttpMethod.GET, entity, String.class);
 
@@ -366,24 +369,27 @@ public class GeocodingService {
 
             log.debug("📡 Google Maps: {}", url);
 
-            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            if (url != null) {
+                @SuppressWarnings("null")
+                ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                JsonNode root = objectMapper.readTree(response.getBody());
-                String status = root.path("status").asText();
+                if (response != null && response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                    JsonNode root = objectMapper.readTree(response.getBody());
+                    String status = root.path("status").asText();
 
-                if ("OK".equals(status)) {
-                    JsonNode results = root.path("results");
-                    if (results.isArray() && results.size() > 0) {
-                        JsonNode location = results.get(0).path("geometry").path("location");
-                        Double lat = location.path("lat").asDouble();
-                        Double lng = location.path("lng").asDouble();
+                    if ("OK".equals(status)) {
+                        JsonNode results = root.path("results");
+                        if (results.isArray() && results.size() > 0) {
+                            JsonNode location = results.get(0).path("geometry").path("location");
+                            Double lat = location.path("lat").asDouble();
+                            Double lng = location.path("lng").asDouble();
 
-                        log.info("✅ Google Maps: lat={}, lon={}", lat, lng);
-                        return new Double[]{lat, lng};
+                            log.info("✅ Google Maps: lat={}, lon={}", lat, lng);
+                            return new Double[]{lat, lng};
+                        }
+                    } else {
+                        log.warn("⚠️ Google Maps status: {}", status);
                     }
-                } else {
-                    log.warn("⚠️ Google Maps status: {}", status);
                 }
             }
         } catch (Exception e) {

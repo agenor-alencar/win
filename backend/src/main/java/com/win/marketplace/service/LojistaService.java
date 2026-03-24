@@ -34,6 +34,7 @@ public class LojistaService {
     private final PedidoRepository pedidoRepository;
     private final GeocodingService geocodingService;
 
+    @SuppressWarnings("null")
     public LojistaResponseDTO criarLojista(LojistaCreateRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(requestDTO.usuarioId())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
@@ -93,6 +94,7 @@ public class LojistaService {
 
     @Transactional(readOnly = true)
     public LojistaResponseDTO buscarPorId(UUID id) {
+        @SuppressWarnings("null")
         Lojista lojista = lojistaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
         return lojistaMapper.toResponseDTO(lojista);
@@ -127,8 +129,7 @@ public class LojistaService {
         return lojistaMapper.toResponseDTO(lojista);
     }
 
-    public LojistaResponseDTO atualizarLojista(UUID id, LojistaCreateRequestDTO requestDTO) {
-        Lojista lojista = lojistaRepository.findById(id)
+    public LojistaResponseDTO atualizarLojista(UUID id, LojistaCreateRequestDTO requestDTO) {        @SuppressWarnings("null")        Lojista lojista = lojistaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
 
         // Verificar se o novo CNPJ já está em uso (se foi alterado)
@@ -192,6 +193,7 @@ public class LojistaService {
     @Transactional(readOnly = true)
     public LojistaEstatisticasDTO buscarEstatisticas(UUID lojistaId) {
         // Verificar se lojista existe
+        @SuppressWarnings("null")
         Lojista lojista = lojistaRepository.findById(lojistaId)
                 .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
         

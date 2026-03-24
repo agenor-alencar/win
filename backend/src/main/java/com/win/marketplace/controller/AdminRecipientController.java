@@ -93,6 +93,7 @@ public class AdminRecipientController {
             request.recipientId, request.lojistaId);
 
         try {
+@SuppressWarnings("null")
             Lojista lojista = lojistaRepository.findById(request.lojistaId)
                 .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
 

@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.lang.NonNull;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -17,7 +18,7 @@ public class FileUploadConfig implements WebMvcConfigurer {
     private String uploadDir;
 
     @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         // Criar diretório se não existir
         File uploadDirFile = new File(uploadDir);
         if (!uploadDirFile.exists()) {
@@ -33,7 +34,7 @@ public class FileUploadConfig implements WebMvcConfigurer {
     }
 
     @Override
-    public void addCorsMappings(CorsRegistry registry) {
+    public void addCorsMappings(@NonNull CorsRegistry registry) {
         // Origens permitidas para upload de arquivos
         String allowedOriginsEnv = System.getenv("ALLOWED_ORIGINS");
         

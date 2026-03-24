@@ -7,8 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -249,9 +247,10 @@ public class PagarMeService {
                 log.debug("Erro ao converter payload para JSON: {}", e.getMessage());
             }
 
-            ResponseEntity<Map> response;
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response;
             try {
-                response = restTemplate.exchange(
+                response = (ResponseEntity<Map<String, Object>>) (ResponseEntity<?>) restTemplate.exchange(
                     endpoint,
                     HttpMethod.POST,
                     request,
@@ -279,9 +278,11 @@ public class PagarMeService {
                 
                 // Verificar se há erros na resposta
                 if ("failed".equals(responseBody.get("status"))) {
+                    @SuppressWarnings("unchecked")
                     List<Map<String, Object>> charges = (List<Map<String, Object>>) responseBody.get("charges");
                     if (charges != null && !charges.isEmpty()) {
                         Map<String, Object> charge = charges.get(0);
+                        @SuppressWarnings("unchecked")
                         Map<String, Object> lastTransaction = (Map<String, Object>) charge.get("last_transaction");
                         if (lastTransaction != null) {
                             log.error("❌ Cobrança falhou! Detalhes da transação: {}", lastTransaction);
@@ -294,10 +295,12 @@ public class PagarMeService {
                 }
                 
                 // Extrair informações do PIX
-                List<Map<String, Object>> charges = (List<Map<String, Object>>) responseBody.get("charges");
-                if (charges != null && !charges.isEmpty()) {
-                    Map<String, Object> charge = charges.get(0);
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> chargesFinais = (List<Map<String, Object>>) responseBody.get("charges");
+                if (chargesFinais != null && !chargesFinais.isEmpty()) {
+                    Map<String, Object> charge = chargesFinais.get(0);
                     log.info("📋 Charge data: {}", charge);
+                    @SuppressWarnings("unchecked")
                     Map<String, Object> lastTransaction = (Map<String, Object>) charge.get("last_transaction");
                     
                     if (lastTransaction != null) {
@@ -336,11 +339,16 @@ public class PagarMeService {
             String endpoint = BASE_URL + "/orders/" + orderId;
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setBasicAuth(apiKey, "");
+            if (apiKey != null) {
+                @SuppressWarnings("null")
+                String finalApiKey = apiKey;
+                headers.setBasicAuth(finalApiKey, "");
+            }
 
             HttpEntity<?> request = new HttpEntity<>(headers);
 
-            ResponseEntity<Map> response = restTemplate.exchange(
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = (ResponseEntity<Map<String, Object>>) (ResponseEntity<?>) restTemplate.exchange(
                 endpoint,
                 HttpMethod.GET,
                 request,
@@ -348,7 +356,9 @@ public class PagarMeService {
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return response.getBody();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> body = response.getBody();
+                return body;
             }
 
             throw new RuntimeException("Ordem não encontrada");
@@ -374,11 +384,16 @@ public class PagarMeService {
             String endpoint = BASE_URL + "/orders/" + orderId;
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setBasicAuth(apiKey, "");
+            if (apiKey != null) {
+                @SuppressWarnings("null")
+                String finalApiKey = apiKey;
+                headers.setBasicAuth(finalApiKey, "");
+            }
 
             HttpEntity<?> request = new HttpEntity<>(headers);
 
-            ResponseEntity<Map> response = restTemplate.exchange(
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = (ResponseEntity<Map<String, Object>>) (ResponseEntity<?>) restTemplate.exchange(
                 endpoint,
                 HttpMethod.DELETE,
                 request,
@@ -387,7 +402,9 @@ public class PagarMeService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 log.info("✅ Ordem cancelada: {}", orderId);
-                return response.getBody();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> body = response.getBody();
+                return body;
             }
 
             throw new RuntimeException("Erro ao cancelar ordem");
@@ -533,7 +550,8 @@ public class PagarMeService {
             log.info("🏦 Criando recipient no Pagar.me - Nome: {}, Documento: {}, Banco: {}", 
                 nome, documento, dadosBancarios.get("bank_code"));
 
-            ResponseEntity<Map> response = restTemplate.exchange(
+            @SuppressWarnings({"unchecked", "null"})
+            ResponseEntity<Map<String, Object>> response = (ResponseEntity<Map<String, Object>>) (ResponseEntity<?>) restTemplate.exchange(
                 endpoint,
                 HttpMethod.POST,
                 request,
@@ -541,8 +559,9 @@ public class PagarMeService {
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                @SuppressWarnings("unchecked")
                 Map<String, Object> responseBody = response.getBody();
-                String recipientId = (String) responseBody.get("id");
+                Object recipientId = responseBody.get("id");
                 
                 log.info("✅ Recipient criado com sucesso - ID: {}", recipientId);
                 
@@ -573,11 +592,16 @@ public class PagarMeService {
             String endpoint = BASE_URL + "/recipients/" + recipientId;
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setBasicAuth(apiKey, "");
+            if (apiKey != null) {
+                @SuppressWarnings("null")
+                String finalApiKey = apiKey;
+                headers.setBasicAuth(finalApiKey, "");
+            }
 
             HttpEntity<?> request = new HttpEntity<>(headers);
 
-            ResponseEntity<Map> response = restTemplate.exchange(
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = (ResponseEntity<Map<String, Object>>) (ResponseEntity<?>) restTemplate.exchange(
                 endpoint,
                 HttpMethod.GET,
                 request,
@@ -585,7 +609,9 @@ public class PagarMeService {
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return response.getBody();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> body = response.getBody();
+                return body;
             }
 
             throw new RuntimeException("Recipient não encontrado");

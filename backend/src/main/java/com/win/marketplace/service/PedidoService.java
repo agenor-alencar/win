@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,9 +31,10 @@ public class PedidoService {
     private final ProdutoRepository produtoRepository;
     private final PedidoMapper pedidoMapper;
     private final ObjectMapper objectMapper;
-    private final EntregaService entregaService;
+
     private final PedidoStatusService pedidoStatusService;
 
+    @SuppressWarnings("null")
     public PedidoResponseDTO criarPedido(PedidoCreateRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(requestDTO.usuarioId())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
@@ -165,6 +166,7 @@ public class PedidoService {
     }
 
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public PedidoResponseDTO buscarPorId(UUID id) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
@@ -210,6 +212,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO atribuirMotorista(UUID pedidoId, UUID motoristaId) {
+        @SuppressWarnings("null")
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
         
@@ -234,6 +237,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO marcarComoEntregue(UUID id, String codigoEntrega) {
+        @SuppressWarnings("null")
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
         

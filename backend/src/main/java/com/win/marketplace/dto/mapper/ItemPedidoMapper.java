@@ -21,6 +21,7 @@ public interface ItemPedidoMapper {
     @Mapping(target = "quantidade", ignore = true)
     @Mapping(target = "precoUnitario", ignore = true)
     @Mapping(target = "precoTotal", ignore = true)
+    @Mapping(target = "subtotal", expression = "java(requestDTO.quantidade() * requestDTO.precoUnitario())")
     ItemPedido toEntity(ItemPedidoRequestDTO requestDTO);
 
     @Mapping(source = "pedido.id", target = "pedidoId")
@@ -54,5 +55,6 @@ public interface ItemPedidoMapper {
     @Mapping(target = "quantidade", ignore = true)
     @Mapping(target = "precoUnitario", ignore = true)
     @Mapping(target = "precoTotal", ignore = true)
+    @Mapping(target = "subtotal", expression = "java(requestDTO.quantidade() * requestDTO.precoUnitario())")
     void updateEntityFromDTO(ItemPedidoRequestDTO requestDTO, @MappingTarget ItemPedido itemPedido);
 }

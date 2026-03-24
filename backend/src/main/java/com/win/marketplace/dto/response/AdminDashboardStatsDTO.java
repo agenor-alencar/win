@@ -83,7 +83,7 @@ public record AdminDashboardStatsDTO(
             ticketMedio = receitaTotal.divide(
                 BigDecimal.valueOf(totalPedidos), 
                 2, 
-                BigDecimal.ROUND_HALF_UP
+                java.math.RoundingMode.HALF_UP
             );
         }
         

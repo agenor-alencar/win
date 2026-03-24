@@ -28,8 +28,8 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
-            helper.setTo(destinatario);
+            if (fromEmail != null) helper.setFrom(fromEmail);
+            if (destinatario != null) helper.setTo(destinatario);
             helper.setSubject("Win Marketplace - Recuperação de Senha");
 
             String resetUrl = frontendUrl + "/reset-password?token=" + token;
@@ -80,7 +80,9 @@ public class EmailService {
                 </html>
                 """.formatted(nomeUsuario, resetUrl, resetUrl);
 
-            helper.setText(htmlContent, true);
+            if (htmlContent != null) {
+                helper.setText(htmlContent, true);
+            }
             
             mailSender.send(message);
             log.info("Email de reset de senha enviado para: {}", destinatario);

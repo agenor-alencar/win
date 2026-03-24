@@ -2,7 +2,7 @@ package com.win.marketplace.service;
 
 import com.win.marketplace.dto.request.ConfiguracaoRequestDTO;
 import com.win.marketplace.dto.response.ConfiguracaoResponseDTO;
-import com.win.marketplace.exception.ResourceNotFoundException;
+
 import com.win.marketplace.model.Configuracao;
 import com.win.marketplace.repository.ConfiguracaoRepository;
 import lombok.RequiredArgsConstructor;

@@ -6,7 +6,6 @@ import com.win.marketplace.model.Entrega;
 import com.win.marketplace.model.Pedido;
 import com.win.marketplace.model.enums.StatusEntrega;
 import com.win.marketplace.repository.EntregaRepository;
-import com.win.marketplace.repository.PedidoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +17,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -40,8 +40,8 @@ import java.util.Optional;
 public class UberWebhookService {
 
     private final EntregaRepository entregaRepository;
-    private final PedidoRepository pedidoRepository;
     private final PedidoStatusService pedidoStatusService;
+    private final WebSocketNotificationService webSocketService;
     private final ObjectMapper objectMapper;
 
     @Value("${uber.webhook.secret:}")
@@ -184,6 +184,13 @@ public class UberWebhookService {
         });
 
         entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_MOTORISTA);
+        
+        // 📡 Notificar clientes WebSocket
+        webSocketService.notificarAcaoPendente(
+            entrega.getIdCorridaUber(),
+            "MOTORISTA_ATRIBUIDO",
+            null
+        );
     }
 
     private void processarMotoristaACaminhoDaLoja(Entrega entrega, UberWebhookEventDTO event) {
@@ -192,11 +199,25 @@ public class UberWebhookService {
         
         // Atualizar localização se disponível
         atualizarLocalizacaoMotorista(entrega, event);
+        
+        // 📡 Notificar mudança de status
+        webSocketService.notificarMudancaStatus(
+            entrega.getIdCorridaUber(),
+            "MOTORISTA_A_CAMINHO_RETIRADA",
+            Map.of("mensagem", "Motorista está a caminho da loja para retirada")
+        );
     }
 
     private void processarMotoristaChegouNaLoja(Entrega entrega, UberWebhookEventDTO event) {
         log.info("📍 Motorista chegou na loja");
         entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_PREPARACAO);
+        
+        // 📡 Notificar ação pendente - validação de PIN de coleta
+        webSocketService.notificarAcaoPendente(
+            entrega.getIdCorridaUber(),
+            "VALIDAR_PIN_COLETA",
+            entrega.getCodigoRetiradaUber()
+        );
         
         atualizarLocalizacaoMotorista(entrega, event);
     }

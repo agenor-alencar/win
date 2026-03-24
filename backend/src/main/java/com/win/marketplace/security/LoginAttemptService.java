@@ -41,6 +41,7 @@ public class LoginAttemptService {
         return normalizedEmail + "|" + normalizedIp;
     }
 
+    @SuppressWarnings("null")
     public boolean isBlocked(String key) {
         StringRedisTemplate redisTemplate = getRedisTemplate();
         if (redisTemplate != null) {
@@ -71,6 +72,7 @@ public class LoginAttemptService {
     public long blockedSecondsRemaining(String key) {
         StringRedisTemplate redisTemplate = getRedisTemplate();
         if (redisTemplate != null) {
+            @SuppressWarnings("null")
             String blockedUntil = redisTemplate.opsForValue().get(blockKey(key));
             if (blockedUntil == null) {
                 return 0;
@@ -91,16 +93,20 @@ public class LoginAttemptService {
     public void registerFailure(String key) {
         StringRedisTemplate redisTemplate = getRedisTemplate();
         if (redisTemplate != null) {
+            @SuppressWarnings("null")
             Duration lockDuration = Duration.ofMinutes(lockMinutes);
             String failKey = failuresKey(key);
 
+            @SuppressWarnings("null")
             Long failures = redisTemplate.opsForValue().increment(failKey);
             if (failures != null && failures == 1) {
-                redisTemplate.expire(failKey, lockDuration);
+                @SuppressWarnings("null")
+                Boolean expireOk = redisTemplate.expire(failKey, lockDuration);
             }
 
             if (failures != null && failures >= maxAttempts) {
                 long blockedUntilEpoch = Instant.now().plus(lockDuration).getEpochSecond();
+                // Suppress null warnings for RedisTemplate operations - keys validated above
                 redisTemplate.opsForValue().set(blockKey(key), String.valueOf(blockedUntilEpoch), lockDuration);
                 redisTemplate.delete(failKey);
             }

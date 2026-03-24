@@ -118,6 +118,21 @@ app:
       max-size-mb: 10
       allowed-types: jpg,jpeg,png,webp,gif
       thumbnail-width: 300
+  
+  # ✅ Google Cloud Geocoding
+  google:
+    maps:
+      api-key: ${GOOGLE_MAPS_API_KEY:}
+  
+  # ✅ Uber Direct API
+  uber:
+    direct:
+      oauth-url: ${UBER_OAUTH_URL:https://auth.uber.com/oauth/v2/token}
+      api-base-url: ${UBER_API_BASE_URL:https://api.uber.com/v1/customers}
+      customer-id: ${UBER_CUSTOMER_ID:}
+      client-id: ${UBER_CLIENT_ID:}
+      client-secret: ${UBER_CLIENT_SECRET:}
+      webhook-secret: ${UBER_WEBHOOK_SECRET:}
       thumbnail-height: 300
       medium-width: 800
       medium-height: 800
@@ -171,3 +186,8 @@ management:
   health:
     mail:
       enabled: false
+
+# ✅ Scheduler Configuration (para limpeza de tokens e tarefas agendadas)
+scheduler:
+  initial-delay: 5000  # 5 segundos (atraso inicial para startup)
+  fixed-delay: 86400000  # 24 horas entre execuções de validação

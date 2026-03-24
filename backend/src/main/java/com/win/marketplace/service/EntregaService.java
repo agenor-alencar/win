@@ -1,6 +1,5 @@
 package com.win.marketplace.service;
 
-import com.win.marketplace.dto.request.SimulacaoFreteRequestDTO;
 import com.win.marketplace.dto.request.UberWebhookDTO;
 import com.win.marketplace.dto.response.DeliveryStatusResponseDTO;
 import com.win.marketplace.dto.response.EntregaResponseDTO;
@@ -219,6 +218,7 @@ public class EntregaService {
     public DeliveryStatusResponseDTO consultarStatusEmTempoReal(UUID entregaId) {
         log.info("Consultando status em tempo real da entrega: {}", entregaId);
         
+        @SuppressWarnings("null")
         var entrega = entregaRepository.findById(entregaId)
                 .orElseThrow(() -> new BusinessException("Entrega não encontrada"));
         

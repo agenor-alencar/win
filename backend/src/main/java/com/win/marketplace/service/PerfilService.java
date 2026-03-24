@@ -38,6 +38,7 @@ public class PerfilService {
 
         Perfil perfil = perfilMapper.toEntity(requestDTO);
 
+        @SuppressWarnings("null")
         Perfil savedPerfil = perfilRepository.save(perfil);
         log.info("Perfil criado com sucesso. ID: {}", savedPerfil.getId());
         
@@ -51,6 +52,7 @@ public class PerfilService {
     public PerfilResponseDTO buscarPorId(UUID id) {
         log.info("Buscando perfil por ID: {}", id);
         
+        @SuppressWarnings("null")
         Perfil perfil = perfilRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado com ID: " + id));
         
@@ -105,6 +107,7 @@ public class PerfilService {
     public PerfilResponseDTO atualizar(UUID id, PerfilRequestDTO requestDTO) {
         log.info("Atualizando perfil ID: {}", id);
         
+        @SuppressWarnings("null")
         Perfil perfil = perfilRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado com ID: " + id));
 
@@ -137,6 +140,7 @@ public class PerfilService {
     public void deletar(UUID id) {
         log.info("Deletando perfil ID: {}", id);
         
+        @SuppressWarnings("null")
         Perfil perfil = perfilRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado com ID: " + id));
 
@@ -148,7 +152,9 @@ public class PerfilService {
             );
         }
 
-        perfilRepository.delete(perfil);
+        @SuppressWarnings("null")
+        Perfil finalPerfil = perfil;
+        perfilRepository.delete(finalPerfil);
         log.info("Perfil deletado com sucesso. ID: {}", id);
     }
 
@@ -158,6 +164,7 @@ public class PerfilService {
     public PerfilResponseDTO ativar(UUID id) {
         log.info("Ativando perfil ID: {}", id);
         
+        @SuppressWarnings("null")
         Perfil perfil = perfilRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado com ID: " + id));
 
@@ -175,6 +182,7 @@ public class PerfilService {
     public PerfilResponseDTO desativar(UUID id) {
         log.info("Desativando perfil ID: {}", id);
         
+        @SuppressWarnings("null")
         Perfil perfil = perfilRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado com ID: " + id));
 

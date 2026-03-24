@@ -30,7 +30,6 @@ public class PagamentoService {
     private final PagamentoRepository pagamentoRepository;
     private final PedidoRepository pedidoRepository;
     private final ConfiguracaoRepository configuracaoRepository;
-    private final LojistaRepository lojistaRepository;
     private final PagamentoMapper pagamentoMapper;
     private final PagarMeService pagarMeService;
     private final PedidoStatusService pedidoStatusService;

@@ -32,6 +32,7 @@ public class PromocaoService {
     /**
      * Cria uma nova promoção
      */
+    @SuppressWarnings("null")
     public PromocaoResponseDTO criarPromocao(PromocaoRequestDTO requestDTO) {
         log.info("Criando promoção para produto ID: {}", requestDTO.produtoId());
         
@@ -128,6 +129,7 @@ public class PromocaoService {
     public PromocaoResponseDTO buscarPorId(UUID id) {
         log.info("Buscando promoção ID: {}", id);
         
+        @SuppressWarnings("null")
         Promocao promocao = promocaoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Promoção não encontrada com ID: " + id));
         
@@ -150,6 +152,7 @@ public class PromocaoService {
 
         // Se o produto foi alterado, validar se existe
         if (!promocao.getProduto().getId().equals(requestDTO.produtoId())) {
+            @SuppressWarnings("null")
             Produto novoProduto = produtoRepository.findById(requestDTO.produtoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com ID: " + requestDTO.produtoId()));
             promocao.setProduto(novoProduto);
@@ -184,6 +187,7 @@ public class PromocaoService {
     public PromocaoResponseDTO ativarPromocao(UUID id) {
         log.info("Ativando promoção ID: {}", id);
         
+        @SuppressWarnings("null")
         Promocao promocao = promocaoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Promoção não encontrada com ID: " + id));
 
@@ -216,6 +220,7 @@ public class PromocaoService {
     public PromocaoResponseDTO desativarPromocao(UUID id) {
         log.info("Desativando promoção ID: {}", id);
         
+        @SuppressWarnings("null")
         Promocao promocao = promocaoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Promoção não encontrada com ID: " + id));
 
@@ -233,6 +238,7 @@ public class PromocaoService {
     public void deletarPromocao(UUID id) {
         log.info("Deletando promoção ID: {}", id);
         
+        @SuppressWarnings("null")
         Promocao promocao = promocaoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Promoção não encontrada com ID: " + id));
 

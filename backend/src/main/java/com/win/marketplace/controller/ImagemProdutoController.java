@@ -91,6 +91,7 @@ public class ImagemProdutoController {
             boolean isVideo = TIPOS_VIDEO.contains(contentType.toLowerCase());
 
             // Buscar produto
+            @SuppressWarnings("null")
             Produto produto = produtoRepository.findById(produtoId)
                 .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
 
