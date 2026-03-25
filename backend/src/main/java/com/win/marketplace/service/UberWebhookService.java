@@ -229,6 +229,25 @@ public class UberWebhookService {
         
         atualizarLocalizacaoMotorista(entrega, event);
         
+        // 📡 Notificar mudança de status
+        webSocketService.notificarMudancaStatus(
+            entrega.getIdCorridaUber(),
+            "EM_TRANSITO",
+            Map.of("mensagem", "Motorista retirou do lojista e está a caminho do cliente")
+        );
+        
+        // 📍 Notificar localização do motorista
+        if (event.getCourier() != null && event.getCourier().getLocation() != null) {
+            webSocketService.notificarAtualizacaoMotorista(
+                entrega.getIdCorridaUber(),
+                event.getCourier().getLocation().getLatitude(),
+                event.getCourier().getLocation().getLongitude(),
+                entrega.getNomeMotorista(),
+                entrega.getContatoMotorista(),
+                entrega.getPlacaVeiculo()
+            );
+        }
+        
         // Atualizar status do pedido também
         Pedido pedido = entrega.getPedido();
         if (pedido != null) {
@@ -241,12 +260,43 @@ public class UberWebhookService {
         entrega.setStatusEntrega(StatusEntrega.EM_TRANSITO);
         
         atualizarLocalizacaoMotorista(entrega, event);
+        
+        // 📡 Notificar ação pendente - validação de PIN de entrega
+        webSocketService.notificarAcaoPendente(
+            entrega.getIdCorridaUber(),
+            "VALIDAR_PIN_ENTREGA",
+            entrega.getCodigoEntregaUber()
+        );
+        
+        // 📍 Notificar que motorista chegou no local
+        webSocketService.notificarAlerta(
+            entrega.getIdCorridaUber(),
+            "MOTORISTA_CHEGOU",
+            "Motorista chegou no endereço de entrega. Prepare-se para receber!",
+            "INFO"
+        );
     }
 
     private void processarEntregaConcluida(Entrega entrega, UberWebhookEventDTO event) {
         log.info("✅ Entrega concluída com sucesso");
         entrega.setStatusEntrega(StatusEntrega.ENTREGUE);
         entrega.setDataHoraEntrega(OffsetDateTime.now());
+        
+        // 📡 Notificar mudança de status
+        webSocketService.notificarMudancaStatus(
+            entrega.getIdCorridaUber(),
+            "ENTREGUE",
+            Map.of("mensagem", "Entrega concluída com sucesso!", 
+                   "dataHora", entrega.getDataHoraEntrega().toString())
+        );
+        
+        // 📢 Broadcast: Alertar que entrega foi concluída
+        webSocketService.notificarAlerta(
+            entrega.getIdCorridaUber(),
+            "ENTREGA_CONCLUIDA",
+            "Sua entrega foi recebida com sucesso!",
+            "INFO"
+        );
         
         // Atualizar status do pedido
         Pedido pedido = entrega.getPedido();
@@ -262,10 +312,26 @@ public class UberWebhookService {
         log.warn("❌ Entrega cancelada pela Uber");
         entrega.setStatusEntrega(StatusEntrega.CANCELADA);
         
+        String motivo = event.getCancellationReason() != null ? 
+            event.getCancellationReason() : "Cancelada pela Uber";
+        
         // Registrar motivo do cancelamento
-        if (event.getCancellationReason() != null) {
-            log.warn("📝 Motivo: {}", event.getCancellationReason());
-        }
+        log.warn("📝 Motivo: {}", motivo);
+        
+        // 📡 Notificar mudança de status
+        webSocketService.notificarMudancaStatus(
+            entrega.getIdCorridaUber(),
+            "CANCELADA",
+            Map.of("motivo", motivo)
+        );
+        
+        // 🔔 Alertar com severidade ERROR
+        webSocketService.notificarAlerta(
+            entrega.getIdCorridaUber(),
+            "ENTREGA_CANCELADA",
+            "Sua entrega foi cancelada. Motivo: " + motivo,
+            "ERROR"
+        );
         
         // Atualizar status do pedido
         Pedido pedido = entrega.getPedido();
@@ -289,9 +355,30 @@ public class UberWebhookService {
         // Mapear status da Uber para nosso enum
         try {
             switch (status.toLowerCase()) {
-                case "pending" -> entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_PREPARACAO);
-                case "pickup" -> entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_MOTORISTA);
-                case "dropoff" -> entrega.setStatusEntrega(StatusEntrega.EM_TRANSITO);
+                case "pending" -> {
+                    entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_PREPARACAO);
+                    webSocketService.notificarMudancaStatus(
+                        entrega.getIdCorridaUber(),
+                        "AGUARDANDO_PREPARACAO",
+                        Map.of("mensagem", "Lojista está preparando seu pedido")
+                    );
+                }
+                case "pickup" -> {
+                    entrega.setStatusEntrega(StatusEntrega.AGUARDANDO_MOTORISTA);
+                    webSocketService.notificarMudancaStatus(
+                        entrega.getIdCorridaUber(),
+                        "AGUARDANDO_MOTORISTA",
+                        Map.of("mensagem", "Sua entrega está pronta para coleta")
+                    );
+                }
+                case "dropoff" -> {
+                    entrega.setStatusEntrega(StatusEntrega.EM_TRANSITO);
+                    webSocketService.notificarMudancaStatus(
+                        entrega.getIdCorridaUber(),
+                        "EM_TRANSITO",
+                        Map.of("mensagem", "Motorista está a caminho com seu pedido")
+                    );
+                }
                 case "delivered" -> processarEntregaConcluida(entrega, event);
                 case "canceled", "cancelled" -> processarEntregaCancelada(entrega, event);
                 default -> log.warn("Status desconhecido: {}", status);

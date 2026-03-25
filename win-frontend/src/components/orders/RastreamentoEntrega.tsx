@@ -20,6 +20,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useUberDelivery } from "@/hooks/useUberDelivery";
 import { useWebSocketDelivery, DeliveryStatusUpdate } from "@/hooks/useWebSocketDelivery";
+import { ValidarPinModal } from "@/components/ValidarPinModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -75,6 +76,13 @@ export const RastreamentoEntrega: React.FC<RastreamentoEntregaProps> = ({
   const [courierLocation, setCourierLocation] = useState<any>(null);
   const [alertas, setAlertas] = useState<DeliveryStatusUpdate[]>([]);
   const [usePolling, setUsePolling] = useState(false);
+  
+  // Estado do modal de PIN
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [pinModalData, setPinModalData] = useState<{
+    pinCode: string;
+    acao: 'VALIDAR_PIN_COLETA' | 'VALIDAR_PIN_ENTREGA';
+  } | null>(null);
 
   // Handlers de eventos WebSocket
   const handleStatusChange = useCallback((update: DeliveryStatusUpdate) => {
@@ -102,6 +110,14 @@ export const RastreamentoEntrega: React.FC<RastreamentoEntregaProps> = ({
   const handleActionRequired = useCallback((update: DeliveryStatusUpdate) => {
     console.log("⚠️ Ação requerida:", update.acao);
     if (update.acao === "VALIDAR_PIN_COLETA" || update.acao === "VALIDAR_PIN_ENTREGA") {
+      // Armazenar dados do PIN e abrir modal
+      setPinModalData({
+        pinCode: update.pinCode || "",
+        acao: update.acao as 'VALIDAR_PIN_COLETA' | 'VALIDAR_PIN_ENTREGA',
+      });
+      setPinModalOpen(true);
+      
+      // Chamar callback legado se existir
       onPinRequerido?.(update.pinCode || "", update.acao);
     }
   }, [onPinRequerido]);
@@ -110,6 +126,23 @@ export const RastreamentoEntrega: React.FC<RastreamentoEntregaProps> = ({
     console.log("🔔 Alerta recebido:", update.mensagem);
     setAlertas((prev) => [update, ...prev].slice(0, 3)); // Guardar últimos 3 alertas
   }, []);
+
+  // Handler para quando PIN é validado com sucesso
+  const handlePinValidado = useCallback((dataValidacao: string) => {
+    console.log("✅ PIN validado com sucesso em:", dataValidacao);
+    setPinModalOpen(false);
+    setPinModalData(null);
+    
+    // Adicionar um alerta de sucesso temporário
+    const alertaSucesso: DeliveryStatusUpdate = {
+      tipo: 'ALERT',
+      deliveryId: deliveryId,
+      mensagem: 'PIN validado com sucesso!',
+      severidade: 'INFO',
+      timestamp: Date.now(),
+    };
+    setAlertas((prev) => [alertaSucesso, ...prev].slice(0, 3));
+  }, [deliveryId]);
 
   const { consultarStatusEntrega, loading, error: uberError } = useUberDelivery();
   const { isConnected, error: wsError } = useWebSocketDelivery(deliveryId || null, {
@@ -182,7 +215,22 @@ export const RastreamentoEntrega: React.FC<RastreamentoEntregaProps> = ({
   const statusInfo = statusMap[status.status] || statusMap.SEARCHING_FOR_COURIER;
 
   return (
-    <Card className="w-full">
+    <>
+      {/* Modal de validação de PIN - aparece quando necessário */}
+      {pinModalData && (
+        <ValidarPinModal
+          entregaId={deliveryId}
+          tipo={pinModalData.acao === 'VALIDAR_PIN_COLETA' ? 'COLETA' : 'ENTREGA'}
+          isOpen={pinModalOpen}
+          onClose={() => {
+            setPinModalOpen(false);
+            setPinModalData(null);
+          }}
+          onValidadoComSucesso={handlePinValidado}
+        />
+      )}
+
+      <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Rastreamento da Entrega</span>
@@ -359,5 +407,6 @@ export const RastreamentoEntrega: React.FC<RastreamentoEntregaProps> = ({
         )}
       </CardContent>
     </Card>
+    </>
   );
 };
