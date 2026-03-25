@@ -127,7 +127,7 @@ public class UberAuthService {
             body.add("grant_type", "client_credentials");
             body.add("client_id", clientId);
             body.add("client_secret", clientSecret);
-            body.add("scope", "delivery:write");
+            body.add("scope", "delivery");
 
             HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
 

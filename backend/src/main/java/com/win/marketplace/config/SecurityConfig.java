@@ -109,6 +109,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/v1/banners/**").permitAll()
                     .requestMatchers("/api/v1/external/**").permitAll()
                     .requestMatchers("/api/v1/entregas/**").permitAll()
+                    .requestMatchers("/api/v1/uber/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/uber/quotes/test").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/fretes/estimar").permitAll()
                     .requestMatchers("/api/v1/webhooks/**").permitAll()
                     .requestMatchers("/api/v1/pagamentos/webhooks/**").permitAll()

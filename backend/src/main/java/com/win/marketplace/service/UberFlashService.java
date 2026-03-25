@@ -98,12 +98,12 @@ public class UberFlashService {
 
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
             body.add("grant_type", "client_credentials");
-            body.add("scope", "eats.deliveries");
+            body.add("scope", "delivery");
 
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
             // Fazer requisição
-            String tokenUrl = "https://login.uber.com/oauth/v2/token";
+            String tokenUrl = "https://auth.uber.com/oauth/v2/token";
             ResponseEntity<JsonNode> response = restTemplate.postForEntity(
                     tokenUrl, request, JsonNode.class);
 
@@ -248,57 +248,51 @@ public class UberFlashService {
                 }
             }
 
-            // 3. PREPARAR REQUEST PARA UBER API
-            // Preparar body da requisição
+            // 3. PREPARAR REQUEST PARA UBER API (FORMATO CORRETO)
+            // Preparar body da requisição conforme API Uber Direct
             Map<String, Object> quoteRequest = new HashMap<>();
             
-            // Endereço de origem (lojista) com coordenadas
-            Map<String, Object> pickup = new HashMap<>();
-            pickup.put("address", request.getEnderecoOrigemCompleto());
-            pickup.put("postal_code", request.getCepOrigem());
+            // TOP-LEVEL: Endereños em formato texto (obrigatório para Uber)
+            quoteRequest.put("pickup_address", request.getEnderecoOrigemCompleto());
+            quoteRequest.put("dropoff_address", request.getEnderecoDestinoCompleto());
             
+            // TOP-LEVEL: Localização com coordenadas (obrigatório)
             Map<String, Double> pickupLocation = new HashMap<>();
             pickupLocation.put("latitude", request.getOrigemLatitude());
             pickupLocation.put("longitude", request.getOrigemLongitude());
-            pickup.put("location", pickupLocation);
-            
-            // Adicionar contato de pickup (recomendado pela Uber)
-            if (request.getNomeLojista() != null && request.getTelefoneLojista() != null) {
-                Map<String, Object> pickupContact = new HashMap<>();
-                pickupContact.put("name", request.getNomeLojista());
-                
-                Map<String, Object> pickupPhone = new HashMap<>();
-                pickupPhone.put("number", limparTelefone(request.getTelefoneLojista()));
-                pickupContact.put("phone", pickupPhone);
-                
-                pickup.put("contact", pickupContact);
-            }
-            
-            quoteRequest.put("pickup", pickup);
-            
-            // Endereço de destino (cliente) com coordenadas
-            Map<String, Object> dropoff = new HashMap<>();
-            dropoff.put("address", request.getEnderecoDestinoCompleto());
-            dropoff.put("postal_code", request.getCepDestino());
+            quoteRequest.put("pickup_location", pickupLocation);
             
             Map<String, Double> dropoffLocation = new HashMap<>();
             dropoffLocation.put("latitude", request.getDestinoLatitude());
             dropoffLocation.put("longitude", request.getDestinoLongitude());
-            dropoff.put("location", dropoffLocation);
+            quoteRequest.put("dropoff_location", dropoffLocation);
             
-            // Adicionar contato de dropoff (recomendado pela Uber)
-            if (request.getNomeCliente() != null && request.getTelefoneCliente() != null) {
-                Map<String, Object> dropoffContact = new HashMap<>();
-                dropoffContact.put("name", request.getNomeCliente());
-                
-                Map<String, Object> dropoffPhone = new HashMap<>();
-                dropoffPhone.put("number", limparTelefone(request.getTelefoneCliente()));
-                dropoffContact.put("phone", dropoffPhone);
-                
-                dropoff.put("contact", dropoffContact);
+            // OPCIONAL: Contatos (recomendado)
+            if (request.getNomeLojista() != null || request.getTelefoneLojista() != null) {
+                Map<String, Object> pickupContact = new HashMap<>();
+                if (request.getNomeLojista() != null) {
+                    pickupContact.put("name", request.getNomeLojista());
+                }
+                if (request.getTelefoneLojista() != null) {
+                    Map<String, Object> pickupPhone = new HashMap<>();
+                    pickupPhone.put("number", limparTelefone(request.getTelefoneLojista()));
+                    pickupContact.put("phone", pickupPhone);
+                }
+                quoteRequest.put("pickup_contact", pickupContact);
             }
             
-            quoteRequest.put("dropoff", dropoff);
+            if (request.getNomeCliente() != null || request.getTelefoneCliente() != null) {
+                Map<String, Object> dropoffContact = new HashMap<>();
+                if (request.getNomeCliente() != null) {
+                    dropoffContact.put("name", request.getNomeCliente());
+                }
+                if (request.getTelefoneCliente() != null) {
+                    Map<String, Object> dropoffPhone = new HashMap<>();
+                    dropoffPhone.put("number", limparTelefone(request.getTelefoneCliente()));
+                    dropoffContact.put("phone", dropoffPhone);
+                }
+                quoteRequest.put("dropoff_contact", dropoffContact);
+            }
             
             // Tipo de veículo baseado no peso
             var tipoVeiculo = request.getTipoVeiculoCalculado();

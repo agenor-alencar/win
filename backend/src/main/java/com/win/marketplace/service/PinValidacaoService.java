@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -204,7 +205,7 @@ public class PinValidacaoService {
                     request.entregaId(), pinValidacao.getNumeroTentativas() + 1);
 
             pinValidacao.incrementarTentativas();
-            pinValidacao.setMotivFalha("PIN incorreto");
+            pinValidacao.setMotivoFalha("PIN incorreto");
 
             PinValidacao pinAtualizado = pinValidacaoRepository.save(pinValidacao);
 
@@ -234,15 +235,14 @@ public class PinValidacaoService {
      */
     private void notificarValidacaoPinDireto(Entrega entrega, TipoPinValidacao tipo, UUID usuarioId) {
         try {
-            String topico = "/topic/entrega/" + entrega.getId() + "/pin-validado";
-            String mensagem = String.format(
-                    "{\"tipo\":\"%s\",\"validadoEm\":\"%s\",\"validadorId\":\"%s\"}",
-                    tipo.name(),
-                    OffsetDateTime.now(),
-                    usuarioId
+            Map<String, Object> dados = Map.of(
+                    "tipo", tipo.name(),
+                    "validadoEm", OffsetDateTime.now().toString(),
+                    "validadorId", usuarioId.toString(),
+                    "entregaId", entrega.getId().toString()
             );
-            webSocketNotificationService.enviarNotificacao(topico, mensagem);
-            log.debug("WebSocket notificação enviada para: {}", topico);
+            webSocketNotificationService.broadcastNotificacao("pin-validado", dados);
+            log.debug("WebSocket notificação enviada para validação de PIN da entrega: {}", entrega.getId());
         } catch (Exception e) {
             log.error("Erro ao enviar notificação WebSocket de validação de PIN", e);
         }

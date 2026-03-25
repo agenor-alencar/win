@@ -2,6 +2,11 @@ spring:
   application:
     name: win-marketplace
   
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+  
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/win_marketplace}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
@@ -29,6 +34,11 @@ spring:
     baseline-on-migrate: true
     validate-on-migrate: true
 
+  # Desabilitar RSocket auto-config (causando erro de authenticationManager null)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.rsocket.RSocketMessagingAutoConfiguration
+
 # DigitalOcean Spaces Configuration (opcional)
 # Para habilitar, configure as variáveis de ambiente:
 # SPACES_ACCESS_KEY e SPACES_SECRET_KEY
@@ -48,7 +58,6 @@ server:
     enabled: true
   error:
     include-message: never
-    include-binding-errors: never
 
 logging:
   level:

@@ -51,11 +51,14 @@ public interface UberOAuthTokenRepository extends JpaRepository<UberOAuthToken, 
     /**
      * Busca tokens que vão expirar em breve (próximos 5 minutos)
      */
-    @Query("""
-        SELECT t FROM UberOAuthToken t 
+    @Query(nativeQuery = true, value = """
+        SELECT t.id, t.codigo_cliente_uber, t.token_acesso, t.tipo_token, t.expira_em,
+               t.resfresco_token, t.escopos, t.ativo, t.data_criacao, t.data_atualizacao,
+               t.motivo_revogacao, t.data_revogacao
+        FROM uber_oauth_token t 
         WHERE t.ativo = true
-        AND t.expiraEm BETWEEN CURRENT_TIMESTAMP 
-                          AND CURRENT_TIMESTAMP + INTERVAL '5 minutes'
+        AND t.expira_em BETWEEN NOW() 
+                          AND NOW() + INTERVAL '5 minutes'
     """)
     List<UberOAuthToken> findTokensExpiringsoon();
 }

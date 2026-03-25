@@ -129,12 +129,12 @@ public class UberDeliveryService {
 
             return delivery;
 
-        } catch (RuntimeException e) {
-            log.error("❌ Erro: {}", e.getMessage());
-            throw e;
         } catch (RestClientException e) {
             log.error("❌ Erro de conexão: {}", e.getMessage(), e);
             throw new RuntimeException("Falha ao conectar na API da Uber: " + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            log.error("❌ Erro: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.error("❌ Erro ao processar: {}", e.getMessage(), e);
             throw new RuntimeException("Erro ao criar entrega: " + e.getMessage(), e);

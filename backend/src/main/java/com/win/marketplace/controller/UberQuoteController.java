@@ -199,4 +199,27 @@ public class UberQuoteController {
                     ));
         }
     }
+
+    /**
+     * Endpoint de teste para verificar se Uber API está em modo REAL ou MOCK
+     * Sem autenticação requerida
+     */
+    @PostMapping("/test")
+    @Operation(summary = "Teste de Modo Uber", description = "Verifica se está usando API REAL ou MOCK")
+    public ResponseEntity<?> testarModo(@Valid @RequestBody UberQuoteRequestDTO request) {
+        try {
+            log.info("🧪 POST /api/v1/uber/quotes/test - Teste de modo");
+            UberQuoteResponseDTO cotacao = uberQuoteService.solicitarCotacao(request);
+            return ResponseEntity.ok(Map.of(
+                "sucesso", true,
+                "quote_id", cotacao.getQuoteId(),
+                "modo", cotacao.getQuoteId().startsWith("quo_") ? "REAL" : "MOCK",
+                "valor", cotacao.getValor()
+            ));
+        } catch (Exception e) {
+            log.error("❌ Erro no teste: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("sucesso", false, "erro", e.getMessage()));
+        }
+    }
 }

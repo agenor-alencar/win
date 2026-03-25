@@ -82,15 +82,11 @@ public class UberWebhookController {
             }
 
             log.info("✅ Webhook validado");
-            log.info("   Tipo: {}", webhook.getTipoEvento());
             log.info("   ID Corrida: {}", webhook.getIdCorridaUber());
             log.info("   Status: {}", webhook.getStatusUber());
 
             // 2. Processar webhook (atualizar DB)
             entregaService.processarWebhookUber(webhook);
-            
-            // 3. Processar via novo serviço (emitir eventos WebSocket, etc)
-            webhookService.processarWebhook(webhook);
 
             // 4. Retornar 200 OK (confirm to Uber)
             return ResponseEntity.ok(Map.of("status", "received"));
