@@ -98,7 +98,6 @@ public class UberFlashService {
 
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
             body.add("grant_type", "client_credentials");
-            body.add("scope", "delivery");
 
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
