@@ -1,0 +1,20 @@
+# ========================================
+# SendGrid Configuration Template
+# ========================================
+# Copie este arquivo para .env e preencha com suas credenciais
+
+# Sua API Key do SendGrid (obtida em Settings → API Keys)
+SENDGRID_API_KEY=
+
+# Email verificado no SendGrid (Settings → Sender Authentication)
+MAIL_FROM=
+
+# URL do frontend (mantenha localhost para desenvolvimento)
+FRONTEND_URL=http://localhost:3000
+
+# ========================================
+# EXEMPLO DE PREENCHIMENTO:
+# ========================================
+# SENDGRID_API_KEY=SG.aBcDeFgHiJkLmNoPqRsTuVwXyZ123456789abcdefghijklmnopqrstuvwxyz
+# MAIL_FROM=contato@gmail.com
+# FRONTEND_URL=http://localhost:3000

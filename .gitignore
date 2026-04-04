@@ -204,9 +204,9 @@ temp_*
 tmp_*
 
 # ========================================
-# 📝 DOCUMENTAÇÃO INTERNA (NÃO PUBLICAR)
+# 📝 DOCUMENTAÇÃO (VERSIONAR)
 # ========================================
-_DOCS/
+# _DOCS/ agora versionada (removido de ignore)
 RELATORIO_FINAL.md
 scripts/internal/
 
