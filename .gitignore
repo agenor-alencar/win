@@ -5,22 +5,37 @@
 # ========================================
 # 🔐 SEGURANÇA - NUNCA COMMITAR
 # ========================================
+# Variáveis de ambiente
 .env
-.env.vps
-.env.vps.*
-.env.vps.corrigido
-.env.sendgrid.template
 .env.local
 .env.*.local
 .env.production
+.env.staging
+.env.test
+.env.vps*
+.env.*.example.local
 **/.env.production
+**/.env.staging
+
+# Chaves de criptografia e certificados
 *.key
 *.pem
 *.p12
+*.pkcs12
+*.jks
 secrets/
 credentials/
+.ssh/
+.keys/
+
+# Configurações locais/sensíveis
 config/application-prod.yml
 config/application-local.yml
+config/application-*.yml
+!config/application.yml
+!config/application-dev.yml
+backend/src/main/resources/application-prod.yml
+backend/src/main/resources/application-local.yml
 
 # ========================================
 # 🗄️ BANCO DE DADOS
@@ -84,7 +99,7 @@ win-frontend/*.local
 docker-compose.override.yml
 
 # ========================================
-# 📤 UPLOADS
+# 📤 UPLOADS - Dados do Usuário
 # ========================================
 uploads/*
 !uploads/.gitkeep
@@ -103,6 +118,57 @@ out/
 .settings/
 .classpath
 .project
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# ========================================
+# 🔧 Arquivos de Teste/Dev Locais
+# ========================================
+db-check.txt
+*-test.html
+*-test.js
+*-test.json
+temp_migrations.sql
+*-local.sh
+*-local.bat
+*-dev.conf
+.local/
+.test/
+
+# ========================================
+# 📊 Logs e Reportes Sensíveis
+# ========================================
+*.log
+logs/
+audit.log
+access.log
+error.log
+
+# ========================================
+# 🖥 OS Files
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ========================================
+# 📁 Backup e Temp
+# ========================================
+*.bak
+*.backup
+*.orig
+*.swp
+*.tmp
+*.temp
+.cache/
 .metadata
 bin/
 .vscode/*
