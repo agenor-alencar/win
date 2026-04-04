@@ -110,6 +110,15 @@ bin/
 !.vscode/extensions.json
 
 # ========================================
+# 🤖 VS Code Copilot Customizations
+# ========================================
+# Track local progress (não sincronizar entre devs)
+.github/PROGRESS_TRACKING.md
+# Mas manter customizações compartilhadas
+!.github/copilot-instructions.md
+!.github/agents/
+
+# ========================================
 # 🖥️ OS
 # ========================================
 .DS_Store

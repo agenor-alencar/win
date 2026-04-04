@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(timeout = 30)  // ✅ FIX-003: Timeout global 30s para escrita
 public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
@@ -38,6 +38,7 @@ public class ProdutoService {
 
     /**
      * Cria um novo produto
+     * ✅ FIX-003: Herda timeout de 30 segundos da classe
      */
     public ProdutoResponseDTO criarProduto(UUID lojistaId, ProdutoCreateRequestDTO requestDTO) {
         log.info("Criando produto para lojista ID: {}", lojistaId);
@@ -76,8 +77,9 @@ public class ProdutoService {
 
     /**
      * Lista produtos com paginação (apenas ativos)
+     * ✅ FIX-003: Timeout customizado 15s para leitura paginada
      */
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, timeout = 15)
     public Page<ProdutoSummaryResponseDTO> listarProdutosPaginados(Pageable pageable) {
         log.info("Listando produtos paginados - Página: {}, Tamanho: {}", pageable.getPageNumber(), pageable.getPageSize());
         
@@ -136,8 +138,9 @@ public class ProdutoService {
 
     /**
      * Busca produtos por nome (busca parcial, case insensitive)
+     * ✅ FIX-003: Timeout 15s para buscas textuais
      */
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, timeout = 15)
     public List<ProdutoResponseDTO> buscarProdutosPorNome(String nome) {
         log.info("Buscando produtos com nome contendo: {}", nome);
         
@@ -153,8 +156,9 @@ public class ProdutoService {
 
     /**
      * Busca produto por ID
+     * ✅ FIX-003: Timeout 10s para buscas por ID (rápidas)
      */
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, timeout = 10)
     public ProdutoResponseDTO buscarPorId(UUID id) {
         log.info("Buscando produto por ID: {}", id);
         
@@ -166,6 +170,7 @@ public class ProdutoService {
 
     /**
      * Atualiza produto existente
+     * ✅ FIX-003: Herda timeout de 30s da classe para escrita
      */
     public ProdutoResponseDTO atualizarProduto(UUID id, ProdutoUpdateRequestDTO requestDTO) {
         log.info("Atualizando produto ID: {}", id);

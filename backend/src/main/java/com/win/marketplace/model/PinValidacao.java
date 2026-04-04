@@ -28,7 +28,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Table(name = "pin_validacoes", indexes = {
     @Index(name = "idx_pin_entrega_id", columnList = "entrega_id"),
-    @Index(name = "idx_pin_tipo", columnList = "tipo_pin"),
+    @Index(name = "idx_pin_tipo", columnList = "tipo_pin_validacao"),
     @Index(name = "idx_pin_bloqueado_ate", columnList = "bloqueado_ate"),
     @Index(name = "idx_pin_criado_em", columnList = "criado_em")
 })

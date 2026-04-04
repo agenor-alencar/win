@@ -1,5 +1,6 @@
 package com.win.marketplace.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -36,6 +37,9 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    @Value("${cors.allowed-origins:http://localhost:3000}")
+    private String allowedOrigins;
+
     /**
      * Configura o message broker
      * - enableSimpleBroker: ativa broker in-memory para /topic
@@ -50,17 +54,23 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     /**
      * Registra STOMP endpoints
      * - /ws/connect: URL onde cliente se conecta
-     * - setAllowedOrigins("*"): CORS - remover "*" em produção
+     * - setAllowedOrigins: CORS restringido via configuração (FIX-001: Security Hardening)
      * - withSockJS(): fallback para browsers antigos
+     * 
+     * NOTA CRÍTICA DE SEGURANÇA:
+     * Antes da implementação deste fix, CORS estava *aberto* (.setAllowedOrigins("*"))
+     * Isso permitia ataques CSRF de qualquer origem. Agora é controlado via ambiente.
      */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String[] origins = allowedOrigins.split(",");
+        
         registry.addEndpoint("/ws/connect")
-                .setAllowedOrigins("*")  // TODO: Configurar origem corretamente em produção
+                .setAllowedOrigins(origins)  // ✅ FIX-001: CORS configurável e restrito
                 .withSockJS();
         
         // Endpoint WebSocket nativo (sem SockJS)
         registry.addEndpoint("/ws/connect")
-                .setAllowedOrigins("*");
+                .setAllowedOrigins(origins);
     }
 }

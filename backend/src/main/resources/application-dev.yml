@@ -1,0 +1,138 @@
+spring:
+  application:
+    name: win-marketplace
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/win_marketplace
+    username: postgres
+    password: postgres123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 120000
+      max-lifetime: 240000
+      keepalive-time: 60000
+      connection-test-query: SELECT 1
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
+      auto-commit: true
+      pool-name: HikariPool-WinMarketplace
+
+  jpa:
+    hibernate:
+      ddl-auto: update  # ✅ AUTO em dev: cria/altera tabelas automaticamente
+    show-sql: true  # ✅ Mostrar SQL em dev para debug
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true  # ✅ Formata SQL para legibilidade em dev
+        use_sql_comments: true  # ✅ Adiciona comentários em SQL
+        enable_lazy_load_no_trans: false  # Força transação explícita
+        jdbc:
+          time_zone: America/Sao_Paulo
+          batch_size: 20
+          statement_fetch_size: 50  # ✅ Fetch size otimizado
+        order_inserts: true
+        order_updates: true
+        temp:
+          use_jdbc_metadata_defaults: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  sql:
+    init:
+      mode: always
+      continue-on-error: false
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+  mail:
+    host: smtp.sendgrid.net
+    port: 587
+    username: apikey
+    password: SG.test-key
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        from: noreply@winmarketplace.com
+    test-connection: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  
+  session:
+    store-type: none
+  
+  cache:
+    type: none
+
+management:
+  health:
+    redis:
+      enabled: false
+  endpoint:
+    health:
+      show-details: when-authorized
+
+server:
+  port: 8080
+
+app:
+  frontend:
+    url: http://localhost:3000
+  cors:
+    allowed-origins: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
+  dev-tools:
+    enabled: true
+  api-docs:
+    enabled: true
+  upload:
+    dir: ${user.dir}/uploads/produtos
+    base-url: http://localhost:8080/uploads/produtos
+
+jwt:
+  secret: 9f4b8c1d7e2a6f3c8b1d5e7a9c2f4b6d8e1a3c5f7b9d2e4a6c8f1b3d5e7a9c2f
+
+security:
+  login:
+    max-attempts: 5
+    lock-minutes: 15
+    use-redis: false
+
+uber:
+  client-id: xM1fvatROhYoEE5q-cgrx0597OH9lIlf
+  client-secret: r2OLu0psdu0lErzpzjdvSiQ_NPFNKCyJORxRJVMy
+  customer-id: 01233f28-3140-594c-85b5-553b08284ee0
+  api-base-url: https://sandbox-api.uber.com
+  api:
+    enabled: true
+
+pagarme:
+  api-key: pk_test_seu-teste-aqui
+  public-key: pk_test_seu-public-teste
+  environment: test
+  enabled: false
+
+maps:
+  api-key: AIzaSyDShWrpS8HkLYS2Rit6AalJmrq3KE9cYHw
+
+logging:
+  level:
+    root: INFO
+    com.win.marketplace: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

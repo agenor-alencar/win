@@ -1,0 +1,11 @@
+{
+  "idCorridaUber": "test-delivery-12345",
+  "statusUber": "DELIVERED",
+  "dataHoraEvento": "2026-03-25T19:50:00Z",
+  "nomeMotorista": "Driver Test",
+  "placaVeiculo": "ABC-1234",
+  "contatoMotorista": "11999999999",
+  "latitude": -23.5505,
+  "longitude": -46.6333,
+  "mensagem": "Delivery completed successfully"
+}

@@ -35,7 +35,7 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: update  # ✅ Cria/atualiza tabelas automaticamente
+      ddl-auto: ${JPA_DDL_AUTO:validate}  # ✅ FIX-002: Environment-aware DDL strategy
     show-sql: false  # Desabilitado para produção (reduz CPU)
     properties:
       hibernate:
@@ -45,8 +45,10 @@ spring:
         jdbc:
           time_zone: America/Sao_Paulo
           batch_size: 20  # Batch para operações em lote
+          statement_fetch_size: 50  # ✅ PERF-001: Fetch size otimizado
         order_inserts: true  # Otimização para inserts
         order_updates: true  # Otimização para updates
+        enable_lazy_load_no_trans: false  # ✅ FIX-003: Garante transação explícita
         temp:
           use_jdbc_metadata_defaults: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect

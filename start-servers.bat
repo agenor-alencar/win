@@ -11,14 +11,14 @@ echo.
 
 REM Start Backend in new window
 echo [1/2] Starting Backend on port 8080...
-start "WIN Marketplace Backend" cmd /k cd /d c:\Users\Usuario\Documents\win\backend ^& mvnw.cmd spring-boot:run
+start "WIN Marketplace Backend" cmd /k cd /d c:\Users\user\OneDrive\Documentos\win\backend ^& mvnw.cmd spring-boot:run
 
 REM Wait for backend to start
 timeout /t 5
 
 REM Start Frontend in new window  
 echo [2/2] Starting Frontend on port 5173...
-start "WIN Marketplace Frontend" cmd /k cd /d c:\Users\Usuario\Documents\win\win-frontend ^& npm run dev
+start "WIN Marketplace Frontend" cmd /k cd /d c:\Users\user\OneDrive\Documentos\win\win-frontend ^& npm run dev
 
 echo.
 echo ===================================================

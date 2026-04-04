@@ -1,0 +1,187 @@
+# ============================================================================
+# PERFIL DE PRODUÇÃO
+# ============================================================================
+# Ativação: spring.profiles.active=prod OU SPRING_PROFILES_ACTIVE=prod
+# 
+# Este perfil é para ambiente de PRODUÇÃO com máxima segurança e performance
+# ============================================================================
+
+spring:
+  application:
+    name: win-marketplace
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/win_marketplace}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20  # Aumentado para produção
+      minimum-idle: 10  # Mais conexões em espera
+      connection-timeout: 30000
+      idle-timeout: 120000
+      max-lifetime: 240000
+      keepalive-time: 60000
+      connection-test-query: SELECT 1
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
+      auto-commit: true
+      pool-name: HikariPool-WinMarketplace-Prod
+
+  jpa:
+    hibernate:
+      ddl-auto: validate  # ✅ PROD: Apenas VALIDA, não cria/altera (FIX-002)
+    show-sql: false  # NUNCA mostrar SQL em produção
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false  # Desabilitado em produção
+        use_sql_comments: false  # Desabilitado em produção
+        enable_lazy_load_no_trans: false  # Força transação explícita (FIX-003)
+        jdbc:
+          time_zone: America/Sao_Paulo
+          batch_size: 20
+          statement_fetch_size: 50
+          max_batch_prepared_statement_size: 20
+        order_inserts: true
+        order_updates: true
+        temp:
+          use_jdbc_metadata_defaults: false
+
+  sql:
+    init:
+      mode: never  # NUNCA executa scripts em produção
+      continue-on-error: false
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+  mail:
+    host: ${MAIL_HOST:smtp.sendgrid.net}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:apikey}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        from: ${MAIL_FROM:noreply@winmarketplace.com}
+    test-connection: false
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+  
+  session:
+    store-type: redis  # ✅ Usar Redis para sessões em produção
+  
+  cache:
+    type: redis
+    redis:
+      time-to-live: 1800000  # 30 minutos
+
+  devtools:
+    restart:
+      enabled: false  # NUNCA habilitar em produção
+
+management:
+  health:
+    redis:
+      enabled: true
+  endpoint:
+    health:
+      show-details: when-authorized  # Apenas para usuários autenticados
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+server:
+  port: 8080
+  compression:
+    enabled: true
+    min-response-size: 1024  # Comprime respostas > 1KB
+  error:
+    whitelabel:
+      enabled: false  # Disable default error page
+    include-message: never  # Não expõe detalhes de erro
+    include-binding-errors: never
+    include-stacktrace: never
+
+app:
+  frontend:
+    url: ${FRONTEND_URL:https://win-marketplace.com.br}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://win-marketplace.com.br}
+  dev-tools:
+    enabled: false  # NUNCA habilitar em produção
+  api-docs:
+    enabled: false  # NUNCA expor Swagger em produção
+  upload:
+    dir: ${UPLOAD_DIR:/data/uploads/produtos}
+    base-url: https://cdn.win-marketplace.com.br/uploads/produtos
+
+jwt:
+  secret: ${JWT_SECRET:}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+security:
+  login:
+    max-attempts: ${SECURITY_LOGIN_MAX_ATTEMPTS:5}
+    lock-minutes: ${SECURITY_LOGIN_LOCK_MINUTES:15}
+    use-redis: true  # ✅ Redis para rate limiting em cluster
+
+uber:
+  client:
+    id: ${UBER_CLIENT_ID:}
+    secret: ${UBER_CLIENT_SECRET:}
+  api:
+    base-url: ${UBER_API_BASE_URL:https://api.uber.com}
+    enabled: ${UBER_API_ENABLED:false}
+  webhook:
+    secret: ${UBER_WEBHOOK_SECRET:}
+
+pagarme:
+  api-key: ${PAGARME_API_KEY:}
+  public-key: ${PAGARME_PUBLIC_KEY:}
+  environment: ${PAGARME_ENVIRONMENT:live}
+  enabled: ${PAGARME_ENABLED:false}
+
+maps:
+  api-key: ${GOOGLE_MAPS_API_KEY:}
+
+# ✅ Logging restrito em produção para performance
+logging:
+  level:
+    root: WARN
+    com.win.marketplace: INFO
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/win-marketplace/application.log
+    max-size: 10MB
+    max-history: 30
