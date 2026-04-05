@@ -1,15 +1,21 @@
 package com.win.marketplace.controller;
 
 import com.win.marketplace.dto.request.LoginRequestDTO;
+import com.win.marketplace.dto.request.OtpRequestDTO;
+import com.win.marketplace.dto.request.OtpVerifyRequestDTO;
 import com.win.marketplace.dto.request.RegisterRequestDTO;
 import com.win.marketplace.dto.request.ResetPasswordRequestDTO;
 import com.win.marketplace.dto.response.AuthResponseDTO;
+import com.win.marketplace.dto.response.OtpResponseDTO;
 import com.win.marketplace.dto.response.UsuarioResponseDTO;
 import com.win.marketplace.exception.BusinessException;
+import com.win.marketplace.integration.TwilioSmsClient;
 import com.win.marketplace.model.Usuario;
 import com.win.marketplace.repository.UsuarioRepository;
 import com.win.marketplace.security.JwtService;
 import com.win.marketplace.security.LoginAttemptService;
+import com.win.marketplace.security.SmsRateLimitService;
+import com.win.marketplace.service.OtpService;
 import com.win.marketplace.service.UsuarioService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,6 +52,9 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final LoginAttemptService loginAttemptService;
+    private final SmsRateLimitService smsRateLimitService;
+    private final OtpService otpService;
+    private final TwilioSmsClient twilioSmsClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -344,6 +353,191 @@ public class AuthController {
             "message", "Usuário promovido a ADMIN com sucesso",
             "email", email
         ));
+    }
+
+    /**
+     * Endpoint para solicitar código OTP via SMS
+     * POST /api/v1/auth/request-code
+     * 
+     * Flow:
+     * 1. Validar formato do telefone
+     * 2. Verificar rate limiting (máx 3 req/min por IP+telefone)
+     * 3. Gerar código OTP aleatório de 6 dígitos
+     * 4. Salvar no banco com TTL de 5 minutos
+     * 5. Enviar via SMS Twilio
+     * 6. Retornar sucesso
+     * 
+     * Resposta de sucesso: HTTP 200
+     * {
+     *   "telefone": "+5511987654321",
+     *   "mensagem": "Código de verificação enviado com sucesso via SMS",
+     *   "tempo_expiracao_segundos": 300
+     * }
+     * 
+     * Resposta de erro - Rate limit: HTTP 429
+     * Resposta de erro - SMS falha: HTTP 503
+     */
+    @PostMapping("/request-code")
+    public ResponseEntity<OtpResponseDTO> solicitarCodigoOtp(
+            @Valid @RequestBody OtpRequestDTO requestDTO,
+            HttpServletRequest request
+    ) {
+        String telefone = requestDTO.telefone();
+        String clientIp = extractClientIp(request);
+        String chaveRateLimit = smsRateLimitService.construirChave(clientIp, telefone);
+
+        log.info("POST /api/v1/auth/request-code - Solicitação de OTP para: {} (IP: {})", telefone, clientIp);
+
+        // 1. Verificar se está bloqueado por rate limit
+        if (smsRateLimitService.estaBlockeado(chaveRateLimit)) {
+            long segundosRestantes = smsRateLimitService.obterSegundosRestantes(chaveRateLimit);
+            log.warn("Rate limit atingido para telefone: {} - IP: {} - Esperar: {} segundos",
+                    telefone, clientIp, segundosRestantes);
+            throw new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Muitos códigos solicitados. Tente novamente em " + segundosRestantes + " segundos"
+            );
+        }
+
+        // 2. Registrar tentativa de solicitação
+        if (!smsRateLimitService.registrarSolicitacao(chaveRateLimit)) {
+            log.warn("Rate limit acionado para: {} - IP: {}", telefone, clientIp);
+            long segundosRestantes = smsRateLimitService.obterSegundosRestantes(chaveRateLimit);
+            throw new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Muitos códigos solicitados. Tente novamente em " + segundosRestantes + " segundos"
+            );
+        }
+
+        try {
+            // 3. Gerar código OTP
+            String codigoOtp = otpService.gerarCodigoOtp(telefone);
+            log.debug("Código OTP gerado para: {} - Código: {}", telefone, codigoOtp);
+
+            // 4. Enviar via SMS Twilio
+            twilioSmsClient.enviarSmsComCodigoOtp(telefone, codigoOtp);
+            log.info("SMS enviado com sucesso para: {}", telefone);
+
+            // 5. Limpar contagem (SMS foi enviado com sucesso)
+            smsRateLimitService.limparContagem(chaveRateLimit);
+
+            // 6. Retornar resposta de sucesso
+            OtpResponseDTO resposta = otpService.construirRespostaSucesso(telefone);
+            return ResponseEntity.ok(resposta);
+
+        } catch (ResponseStatusException e) {
+            // Erro esperado (Twilio indisponível, etc) - não incrementar rate limit
+            log.warn("Erro esperado ao enviar OTP: {}", e.getReason());
+            throw e;
+        } catch (Exception e) {
+            log.error("Erro inesperado ao solicitar código OTP: {}", e.getMessage(), e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erro ao processar solicitação. Tente novamente"
+            );
+        }
+    }
+
+    /**
+     * Endpoint para validar e fazer login com código OTP
+     * POST /api/v1/auth/verify-code
+     * 
+     * Flow:
+     * 1. Validar formato do código (6 dígitos)
+     * 2. Validar código OTP armazenado
+     * 3. Buscar ou criar usuário baseado no telefone
+     * 4. Gerar token JWT
+     * 5. Retornar token + dados do usuário
+     * 
+     * Resposta de sucesso: HTTP 200
+     * {
+     *   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+     *   "usuario": {
+     *     "id": "550e8400-e29b-41d4-a716-446655440000",
+     *     "nome": "João Silva",
+     *     "telefone": "+5511987654321",
+     *     "email": "joao@example.com"
+     *   }
+     * }
+     * 
+     * Resposta de erro - Código inválido: HTTP 401
+     */
+    @PostMapping("/verify-code")
+    public ResponseEntity<AuthResponseDTO> validarCodigoOtp(
+            @Valid @RequestBody OtpVerifyRequestDTO requestDTO,
+            HttpServletRequest request
+    ) {
+        String telefone = requestDTO.telefone();
+        String codigo = requestDTO.codigo();
+        String clientIp = extractClientIp(request);
+
+        log.info("POST /api/v1/auth/verify-code - Validação de OTP para: {} (IP: {})", telefone, clientIp);
+
+        try {
+            // 1. Validar código OTP
+            otpService.validarCodigoOtp(telefone, codigo);
+            log.info("Código OTP validado com sucesso para: {}", telefone);
+
+            // 2. Buscar ou criar usuário baseado no telefone
+            Usuario usuario = usuarioRepository.findByTelefone(telefone)
+                    .orElseGet(() -> {
+                        // Se não existe, criar novo usuário com telefone
+                        log.info("Criando novo usuário com telefone: {}", telefone);
+                        Usuario novoUsuario = new Usuario();
+                        novoUsuario.setTelefone(telefone);
+                        novoUsuario.setNome(telefone); // Usar telefone como nome temporário
+                        novoUsuario.setEmail("otp_" + telefone.replace("+", "").replace(" ", "") + "_" + System.currentTimeMillis() + "@otp-login.local");
+                        novoUsuario.setSenhaHash(""); // Sem senha em login OTP
+                        novoUsuario.setAtivo(true);
+                        return usuarioRepository.save(novoUsuario);
+                    });
+
+            // 3. Verificar se usuário está ativo
+            if (!usuario.getAtivo()) {
+                log.warn("Tentativa de acesso com usuário inativo: {}", telefone);
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Usuário inativo. Entre em contato com o suporte"
+                );
+            }
+
+            // 4. Extrair perfis
+            List<String> perfis = usuarioRepository.findPerfisByEmail(usuario.getEmail());
+            if (perfis.isEmpty()) {
+                perfis = List.of("USER"); // Perfil padrão
+            }
+
+            // 5. Gerar token JWT
+            String token = jwtService.generateToken(usuario.getEmail(), perfis);
+            log.info("Token JWT gerado para usuário OTP: {} - Perfis: {}", usuario.getId(), perfis);
+
+            // 6. Atualizar último acesso
+            usuarioService.atualizarUltimoAcesso(usuario.getEmail());
+
+            // 7. Buscar dados completos do usuário para resposta
+            UsuarioResponseDTO usuarioResponse = usuarioService.buscarPorEmail(usuario.getEmail());
+
+            // 8. Criar resposta
+            AuthResponseDTO response = AuthResponseDTO.builder()
+                    .access_token(token)
+                    .usuario(usuarioResponse)
+                    .token_type("Bearer")
+                    .expires_in(86400L) // 24 horas
+                    .build();
+
+            log.info("Login OTP bem-sucedido para usuário: {} (Telefone: {})", usuario.getId(), telefone);
+            return ResponseEntity.ok(response);
+
+        } catch (ResponseStatusException e) {
+            log.warn("Erro ao validar código OTP para {}: {}", telefone, e.getReason());
+            throw e;
+        } catch (Exception e) {
+            log.error("Erro inesperado ao validar código OTP: {}", e.getMessage(), e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erro ao processar solicitação. Tente novamente"
+            );
+        }
     }
 
     private String extractClientIp(HttpServletRequest request) {

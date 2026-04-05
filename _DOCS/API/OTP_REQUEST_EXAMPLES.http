@@ -1,0 +1,342 @@
+// ============================================================================================================
+// EXEMPLOS DE REQUISIÇÕES - OTP SMS AUTHENTICATION
+// ============================================================================================================
+// Copie as requisições abaixo e importe no Postman, Insomnia ou Thunder Client
+// Base URL: http://localhost:8080
+// ============================================================================================================
+
+// ============================================================================================================
+// 1️⃣ SOLICITAR CÓDIGO OTP (POST /api/v1/auth/request-code)
+// ============================================================================================================
+
+### Request 1: Solicitar código com formato válido
+
+POST http://localhost:8080/api/v1/auth/request-code
+Content-Type: application/json
+
+{
+  "telefone": "+5511987654321"
+}
+
+### ✅ Response esperada (200):
+{
+  "telefone": "+5511987654321",
+  "mensagem": "Código de verificação enviado com sucesso via SMS",
+  "tempo_expiracao_segundos": 300
+}
+
+---
+
+### Request 2: Tentar solicitar código com telefone inválido
+
+POST http://localhost:8080/api/v1/auth/request-code
+Content-Type: application/json
+
+{
+  "telefone": "11987654321"  // Sem +55
+}
+
+### ❌ Response esperada (400):
+{
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Telefone deve ter formato válido. Ex: +5511987654321"
+}
+
+---
+
+### Request 3: Rate Limit - Tentar solicitar código 4 vezes em 1 minuto
+
+# Terceira requisição (OK)
+POST http://localhost:8080/api/v1/auth/request-code
+Content-Type: application/json
+
+{
+  "telefone": "+5511987654321"
+}
+
+# Quarta requisição (BLOQUEADA)
+POST http://localhost:8080/api/v1/auth/request-code
+Content-Type: application/json
+
+{
+  "telefone": "+5511987654321"
+}
+
+### ❌ Response esperada (429):
+{
+  "status": 429,
+  "error": "Too Many Requests",
+  "message": "Muitos códigos solicitados. Tente novamente em 60 segundos"
+}
+
+---
+
+// ============================================================================================================
+// 2️⃣ VALIDAR CÓDIGO E LOGIN (POST /api/v1/auth/verify-code)
+// ============================================================================================================
+
+### Request 1: Validar código correto (primeira tentativa)
+
+POST http://localhost:8080/api/v1/auth/verify-code
+Content-Type: application/json
+
+{
+  "telefone": "+5511987654321",
+  "codigo": "123456"
+}
+
+### ✅ Response esperada (200):
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvdHBfNTUxMTk4NzY1NDMyMV8xNzEyMzY0ODAwQG90cC1sb2dpbi5sb2NhbCIsInBlcmZpcyI6WyJVU0VSIl0sImlhdCI6MTcxMjM2NTA2MCwiZXhwIjoxNzEyNDUxNDYwfQ.abcd1234efgh5678",
+  "usuario": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "nome": "+5511987654321",
+    "email": "otp_5511987654321_1712364800@otp-login.local",
+    "telefone": "+5511987654321",
+    "ativo": true,
+    "criado_em": "2024-04-05T10:30:00-03:00"
+  },
+  "token_type": "Bearer",
+  "expires_in": 86400
+}
+
+---
+
+### Request 2: Validar código errado (primeira tentativa)
+
+POST http://localhost:8080/api/v1/auth/verify-code
+Content-Type: application/json
+
+{
+  "telefone": "+5511987654321",
+  "codigo": "000000"  // Código incorreto
+}
+
+### ❌ Response esperada (401):
+{
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Código inválido ou expirado"
+}
+
+---
+
+### Request 3: Validar código errado (terceira tentativa - limite atingido)
+
+# Primeira tentativa errada
+POST http://localhost:8080/api/v1/auth/verify-code
+Content-Type: application/json
+
+{
+  "código": "111111"
+}
+
+# Segunda tentativa errada
+POST http://localhost:8080/api/v1/auth/verify-code
+Content-Type: application/json
+
+{
+  "código": "222222"
+}
+
+# Terceira tentativa errada (LIMITE ATINGIDO)
+POST http://localhost:8080/api/v1/auth/verify-code
+Content-Type: application/json
+
+{
+  "código": "333333"
+}
+
+### ❌ Response esperada (401):
+{
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Código inválido. Limite de tentativas atingido. Solicite um novo código"
+}
+
+---
+
+### Request 4: Validar código com formato inválido
+
+POST http://localhost:8080/api/v1/auth/verify-code
+Content-Type: application/json
+
+{
+  "telefone": "+5511987654321",
+  "codigo": "1234"  // Apenas 4 dígitos
+}
+
+### ❌ Response esperada (400):
+{
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Código deve ser exatamente 6 dígitos numéricos"
+}
+
+---
+
+// ============================================================================================================
+// 3️⃣ USAR TOKEN JWT (Autenticação após OTP bem-sucedido)
+// ============================================================================================================
+
+### Request 1: Acessar rota protegida com token OTP
+
+GET http://localhost:8080/api/v1/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvdHBfNTUxMTk4NzY1NDMyMV8xNzEyMzY0ODAwQG90cC1sb2dpbi5sb2NhbCIsInBlcmZpcyI6WyJVU0VSIl0sImlhdCI6MTcxMjM2NTA2MCwiZXhwIjoxNzEyNDUxNDYwfQ.abcd1234efgh5678
+
+### ✅ Response esperada (200):
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "nome": "+5511987654321",
+  "email": "otp_5511987654321_1712364800@otp-login.local",
+  "telefone": "+5511987654321",
+  "ativo": true,
+  "criado_em": "2024-04-05T10:30:00-03:00"
+}
+
+---
+
+// ============================================================================================================
+// 4️⃣ TESTES COMPARATIVOS (OTP vs Login Tradicional)
+// ============================================================================================================
+
+### Teste: Login Tradicional (funciona como antes)
+
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@example.com",
+  "senha": "minhasenha123"
+}
+
+### ✅ Response esperada (200):
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "usuario": {
+    "id": "550e8401-e29b-41d4-a716-446655440001",
+    "nome": "João Silva",
+    "email": "usuario@example.com"
+  },
+  "token_type": "Bearer",
+  "expires_in": 86400
+}
+
+---
+
+### Teste: Login via OTP (novo fluxo)
+
+# Etapa 1
+POST http://localhost:8080/api/v1/auth/request-code
+Content-Type: application/json
+
+{
+  "telefone": "+5511987654321"
+}
+
+# Etapa 2 (após receber SMS)
+POST http://localhost:8080/api/v1/auth/verify-code
+Content-Type: application/json
+
+{
+  "telefone": "+5511987654321",
+  "codigo": "123456"  // Código do SMS
+}
+
+### ✅ Response esperada (200):
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "usuario": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "nome": "+5511987654321",
+    "email": "otp_5511987654321_1712364800@otp-login.local",
+    "telefone": "+5511987654321"
+  },
+  "token_type": "Bearer",
+  "expires_in": 86400
+}
+
+---
+
+// ============================================================================================================
+// 5️⃣ INSTRUÇÕES PARA EXTRAIR CÓDIGO DOS LOGS (Modo Development)
+// ============================================================================================================
+
+// Quando TWILIO_ENABLED=false em development:
+
+// Terminal 1: Ver logs em tempo real
+docker logs -f win-backend
+
+// Terminal 2: Solicitar código
+curl -X POST http://localhost:8080/api/v1/auth/request-code \
+  -H "Content-Type: application/json" \
+  -d '{"telefone": "+5511987654321"}'
+
+// Terminal 1: Procurar mensagem com padrão
+// [BACKEND LOGS] ... "Código OTP gerado: 123456" ...
+
+// Terminal 3: Usar o código no verify
+curl -X POST http://localhost:8080/api/v1/auth/verify-code \
+  -H "Content-Type: application/json" \
+  -d '{"telefone": "+5511987654321", "codigo": "123456"}'
+
+---
+
+// ============================================================================================================
+// 6️⃣ CENÁRIOS DE TESTE
+// ============================================================================================================
+
+### Cenário 1: Fluxo Completo Bem-Sucedido
+
+1. POST /auth/request-code              → 200 OK
+2. Aguardar SMS (real) ou extrair logs
+3. POST /auth/verify-code (código correto) → 200 OK (token JWT)
+4. GET /auth/me (com token)              → 200 OK (dados usuário)
+
+✅ Resultado esperado: Login bem-sucedido, usuário criado automaticamente
+
+
+### Cenário 2: Código Errado com Limite Atingido
+
+1. POST /auth/request-code              → 200 OK
+2. POST /auth/verify-code (código errado) → 401 (tentativa 1/3)
+3. POST /auth/verify-code (código errado) → 401 (tentativa 2/3)
+4. POST /auth/verify-code (código errado) → 401 (tentativa 3/3 - limite)
+5. POST /auth/verify-code (código correto) → 401 (OTP invalidado)
+6. POST /auth/request-code (novo)      → 200 OK
+
+✅ Resultado esperado: Usuário forçado a solicitar novo código
+
+
+### Cenário 3: Rate Limiting
+
+1. POST /auth/request-code              → 200 OK
+2. POST /auth/request-code (1s depois)  → 200 OK
+3. POST /auth/request-code (1s depois)  → 200 OK
+4. POST /auth/request-code (1s depois)  → 429 Too Many Requests
+
+✅ Resultado esperado: Bloqueio após 3 requisições em 1 minuto
+
+
+### Cenário 4: Timeout de Códi20
+
+1. POST /auth/request-code              → 200 OK
+2. Aguardar 5 minutos + 1 segundo
+3. POST /auth/verify-code              → 401 (código expirado)
+
+✅ Resultado esperado: Código recusado por expiração
+
+
+### Cenário 5: Usuário Existente
+
+1. Usuário criado via OTP para +5511987654321
+2. POST /auth/request-code (mesmo telefone) → 200 OK
+3. POST /auth/verify-code (código novo)    → 200 OK
+
+✅ Resultado esperado: Mesmo usuário reutilizado (um por telefone)
+
+
+// ============================================================================================================
+// FIM DOS EXEMPLOS
+// ============================================================================================================

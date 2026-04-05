@@ -51,6 +51,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      * Busca usuário por CPF
      */
     Optional<Usuario> findByCpf(String cpf);
+
+    /**
+     * Busca usuário por telefone
+     * Usado para autenticação via OTP SMS
+     */
+    Optional<Usuario> findByTelefone(String telefone);
     
     /**
      * Lista todos os usuários ativos

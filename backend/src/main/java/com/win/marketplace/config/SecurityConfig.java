@@ -93,6 +93,7 @@ public class SecurityConfig {
                 auth
                     .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/login/**", "/api/v1/auth/register").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/request-code", "/api/v1/auth/verify-code").permitAll()
                     .requestMatchers("/api/v1/password-reset/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/produtos/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/categoria/**").permitAll()

@@ -148,6 +148,13 @@
             <scope>runtime</scope>
         </dependency>
         
+        <!-- ✅ TWILIO SMS API -->
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>9.0.0</version>
+        </dependency>
+        
         <!-- ✅ LOMBOK -->
         <dependency>
             <groupId>org.projectlombok</groupId>

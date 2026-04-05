@@ -35,7 +35,7 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:validate}  # ✅ FIX-002: Environment-aware DDL strategy
+      ddl-auto: ${JPA_DDL_AUTO:update}  # ✅ FIX-002: Environment-aware DDL strategy (update para criar tabelas automáticamente)
     show-sql: false  # Desabilitado para produção (reduz CPU)
     properties:
       hibernate:
@@ -172,6 +172,25 @@ security:
     max-attempts: ${SECURITY_LOGIN_MAX_ATTEMPTS:5}
     lock-minutes: ${SECURITY_LOGIN_LOCK_MINUTES:15}
     use-redis: ${SECURITY_LOGIN_USE_REDIS:true}
+
+# ✅ TWILIO SMS CONFIGURATION
+twilio:
+  enabled: ${TWILIO_ENABLED:true}
+  account-sid: ${TWILIO_ACCOUNT_SID:}  # Account SID do Twilio
+  auth-token: ${TWILIO_AUTH_TOKEN:}    # Auth Token do Twilio
+  phone-number: ${TWILIO_PHONE_NUMBER:}  # Número de telefone Twilio para enviar SMS (ex: +5511999999999)
+
+# ✅ OTP (One-Time Password) CONFIGURATION
+otp:
+  expiration-minutes: ${OTP_EXPIRATION_MINUTES:5}  # Tempo de expiração do código OTP
+  max-attempts: ${OTP_MAX_ATTEMPTS:3}  # Máximo de tentativas de validação
+
+# ✅ SMS RATE LIMITING CONFIGURATION
+sms:
+  ratelimit:
+    max-requests: ${SMS_RATELIMIT_MAX_REQUESTS:3}  # Máximo de requisições por SMS
+    window-minutes: ${SMS_RATELIMIT_WINDOW_MINUTES:1}  # Janela de tempo (em minutos)
+    block-minutes: ${SMS_RATELIMIT_BLOCK_MINUTES:1}  # Tempo de bloqueio (em minutos)
 
 logging:
   level:
