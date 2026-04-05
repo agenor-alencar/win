@@ -8,6 +8,14 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 1. Checkout do Código
+        uses: actions/checkout@v3
+
     steps:
       - name: 1. Checkout do Código
         uses: actions/checkout@v3
