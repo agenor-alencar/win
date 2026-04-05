@@ -6,6 +6,9 @@ Write-Host "  CRIAR ADMIN - WIN MARKETPLACE" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
+$BackendUrl = if ($env:BACKEND_URL) { $env:BACKEND_URL } else { "http://localhost:8080" }
+$FrontendUrl = if ($env:FRONTEND_URL) { $env:FRONTEND_URL } else { "http://localhost:3000" }
+
 # Verificar se o backend está rodando
 $containers = docker ps --format "{{.Names}}"
 if ($containers -notcontains "win-marketplace-backend") {
@@ -47,7 +50,7 @@ $body = @{
 
 # Gerar hash via API
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/v1/dev/hash-password" `
+    $response = Invoke-RestMethod -Uri "$BackendUrl/api/v1/dev/hash-password" `
         -Method Post `
         -ContentType "application/json" `
         -Body $body
@@ -122,11 +125,10 @@ try {
     Write-Host "  Email: $Email" -ForegroundColor White
     Write-Host "  Senha: [a que você digitou]" -ForegroundColor White
     Write-Host ""
-    Write-Host "Acesse: http://localhost:3000/login" -ForegroundColor Cyan
+    Write-Host "Acesse: $FrontendUrl/login" -ForegroundColor Cyan
 } catch {
     Write-Host ""
-    Write-Host "❌ Erro ao inse
-    rir no banco de dados!" -ForegroundColor Red
+    Write-Host "❌ Erro ao inserir no banco de dados!" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Yellow
     exit 1
 }

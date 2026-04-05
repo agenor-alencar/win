@@ -43,7 +43,7 @@ public class SecurityConfig {
     @Value("${app.api-docs.enabled:false}")
     private boolean apiDocsEnabled;
 
-    @Value("${app.cors.allowed-origins:}")
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}")
     private String allowedOriginsProperty;
 
     /**
@@ -62,21 +62,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        List<String> allowedOrigins = new ArrayList<>();
-        if (allowedOriginsProperty != null && !allowedOriginsProperty.trim().isEmpty()) {
-            allowedOrigins = Arrays.stream(allowedOriginsProperty.split(","))
-                    .map(String::trim)
-                    .filter(origin -> !origin.isEmpty())
-                    .distinct()
-                    .collect(Collectors.toCollection(ArrayList::new));
-        }
-
-        if (allowedOrigins.isEmpty()) {
-            allowedOrigins.add("http://localhost:3000");
-            allowedOrigins.add("http://127.0.0.1:3000");
-            allowedOrigins.add("http://localhost:5173");
-            allowedOrigins.add("http://127.0.0.1:5173");
-        }
+        List<String> allowedOrigins = Arrays.stream(allowedOriginsProperty.split(","))
+            .map(String::trim)
+            .filter(origin -> !origin.isEmpty())
+            .distinct()
+            .collect(Collectors.toCollection(ArrayList::new));
         
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

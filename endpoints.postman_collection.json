@@ -1,0 +1,3715 @@
+{
+  "info": {
+    "name": "WIN API v1",
+    "description": "Collection gerada automaticamente a partir de endpoints.json",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://seu-servidor"
+    },
+    {
+      "key": "apiVersionPath",
+      "value": "/api/v1"
+    },
+    {
+      "key": "token_jwt",
+      "value": ""
+    },
+    {
+      "key": "usuarioId",
+      "value": "1"
+    },
+    {
+      "key": "lojistaId",
+      "value": "1"
+    },
+    {
+      "key": "produtoId",
+      "value": "1"
+    },
+    {
+      "key": "pedidoId",
+      "value": "1"
+    },
+    {
+      "key": "entregaId",
+      "value": "1"
+    },
+    {
+      "key": "id",
+      "value": "1"
+    },
+    {
+      "key": "role",
+      "value": "cliente"
+    },
+    {
+      "key": "email",
+      "value": "usuario@example.com"
+    },
+    {
+      "key": "cnpj",
+      "value": "00000000000000"
+    },
+    {
+      "key": "codigo",
+      "value": "CUPOM10"
+    },
+    {
+      "key": "status",
+      "value": "PENDENTE"
+    },
+    {
+      "key": "numeroPedido",
+      "value": "PED-0001"
+    },
+    {
+      "key": "numeroDevolucao",
+      "value": "DEV-0001"
+    },
+    {
+      "key": "categoriaId",
+      "value": "1"
+    },
+    {
+      "key": "categoriaPaiId",
+      "value": "1"
+    },
+    {
+      "key": "orderId",
+      "value": "ord_123"
+    },
+    {
+      "key": "motoristaId",
+      "value": "1"
+    },
+    {
+      "key": "metodo",
+      "value": "PIX"
+    },
+    {
+      "key": "cep",
+      "value": "01001000"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 AUTENTICAÇÃO",
+      "item": [
+        {
+          "name": "POST /auth/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Registrar novo usuário",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@example.com\",\n  \"senha\": \"senha123\",\n  \"nome\": \"João Silva\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login com email e senha",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@example.com\",\n  \"senha\": \"senha123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/login/{role}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/auth/login/{{role}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "auth",
+                "login",
+                "{role}"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "",
+                  "description": "Tipo de usuário"
+                }
+              ]
+            },
+            "description": "Login por tipo de usuário (cliente, lojista, motorista, admin)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@example.com\",\n  \"senha\": \"senha123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /auth/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Dados do usuário autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/refresh-token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/auth/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "auth",
+                "refresh-token"
+              ]
+            },
+            "description": "Renovar token JWT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/reset-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Solicitar alteração de senha",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👤 USUÁRIO",
+      "item": [
+        {
+          "name": "POST /usuario/create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/usuario/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "usuario",
+                "create"
+              ]
+            },
+            "description": "Criar novo usuário",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /usuario/list/all",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/usuario/list/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "usuario",
+                "list",
+                "all"
+              ]
+            },
+            "description": "Listar todos os usuários"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /usuario/list/ativos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/usuario/list/ativos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "usuario",
+                "list",
+                "ativos"
+              ]
+            },
+            "description": "Listar usuários ativos"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /usuario/list/id/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/usuario/list/id/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "usuario",
+                "list",
+                "id",
+                "{id}"
+              ]
+            },
+            "description": "Buscar usuário por ID"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /usuario/list/email/{email}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/usuario/list/email/{{email}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "usuario",
+                "list",
+                "email",
+                "{email}"
+              ]
+            },
+            "description": "Buscar usuário por email"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🛍️ PRODUTOS",
+      "item": [
+        {
+          "name": "GET /produtos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "description": "número da página (padrão: 0)"
+                },
+                {
+                  "key": "size",
+                  "value": "",
+                  "description": "itens por página (padrão: 20)"
+                }
+              ]
+            },
+            "description": "Listar produtos com paginação"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /produtos/admin/todos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/admin/todos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "admin",
+                "todos"
+              ]
+            },
+            "description": "Listar todos produtos (incluindo inativos)"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /produtos/lojista/{lojistaId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/lojista/{{lojistaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "lojista",
+                "{lojistaId}"
+              ]
+            },
+            "description": "Produtos de uma lojista específica"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /produtos/categoria/{categoriaId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/categoria/{{categoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "categoria",
+                "{categoriaId}"
+              ]
+            },
+            "description": "Produtos de uma categoria"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /produtos/buscar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/buscar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "buscar"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "termo de busca"
+                }
+              ]
+            },
+            "description": "Buscar produto por nome/descrição"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /produtos/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "{id}"
+              ]
+            },
+            "description": "Detalhes completos de um produto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /produtos/{id}/imagens",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/{{id}}/imagens",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "{id}",
+                "imagens"
+              ]
+            },
+            "description": "Listar imagens de um produto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /produtos/mais-vendidos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/mais-vendidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "mais-vendidos"
+              ]
+            },
+            "description": "Produtos mais vendidos"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /produtos/mais-avaliados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/mais-avaliados",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "mais-avaliados"
+              ]
+            },
+            "description": "Produtos com melhor avaliação"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /produtos/lojista/{lojistaId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/lojista/{{lojistaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "lojista",
+                "{lojistaId}"
+              ]
+            },
+            "description": "Criar novo produto",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /produtos/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "{id}"
+              ]
+            },
+            "description": "Editar produto",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /produtos/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/produtos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "produtos",
+                "{id}"
+              ]
+            },
+            "description": "Deletar produto"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏪 LOJISTAS",
+      "item": [
+        {
+          "name": "GET /lojistas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/lojistas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "lojistas"
+              ]
+            },
+            "description": "Listar todos os lojistas"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /lojistas/ativos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/lojistas/ativos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "lojistas",
+                "ativos"
+              ]
+            },
+            "description": "Listar apenas lojistas ativos"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /lojistas/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/lojistas/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "lojistas",
+                "me"
+              ]
+            },
+            "description": "Dados da lojista autenticada"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /lojistas/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/lojistas/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "lojistas",
+                "{id}"
+              ]
+            },
+            "description": "Detalhes de uma lojista"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /lojistas/usuario/{usuarioId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/lojistas/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "lojistas",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Lojista de um usuário específico"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /lojistas/cnpj/{cnpj}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/lojistas/cnpj/{{cnpj}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "lojistas",
+                "cnpj",
+                "{cnpj}"
+              ]
+            },
+            "description": "Buscar lojista por CNPJ"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /lojistas/{id}/estatisticas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/lojistas/{{id}}/estatisticas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "lojistas",
+                "{id}",
+                "estatisticas"
+              ]
+            },
+            "description": "Estatísticas da lojista"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /lojistas/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/lojistas/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "lojistas",
+                "{id}"
+              ]
+            },
+            "description": "Atualizar dados da lojista",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /lojistas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/lojistas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "lojistas"
+              ]
+            },
+            "description": "Criar nova lojista",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📦 PEDIDOS",
+      "item": [
+        {
+          "name": "POST /pedidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos"
+              ]
+            },
+            "description": "Criar novo pedido",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": \"{{usuarioId}}\",\n  \"itens\": [\n    {\n      \"produtoId\": \"{{produtoId}}\",\n      \"quantidade\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pedidos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos"
+              ]
+            },
+            "description": "Listar pedidos"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pedidos/usuario/{usuarioId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Pedidos de um usuário"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pedidos/usuario/{usuarioId}/primeira-compra",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos/usuario/{{usuarioId}}/primeira-compra",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos",
+                "usuario",
+                "{usuarioId}",
+                "primeira-compra"
+              ]
+            },
+            "description": "Verificar se é primeira compra"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pedidos/motorista/{motoristaId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos/motorista/{{motoristaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos",
+                "motorista",
+                "{motoristaId}"
+              ]
+            },
+            "description": "Pedidos de um motorista"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pedidos/status/{status}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos/status/{{status}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos",
+                "status",
+                "{status}"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "PENDENTE, CONFIRMADO, PREPARANDO, PRONTO, ENTREGANDO, ENTREGUE, CANCELADO"
+                }
+              ]
+            },
+            "description": "Filtrar pedidos por status"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pedidos/lojista/{lojistaId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos/lojista/{{lojistaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos",
+                "lojista",
+                "{lojistaId}"
+              ]
+            },
+            "description": "Pedidos de uma lojista"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pedidos/lojista/{lojistaId}/pendentes-preparacao",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos/lojista/{{lojistaId}}/pendentes-preparacao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos",
+                "lojista",
+                "{lojistaId}",
+                "pendentes-preparacao"
+              ]
+            },
+            "description": "Pedidos pendentes de preparação"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pedidos/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos",
+                "{id}"
+              ]
+            },
+            "description": "Detalhes completos do pedido"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pedidos/numero/{numeroPedido}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pedidos/numero/{{numeroPedido}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pedidos",
+                "numero",
+                "{numeroPedido}"
+              ]
+            },
+            "description": "Buscar pedido por número"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "💳 PAGAMENTOS",
+      "item": [
+        {
+          "name": "POST /pagamentos/processar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pagamentos/processar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pagamentos",
+                "processar"
+              ]
+            },
+            "description": "Processar pagamento",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedidoId\": \"{{pedidoId}}\",\n  \"metodo\": \"PIX\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /pagamentos/pagarme/pix/{pedidoId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pagamentos/pagarme/pix/{{pedidoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pagamentos",
+                "pagarme",
+                "pix",
+                "{pedidoId}"
+              ]
+            },
+            "description": "Gerar PIX para o pedido",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /pagamentos/pedido/{pedidoId}/pix/obter-ou-recriar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pagamentos/pedido/{{pedidoId}}/pix/obter-ou-recriar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pagamentos",
+                "pedido",
+                "{pedidoId}",
+                "pix",
+                "obter-ou-recriar"
+              ]
+            },
+            "description": "Obter ou recriar PIX do pedido",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pagamentos/pedido/{pedidoId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pagamentos/pedido/{{pedidoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pagamentos",
+                "pedido",
+                "{pedidoId}"
+              ]
+            },
+            "description": "Pagamentos de um pedido"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pagamentos/pedido/{pedidoId}/pix",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pagamentos/pedido/{{pedidoId}}/pix",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pagamentos",
+                "pedido",
+                "{pedidoId}",
+                "pix"
+              ]
+            },
+            "description": "QR Code PIX do pedido"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pagamentos/status/{status}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pagamentos/status/{{status}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pagamentos",
+                "status",
+                "{status}"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "PENDENTE, APROVADO, RECUSADO, CANCELADO"
+                }
+              ]
+            },
+            "description": "Filtrar pagamentos por status"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pagamentos/metodo/{metodo}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pagamentos/metodo/{{metodo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pagamentos",
+                "metodo",
+                "{metodo}"
+              ]
+            },
+            "description": "Filtrar por método de pagamento"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /pagamentos/{orderId}/status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/pagamentos/{{orderId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "pagamentos",
+                "{orderId}",
+                "status"
+              ]
+            },
+            "description": "Status de uma ordem"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🚚 ENTREGAS",
+      "item": [
+        {
+          "name": "POST /entregas/simular-frete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/entregas/simular-frete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "entregas",
+                "simular-frete"
+              ]
+            },
+            "description": "Simular valor do frete",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origem\": {\n    \"lat\": -23.55,\n    \"lng\": -46.63\n  },\n  \"destino\": {\n    \"lat\": -23.56,\n    \"lng\": -46.64\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /entregas/{pedidoId}/solicitar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/entregas/{{pedidoId}}/solicitar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "entregas",
+                "{pedidoId}",
+                "solicitar"
+              ]
+            },
+            "description": "Solicitar entrega para pedido",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /entregas/pedido/{pedidoId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/entregas/pedido/{{pedidoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "entregas",
+                "pedido",
+                "{pedidoId}"
+              ]
+            },
+            "description": "Informações de entrega do pedido"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /entregas/{entregaId}/status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/entregas/{{entregaId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "entregas",
+                "{entregaId}",
+                "status"
+              ]
+            },
+            "description": "Status detalhado da entrega"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /entregas/lojista/minhas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/entregas/lojista/minhas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "entregas",
+                "lojista",
+                "minhas"
+              ]
+            },
+            "description": "Todas as entregas da lojista"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /entregas/lojista/em-andamento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/entregas/lojista/em-andamento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "entregas",
+                "lojista",
+                "em-andamento"
+              ]
+            },
+            "description": "Entregas em andamento da lojista"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /entregas/{entregaId}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/entregas/{{entregaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "entregas",
+                "{entregaId}"
+              ]
+            },
+            "description": "Cancelar entrega"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🚚 FRETES",
+      "item": [
+        {
+          "name": "GET /fretes/estimar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/fretes/estimar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "fretes",
+                "estimar"
+              ]
+            },
+            "description": "Estimar valor do frete"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /fretes/calcular",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/fretes/calcular",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "fretes",
+                "calcular"
+              ]
+            },
+            "description": "Calcular frete",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /fretes/status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/fretes/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "fretes",
+                "status"
+              ]
+            },
+            "description": "Status do frete"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📍 ENDEREÇOS",
+      "item": [
+        {
+          "name": "POST /enderecos/usuario/{usuarioId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/enderecos/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "enderecos",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Adicionar novo endereço",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /enderecos/usuario/{usuarioId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/enderecos/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "enderecos",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Listar endereços do usuário"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /enderecos/usuario/{usuarioId}/principal",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/enderecos/usuario/{{usuarioId}}/principal",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "enderecos",
+                "usuario",
+                "{usuarioId}",
+                "principal"
+              ]
+            },
+            "description": "Endereço principal do usuário"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /enderecos/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/enderecos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "enderecos",
+                "{id}"
+              ]
+            },
+            "description": "Detalhes do endereço"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /enderecos/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/enderecos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "enderecos",
+                "{id}"
+              ]
+            },
+            "description": "Atualizar endereço",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /enderecos/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/enderecos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "enderecos",
+                "{id}"
+              ]
+            },
+            "description": "Deletar endereço"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "⭐ FAVORITOS",
+      "item": [
+        {
+          "name": "GET /favoritos/meus",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/favoritos/meus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "favoritos",
+                "meus"
+              ]
+            },
+            "description": "Meus produtos favoritos"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /favoritos/verifica/{produtoId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/favoritos/verifica/{{produtoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "favoritos",
+                "verifica",
+                "{produtoId}"
+              ]
+            },
+            "description": "Verificar se produto é favorito"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /favoritos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/favoritos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "favoritos"
+              ]
+            },
+            "description": "Adicionar produto aos favoritos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"produtoId\": \"{{produtoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /favoritos/{produtoId}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/favoritos/{{produtoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "favoritos",
+                "{produtoId}"
+              ]
+            },
+            "description": "Remover produto dos favoritos"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "💬 AVALIAÇÕES",
+      "item": [
+        {
+          "name": "POST /avaliacoes-produtos/usuario/{usuarioId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/avaliacoes-produtos/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "avaliacoes-produtos",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Criar avaliação de produto",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /avaliacoes-produtos/produto/{produtoId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/avaliacoes-produtos/produto/{{produtoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "avaliacoes-produtos",
+                "produto",
+                "{produtoId}"
+              ]
+            },
+            "description": "Avaliações de um produto"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /avaliacoes-produtos/usuario/{usuarioId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/avaliacoes-produtos/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "avaliacoes-produtos",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Minhas avaliações"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /avaliacoes-produtos/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/avaliacoes-produtos/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "avaliacoes-produtos",
+                "{id}"
+              ]
+            },
+            "description": "Detalhes da avaliação"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /avaliacoes-produtos/lojista/{lojistaId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/avaliacoes-produtos/lojista/{{lojistaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "avaliacoes-produtos",
+                "lojista",
+                "{lojistaId}"
+              ]
+            },
+            "description": "Avaliações de uma lojista"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /avaliacoes-produtos/{id}/usuario/{usuarioId}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/avaliacoes-produtos/{{id}}/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "avaliacoes-produtos",
+                "{id}",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Editar avaliação",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /avaliacoes-produtos/{id}/usuario/{usuarioId}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/avaliacoes-produtos/{{id}}/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "avaliacoes-produtos",
+                "{id}",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Deletar avaliação"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔄 DEVOLUÇÕES",
+      "item": [
+        {
+          "name": "POST /devolucoes/usuario/{usuarioId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/devolucoes/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "devolucoes",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Criar solicitação de devolução",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /devolucoes/usuario/{usuarioId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/devolucoes/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "devolucoes",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Minhas devoluções"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /devolucoes/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/devolucoes/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "devolucoes",
+                "{id}"
+              ]
+            },
+            "description": "Detalhes da devolução"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /devolucoes/numero/{numeroDevolucao}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/devolucoes/numero/{{numeroDevolucao}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "devolucoes",
+                "numero",
+                "{numeroDevolucao}"
+              ]
+            },
+            "description": "Buscar devolução por número"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /devolucoes/lojista/{lojistaId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/devolucoes/lojista/{{lojistaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "devolucoes",
+                "lojista",
+                "{lojistaId}"
+              ]
+            },
+            "description": "Devoluções de uma lojista"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /devolucoes/lojista/{lojistaId}/status/{status}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/devolucoes/lojista/{{lojistaId}}/status/{{status}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "devolucoes",
+                "lojista",
+                "{lojistaId}",
+                "status",
+                "{status}"
+              ]
+            },
+            "description": "Devoluções por status da lojista"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🎟️ CUPONS",
+      "item": [
+        {
+          "name": "GET /cupom/list/all",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/cupom/list/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "cupom",
+                "list",
+                "all"
+              ]
+            },
+            "description": "Listar todos os cupons"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /cupom/list/id/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/cupom/list/id/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "cupom",
+                "list",
+                "id",
+                "{id}"
+              ]
+            },
+            "description": "Detalhes do cupom"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /cupom/list/codigo/{codigo}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/cupom/list/codigo/{{codigo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "cupom",
+                "list",
+                "codigo",
+                "{codigo}"
+              ]
+            },
+            "description": "Buscar cupom por código"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /cupom/validar/{codigo}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/cupom/validar/{{codigo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "cupom",
+                "validar",
+                "{codigo}"
+              ]
+            },
+            "description": "Validar cupom"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /cupom/create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/cupom/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "cupom",
+                "create"
+              ]
+            },
+            "description": "Criar cupom",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /cupom/update/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/cupom/update/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "cupom",
+                "update",
+                "{id}"
+              ]
+            },
+            "description": "Editar cupom",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /cupom/delete/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/cupom/delete/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "cupom",
+                "delete",
+                "{id}"
+              ]
+            },
+            "description": "Deletar cupom"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏷️ CATEGORIAS",
+      "item": [
+        {
+          "name": "GET /categoria",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria"
+              ]
+            },
+            "description": "Listar categorias"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /categoria/list/all",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria/list/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria",
+                "list",
+                "all"
+              ]
+            },
+            "description": "Listar todas as categorias"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /categoria/list/principais",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria/list/principais",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria",
+                "list",
+                "principais"
+              ]
+            },
+            "description": "Categorias principais"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /categoria/list/sub/{categoriaPaiId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria/list/sub/{{categoriaPaiId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria",
+                "list",
+                "sub",
+                "{categoriaPaiId}"
+              ]
+            },
+            "description": "Subcategorias"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /categoria/list/id/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria/list/id/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria",
+                "list",
+                "id",
+                "{id}"
+              ]
+            },
+            "description": "Detalhes da categoria"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /categoria/list/nome",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria/list/nome",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria",
+                "list",
+                "nome"
+              ]
+            },
+            "description": "Buscar categoria por nome"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /categoria/create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria",
+                "create"
+              ]
+            },
+            "description": "Criar categoria",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /categoria/create/sub/{categoriaPaiId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria/create/sub/{{categoriaPaiId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria",
+                "create",
+                "sub",
+                "{categoriaPaiId}"
+              ]
+            },
+            "description": "Criar subcategoria",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /categoria/update/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria/update/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria",
+                "update",
+                "{id}"
+              ]
+            },
+            "description": "Editar categoria",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /categoria/delete/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/categoria/delete/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "categoria",
+                "delete",
+                "{id}"
+              ]
+            },
+            "description": "Deletar categoria"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔔 NOTIFICAÇÕES",
+      "item": [
+        {
+          "name": "POST /notificacao/create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/notificacao/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "notificacao",
+                "create"
+              ]
+            },
+            "description": "Criar notificação",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exemplo\": \"preencher_campos_necessarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /notificacao/list/usuario/{usuarioId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/notificacao/list/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "notificacao",
+                "list",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Todas as notificações"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /notificacao/list/nao-lidas/usuario/{usuarioId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/notificacao/list/nao-lidas/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "notificacao",
+                "list",
+                "nao-lidas",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Notificações não lidas"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /notificacao/count-nao-lidas/usuario/{usuarioId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/notificacao/count-nao-lidas/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "notificacao",
+                "count-nao-lidas",
+                "usuario",
+                "{usuarioId}"
+              ]
+            },
+            "description": "Contar notificações não lidas"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /notificacao/delete/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_jwt}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/notificacao/delete/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "notificacao",
+                "delete",
+                "{id}"
+              ]
+            },
+            "description": "Deletar notificação"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🗺️ APIS EXTERNAS",
+      "item": [
+        {
+          "name": "GET /external/cnpj/{cnpj}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/external/cnpj/{{cnpj}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "external",
+                "cnpj",
+                "{cnpj}"
+              ]
+            },
+            "description": "Validar e buscar dados de CNPJ"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /external/cep/{cep}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiVersionPath}}/external/cep/{{cep}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiVersionPath}}",
+                "external",
+                "cep",
+                "{cep}"
+              ]
+            },
+            "description": "Buscar endereço por CEP"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

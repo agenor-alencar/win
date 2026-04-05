@@ -8,6 +8,9 @@ echo "  CRIAR ADMIN - WIN MARKETPLACE"
 echo "=========================================="
 echo ""
 
+BACKEND_URL="${BACKEND_URL:-http://localhost:8080}"
+FRONTEND_URL="${FRONTEND_URL:-http://localhost:3000}"
+
 # Verificar se o backend está rodando
 if ! docker ps | grep -q win-marketplace-backend; then
     echo "❌ Erro: Backend não está rodando!"
@@ -38,7 +41,7 @@ echo ""
 echo "Gerando hash..."
 
 # Gerar hash via API
-RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/dev/hash-password \
+RESPONSE=$(curl -s -X POST "$BACKEND_URL/api/v1/dev/hash-password" \
   -H "Content-Type: application/json" \
   -d "{\"senha\":\"$SENHA\",\"email\":\"$EMAIL\",\"nome\":\"$NOME\"}")
 
@@ -96,7 +99,7 @@ if [ $? -eq 0 ]; then
     echo "  Email: $EMAIL"
     echo "  Senha: [a que você digitou]"
     echo ""
-    echo "Acesse: http://localhost:3000/login"
+    echo "Acesse: $FRONTEND_URL/login"
 else
     echo ""
     echo "❌ Erro ao inserir no banco de dados!"

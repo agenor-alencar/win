@@ -15,7 +15,6 @@ import java.util.Map;
 @RequestMapping("/api/v1/password-reset")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
 public class PasswordResetController {
 
     private final PasswordResetService passwordResetService;

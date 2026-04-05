@@ -101,9 +101,15 @@ app:
     enabled: ${API_DOCS_ENABLED:false}
   upload:
     dir: ${user.dir}/uploads/produtos
+    base-url: ${UPLOAD_BASE_URL:http://localhost:${server.port}/uploads/produtos}
   gtin-api:
     url: ${GTIN_API_URL:https://api.cosmos.bluesoft.com.br/gtins}
     token: ${GTIN_API_TOKEN:}  # Token de autenticação da API GTIN (opcional)
+  external:
+    receitaws:
+      base-url: ${RECEITAWS_BASE_URL:https://receitaws.com.br/v1/cnpj}
+    viacep:
+      base-url: ${VIACEP_BASE_URL:https://viacep.com.br/ws}
   encryption:
     secret: ${APP_ENCRYPTION_SECRET:}
   # Configurações de S3/Cloud Storage

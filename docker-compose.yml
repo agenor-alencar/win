@@ -69,7 +69,7 @@ services:
       
       # Configuração CORS (adicione seus IPs/domínios separados por vírgula)
       # Inclui localhost, IP do VPS com e sem porta, e variações comuns
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://winmarketplace.com.br,https://www.winmarketplace.com.br,http://winmarketplace.com.br,http://www.winmarketplace.com.br,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:marketplace.com.br:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
       SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${SPRING_DATA_REDIS_PORT:-6379}
       

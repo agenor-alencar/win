@@ -73,7 +73,7 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
-        from: ${MAIL_FROM:noreply@winmarketplace.com}
+        from: ${MAIL_FROM:}
     test-connection: false
 
   data:
@@ -130,16 +130,16 @@ server:
 
 app:
   frontend:
-    url: ${FRONTEND_URL:https://win-marketplace.com.br}
+    url: ${FRONTEND_URL}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://win-marketplace.com.br}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
   dev-tools:
     enabled: false  # NUNCA habilitar em produção
   api-docs:
     enabled: false  # NUNCA expor Swagger em produção
   upload:
     dir: ${UPLOAD_DIR:/data/uploads/produtos}
-    base-url: https://cdn.win-marketplace.com.br/uploads/produtos
+    base-url: ${UPLOAD_BASE_URL:http://localhost:${server.port}/uploads/produtos}
 
 jwt:
   secret: ${JWT_SECRET:}
@@ -156,7 +156,7 @@ uber:
     id: ${UBER_CLIENT_ID:}
     secret: ${UBER_CLIENT_SECRET:}
   api:
-    base-url: ${UBER_API_BASE_URL:https://api.uber.com}
+    base-url: ${UBER_API_BASE_URL}
     enabled: ${UBER_API_ENABLED:false}
   webhook:
     secret: ${UBER_WEBHOOK_SECRET:}

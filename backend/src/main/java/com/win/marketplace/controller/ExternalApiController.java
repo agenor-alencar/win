@@ -1,6 +1,7 @@
 package com.win.marketplace.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -18,6 +19,12 @@ import java.util.Map;
 public class ExternalApiController {
 
     private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${app.external.receitaws.base-url:https://receitaws.com.br/v1/cnpj}")
+    private String receitawsBaseUrl;
+
+    @Value("${app.external.viacep.base-url:https://viacep.com.br/ws}")
+    private String viaCepBaseUrl;
 
     /**
      * Busca dados de CNPJ na ReceitaWS
@@ -39,7 +46,7 @@ public class ExternalApiController {
             }
             
             // Busca na ReceitaWS
-            String url = "https://receitaws.com.br/v1/cnpj/" + cnpjLimpo;
+            String url = String.format("%s/%s", receitawsBaseUrl.replaceAll("/+$", ""), cnpjLimpo);
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
             
             log.info("Dados do CNPJ {} encontrados com sucesso", cnpjLimpo);
@@ -76,7 +83,7 @@ public class ExternalApiController {
             }
             
             // Busca no ViaCEP
-            String url = "https://viacep.com.br/ws/" + cepLimpo + "/json/";
+            String url = String.format("%s/%s/json/", viaCepBaseUrl.replaceAll("/+$", ""), cepLimpo);
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
             
             // ViaCEP retorna "erro": true quando CEP não existe

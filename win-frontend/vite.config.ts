@@ -5,7 +5,15 @@ import path from "path";
 import { createServer } from "./server";
 
 // Define the API base URL (backend direct URL)
-const API_BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:8080'; // Backend URL
+const API_BASE_URL = process.env.VITE_API_BASE_URL || process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:8080'; // Backend URL
+const ALLOWED_HOSTS = (process.env.VITE_ALLOWED_HOSTS
+  ? process.env.VITE_ALLOWED_HOSTS.split(",").map((host) => host.trim()).filter(Boolean)
+  : [
+      "winmarketplace.com.br",
+      "www.winmarketplace.com.br",
+      "localhost",
+      "127.0.0.1",
+    ]);
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -20,13 +28,7 @@ export default defineConfig(({ mode }) => ({
       },
     },
    
-    allowedHosts: [
-      'winmarketplace.com.br', 
-      'www.winmarketplace.com.br', 
-      '137.184.87.106', 
-      'localhost', 
-      '127.0.0.1' 
-    ],
+    allowedHosts: ALLOWED_HOSTS,
    
   },
   build: {

@@ -3,9 +3,9 @@ spring:
     name: win-marketplace
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/win_marketplace
-    username: postgres
-    password: postgres123
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/win_marketplace}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres123}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -51,10 +51,10 @@ spring:
       max-request-size: 5MB
 
   mail:
-    host: smtp.sendgrid.net
-    port: 587
-    username: apikey
-    password: SG.test-key
+    host: ${MAIL_HOST:smtp.sendgrid.net}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:apikey}
+    password: ${MAIL_PASSWORD:SG.test-key}
     properties:
       mail:
         smtp:
@@ -65,13 +65,13 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
-        from: noreply@winmarketplace.com
+        from: ${MAIL_FROM:noreply@winmarketplace.com}
     test-connection: false
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
   
   session:
     store-type: none
@@ -92,19 +92,19 @@ server:
 
 app:
   frontend:
-    url: http://localhost:3000
+    url: ${FRONTEND_URL:http://localhost:3000}
   cors:
-    allowed-origins: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
   dev-tools:
     enabled: true
   api-docs:
     enabled: true
   upload:
     dir: ${user.dir}/uploads/produtos
-    base-url: http://localhost:8080/uploads/produtos
+    base-url: ${UPLOAD_BASE_URL:http://localhost:8080/uploads/produtos}
 
 jwt:
-  secret: 9f4b8c1d7e2a6f3c8b1d5e7a9c2f4b6d8e1a3c5f7b9d2e4a6c8f1b3d5e7a9c2f
+  secret: ${JWT_SECRET:dev-only-change-me}
 
 security:
   login:
@@ -113,21 +113,21 @@ security:
     use-redis: false
 
 uber:
-  client-id: xM1fvatROhYoEE5q-cgrx0597OH9lIlf
-  client-secret: r2OLu0psdu0lErzpzjdvSiQ_NPFNKCyJORxRJVMy
-  customer-id: 01233f28-3140-594c-85b5-553b08284ee0
-  api-base-url: https://sandbox-api.uber.com
+  client-id: ${UBER_CLIENT_ID:}
+  client-secret: ${UBER_CLIENT_SECRET:}
+  customer-id: ${UBER_CUSTOMER_ID:}
+  api-base-url: ${UBER_API_BASE_URL:https://sandbox-api.uber.com}
   api:
-    enabled: true
+    enabled: ${UBER_API_ENABLED:true}
 
 pagarme:
-  api-key: pk_test_seu-teste-aqui
-  public-key: pk_test_seu-public-teste
-  environment: test
-  enabled: false
+  api-key: ${PAGARME_API_KEY:}
+  public-key: ${PAGARME_PUBLIC_KEY:}
+  environment: ${PAGARME_ENVIRONMENT:test}
+  enabled: ${PAGARME_ENABLED:false}
 
 maps:
-  api-key: AIzaSyDShWrpS8HkLYS2Rit6AalJmrq3KE9cYHw
+  api-key: ${GOOGLE_MAPS_API_KEY:}
 
 logging:
   level:

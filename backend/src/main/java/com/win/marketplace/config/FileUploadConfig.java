@@ -17,6 +17,9 @@ public class FileUploadConfig implements WebMvcConfigurer {
     @Value("${app.upload.dir}")
     private String uploadDir;
 
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}")
+    private String allowedOriginsProperty;
+
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         // Criar diretório se não existir
@@ -35,25 +38,14 @@ public class FileUploadConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(@NonNull CorsRegistry registry) {
-        // Origens permitidas para upload de arquivos
-        String allowedOriginsEnv = System.getenv("ALLOWED_ORIGINS");
-        
-        // Padrão: localhost para desenvolvimento
-        java.util.List<String> allowedOrigins = new java.util.ArrayList<>();
-        allowedOrigins.add("http://localhost:3000");
-        allowedOrigins.add("http://localhost:5173");
-        allowedOrigins.add("http://127.0.0.1:3000");
-        
-        // Adiciona origens da variável de ambiente (VPS/produção)
-        if (allowedOriginsEnv != null && !allowedOriginsEnv.trim().isEmpty()) {
-            String[] origins = allowedOriginsEnv.split(",");
-            for (String origin : origins) {
-                allowedOrigins.add(origin.trim());
-            }
-        }
+        String[] allowedOrigins = java.util.Arrays.stream(allowedOriginsProperty.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .distinct()
+                .toArray(String[]::new);
         
         registry.addMapping("/uploads/produtos/**")
-                .allowedOrigins(allowedOrigins.toArray(new String[0]))
+                .allowedOrigins(allowedOrigins)
                 .allowedMethods("GET");
     }
 }

@@ -30,8 +30,8 @@ public class LocalStorageService implements ImageStorageService {
     @Value("${app.upload.dir:uploads/produtos}")
     private String uploadDir;
     
-    @Value("${server.port:8080}")
-    private String serverPort;
+    @Value("${app.upload.base-url:http://localhost:${server.port:8080}/uploads}")
+    private String uploadBaseUrl;
     
     private final StorageProperties storageProperties;
     
@@ -152,7 +152,8 @@ public class LocalStorageService implements ImageStorageService {
     public String getImageUrl(String imagePath) {
         // Remove barras iniciais e duplicadas
         String cleanPath = imagePath.replaceAll("^/+", "").replace("\\", "/");
-        return String.format("http://localhost:%s/uploads/%s", serverPort, cleanPath);
+        String normalizedBaseUrl = uploadBaseUrl.replaceAll("/+$", "");
+        return String.format("%s/%s", normalizedBaseUrl, cleanPath);
     }
     
     @Override

@@ -5,6 +5,8 @@
 
 set -e  # Para na primeira falha
 
+FRONTEND_URL="${FRONTEND_URL:-http://localhost:3000}"
+
 echo "🔄 Iniciando rebuild e redeploy do WinMarketplace..."
 
 # 1. Parar containers
@@ -38,5 +40,5 @@ docker compose logs --tail=30 backend
 
 echo ""
 echo "✅ Deploy concluído!"
-echo "🌐 Frontend: http://winmarketplace.com.br"
+echo "🌐 Frontend: $FRONTEND_URL"
 echo "🔍 Ver logs: docker compose logs -f backend"
