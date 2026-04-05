@@ -1,0 +1,270 @@
+### ===================================
+### FLUXO COMPLETO DE COMPRA + ENTREGA
+### ===================================
+### Copie e execute cada requisição na sequência
+### Use CTRL+ALT+R no VSCode com extensão REST Client
+
+### Configurações Globais
+@host = http://localhost:8080
+@jwt = eyJhbGciOiJIUzI1NiJ9...COLOQUE_O_TOKEN_AQUI
+@usuarioId = uuid-do-usuario
+@pedidoId = uuid-do-pedido
+
+---
+
+### 1️⃣ PASSO 1: REGISTRAR USUÁRIO (CLIENTE)
+POST {{host}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "nome": "João Silva",
+  "email": "joao.silva@example.com",
+  "senha": "Senha@123456",
+  "cpf": "12345678901",
+  "telefone": "+5511987654321"
+}
+
+### 📌 Copie o token da resposta para a variável @jwt acima
+
+---
+
+### 2️⃣ PASSO 1B: LOGIN (se já tiver conta)
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "joao.silva@example.com",
+  "senha": "Senha@123456"
+}
+
+---
+
+### 3️⃣ PASSO 2: OBTER ENDEREÇO PADRÃO DO USUÁRIO
+GET {{host}}/api/v1/enderecos/usuario/{{usuarioId}}
+Authorization: Bearer {{jwt}}
+
+---
+
+### 4️⃣ PASSO 3: SOLICITAR COTAÇÃO DE FRETE (QUOTE)
+###
+### ⚠️ IMPORTANTE: 
+### - pickupLatitude/Longitude = coordenadas da LOJA
+### - dropoffLatitude/Longitude = coordenadas do CLIENT
+### - Use coordenadas válidas dentro da área de cobertura Uber
+###
+POST {{host}}/api/v1/uber/quotes
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "pickupLatitude": -23.5505,
+  "pickupLongitude": -46.6333,
+  "dropoffLatitude": -23.5600,
+  "dropoffLongitude": -46.6400,
+  "pickupContactName": "Loja ABC",
+  "pickupPhoneNumber": "+551140001234",
+  "dropoffContactName": "João Silva",
+  "dropoffPhoneNumber": "+5511987654321",
+  "externalDeliveryId": "ordem123"
+}
+
+### 📌 Copie o quoteId da resposta
+
+---
+
+### 5️⃣ PASSO 4: LISTAR PRODUTOS (para criar pedido)
+GET {{host}}/api/v1/produtos?lojista=true&limit=5
+Authorization: Bearer {{jwt}}
+
+---
+
+### 6️⃣ PASSO 4B: BUSCAR LOJISTAS (para associar ao pedido)
+GET {{host}}/api/v1/lojistas?limit=5
+Authorization: Bearer {{jwt}}
+
+---
+
+### 7️⃣ PASSO 5: CRIAR PEDIDO
+###
+### ⚠️ Substitua:
+### - usuarioId: UUID do usuário logado
+### - lojista.id: UUID da loja
+### - enderecoEntrega.id: UUID do endereço de entrega
+### - produtoId: UUID dos produtos
+###
+POST {{host}}/api/v1/pedidos
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "usuarioId": "{{usuarioId}}",
+  "enderecoEntregaId": "uuid-do-endereco",
+  "lojista": {
+    "id": "uuid-da-loja"
+  },
+  "itens": [
+    {
+      "produtoId": "uuid-produto-1",
+      "quantidade": 2,
+      "preco": 50.00,
+      "subtotal": 100.00
+    },
+    {
+      "produtoId": "uuid-produto-2",
+      "quantidade": 1,
+      "preco": 120.00,
+      "subtotal": 120.00
+    }
+  ],
+  "totalItens": 220.00,
+  "observacoes": "Sem cebola, com bastante queijo"
+}
+
+### 📌 Copie o pedidoId da resposta
+
+---
+
+### 8️⃣ PASSO 6: CONFIRMAR ENTREGA (criar delivery com quote)
+###
+### ⚠️ IMPORTANTE:
+### - quoteId: do PASSO 3
+### - pedidoId: do PASSO 5
+### - pinColeta: criar PIN de 4 dígitos (ex: 1234)
+### - pinEntrega: criar PIN de 4 dígitos (ex: 5678)
+###
+POST {{host}}/api/v1/uber/deliveries
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "quoteId": "quote_12345",
+  "pedidoId": "{{pedidoId}}",
+  "pinColeta": "1234",
+  "pinEntrega": "5678",
+  "pickupInstructions": "Retirar pacote na recepção",
+  "dropoffInstructions": "Deixar na porta principal"
+}
+
+### 📌 Salve o deliveryId e trackingUrl
+
+---
+
+### 9️⃣ PASSO 7: CALCULAR TOTAL DO PEDIDO
+POST {{host}}/api/v1/pagamentos/pedido/{{pedidoId}}/calcular-total
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "valorFrete": 15.00,
+  "cupomDesconto": null
+}
+
+---
+
+### 🔟 PASSO 8: CRIAR PAGAMENTO PIX
+###
+### ⚠️ Escolha UMA das opções abaixo:
+### A) Criar novo PIX
+### B) Usar PIX já criado
+###
+
+### ─── OPÇÃO A: CRIAR NOVO PIX ───
+POST {{host}}/api/v1/pagamentos/pedido/{{pedidoId}}/criar-quase-tudo
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "formaPagamento": "PIX",
+  "lojistaSelecionadoId": "uuid-da-loja",
+  "enderecoEntregaId": "uuid-do-endereco"
+}
+
+### 📌 Copie o QR Code ou PIX key e escaneie
+### 📌 Aguarde confirmação do pagamento (webhook)
+
+---
+
+### 1️⃣1️⃣ VERIFICAR STATUS DO PEDIDO
+GET {{host}}/api/v1/pedidos/{{pedidoId}}
+Authorization: Bearer {{jwt}}
+
+---
+
+### 1️⃣2️⃣ LISTAR PEDIDOS DO USUÁRIO
+GET {{host}}/api/v1/pedidos/usuario/{{usuarioId}}
+Authorization: Bearer {{jwt}}
+
+---
+
+### 1️⃣3️⃣ OBTER STATUS DA ENTREGA (DELIVERY)
+###
+### ⚠️ Quando a Uber atualiza status via webhook
+###
+GET {{host}}/api/v1/uber/deliveries/delivery_id/status
+Authorization: Bearer {{jwt}}
+
+---
+
+### 1️⃣4️⃣ CANCELAR PEDIDO (antes da coleta)
+POST {{host}}/api/v1/pedidos/{{pedidoId}}/cancelar
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "motivo": "Produto indisponível"
+}
+
+---
+
+### 1️⃣5️⃣ HEALTH CHECK (verificar se backend está vivo)
+GET {{host}}/actuator/health
+
+---
+
+### ⚙️ NOTAS IMPORTANTES
+
+### ✅ Checklist antes de começar:
+###
+### [ ] Backend está rodando (docker ps)
+### [ ] PostgreSQL está acessível
+### [ ] Chaves Uber configuradas no .env
+### [ ] JWT válido (não expirado)
+### [ ] Endereço de entrega cadastrado
+### [ ] Loja tem itens disponíveis
+### [ ] PIX habilitado para testes
+
+### ⚠️ Testes com dados reais:
+###
+### 1. Comece com PEQUENOS VALORES
+### 2. Use coordenadas DENTRO da área Uber
+### 3. Valide TODOS os campos antes de enviar
+### 4. Monitore os logs: docker logs win-marketplace-backend -f
+### 5. Verifique webhooks da Uber chegando
+
+### 🔐 Variáveis que você DEVE atualizar:
+###
+### - @jwt: Cole o token real do login
+### - @usuarioId: UUID do usuário
+### - @pedidoId: UUID do pedido criado
+### - quoteId: Do resultado da cotação
+### - deliveryId: Do resultado da entrega
+### - Coordenadas: Coloque valores válidos pra sua região
+
+---
+
+### 📚 Documentação Útil:
+###
+### Uber Direct API: https://developer.uber.com/docs/direct
+### Google Maps API: https://developers.google.com/maps
+### PagarMe API: https://docs.pagar.me/
+### Postman: https://www.postman.com/
+
+### 🚀 Próximos Passos:
+###
+### 1. Executar requisições na ordem (1 → 15)
+### 2. Gerar PIX e escaneiar com seu celular
+### 3. Confirmar que webhook de entrega chegou
+### 4. Validar que pedido foi atualizado para ENTREGUE
+### 5. Testar fluxo de cancelamento
+### 6. Testar com múltiplos itens
+### 7. Migrar para chaves de produção Uber
