@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label"; // Garante que o Label está importado
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth, RegisterData } from "@/contexts/AuthContext";
 import { useNotification } from "@/contexts/NotificationContext"; // Importado apenas uma vez
 import { toast } from "@/components/ui/use-toast";
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { maskCPF, maskPhone, validatePassword } from "@/lib/formatters";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, X } from "lucide-react";
 
 // Schema de validação para o formulário de REGISTRO
 const registerFormSchema = z.object({
@@ -266,8 +267,12 @@ function RegisterFormComponent() {
 
 // Componente principal da página de Login, exportado como default
 export default function Login() {
+  const REMEMBER_EMAIL_KEY = "win-user-remember-email";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberEmail, setRememberEmail] = useState(false);
+  const [hasSavedEmail, setHasSavedEmail] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   // role select removed; role will be inferred from authenticated user profile
   const [error, setError] = useState("");
@@ -275,6 +280,24 @@ export default function Login() {
   const { login, isLoading, isAuthenticated } = useAuth();
   const { success, error: notifyError } = useNotification();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
+    if (!savedEmail) {
+      return;
+    }
+
+    setEmail(savedEmail);
+    setRememberEmail(true);
+    setHasSavedEmail(true);
+  }, []);
+
+  const clearRememberedEmail = () => {
+    localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    setEmail("");
+    setRememberEmail(false);
+    setHasSavedEmail(false);
+  };
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -285,8 +308,17 @@ export default function Login() {
     setError("");
 
     try {
-      const loginResult = await login(email, password);
+      const normalizedEmail = email.trim().toLowerCase();
+      const loginResult = await login(normalizedEmail, password);
       if (loginResult.success) {
+        if (rememberEmail) {
+          localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
+          setHasSavedEmail(true);
+        } else {
+          localStorage.removeItem(REMEMBER_EMAIL_KEY);
+          setHasSavedEmail(false);
+        }
+
         success("Login realizado com sucesso!", "Bem-vindo de volta!");
         // Após login, redirecionar baseado no perfil
         const stored = localStorage.getItem("win-user");
@@ -345,18 +377,33 @@ export default function Login() {
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">E-mail</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      required
-                      disabled={isLoading}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        required
+                        disabled={isLoading}
+                        className="pr-10"
+                      />
+                      {hasSavedEmail && (
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                          onClick={clearRememberedEmail}
+                          aria-label="Limpar email salvo"
+                          title="Limpar email salvo"
+                          disabled={isLoading}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -388,6 +435,18 @@ export default function Login() {
                   </div>
                   
                   {/* Removido o seletor de 'role' para o login de cliente */}
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-email"
+                      checked={rememberEmail}
+                      onCheckedChange={(checked) => setRememberEmail(checked === true)}
+                      disabled={isLoading}
+                    />
+                    <Label htmlFor="remember-email" className="text-sm">
+                      Lembrar email
+                    </Label>
+                  </div>
 
                   <Button
                     type="submit"

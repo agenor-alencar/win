@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +27,11 @@ import {
   Shield,
   CheckCircle,
   ArrowRight,
+  X,
 } from "lucide-react";
 import { useNotification } from "../../contexts/NotificationContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { api } from "@/lib/Api";
 
 interface LoginData {
   email: string;
@@ -70,10 +73,15 @@ interface RegisterData {
 }
 
 export default function MerchantAuth() {
+  const REMEMBER_EMAIL_KEY = "win-merchant-remember-email";
+
   const [currentStep, setCurrentStep] = useState(1);
   const [activeTab, setActiveTab] = useState("login");
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(false);
+  const [hasSavedEmail, setHasSavedEmail] = useState(false);
   const { success, error: notifyError } = useNotification();
+  const { login } = useAuth();
 
   const [loginData, setLoginData] = useState<LoginData>({
     email: "",
@@ -103,18 +111,63 @@ export default function MerchantAuth() {
     acceptPrivacy: false,
   });
 
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
+    if (!savedEmail) {
+      return;
+    }
+
+    setLoginData((prev) => ({ ...prev, email: savedEmail }));
+    setRememberEmail(true);
+    setHasSavedEmail(true);
+  }, []);
+
+  const clearRememberedEmail = () => {
+    localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    setLoginData((prev) => ({ ...prev, email: "" }));
+    setRememberEmail(false);
+    setHasSavedEmail(false);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const normalizedEmail = loginData.email.trim().toLowerCase();
+      const loginResult = await login(normalizedEmail, loginData.password, "LOJISTA");
+
+      if (!loginResult.success) {
+        notifyError("Erro ao entrar", loginResult.error || "Email ou senha inválidos");
+        return;
+      }
+
+      if (rememberEmail) {
+        localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
+        setHasSavedEmail(true);
+      } else {
+        localStorage.removeItem(REMEMBER_EMAIL_KEY);
+        setHasSavedEmail(false);
+      }
+
+      try {
+        const refreshResponse = await api.post("/v1/auth/refresh-token");
+        if (refreshResponse.data?.access_token) {
+          localStorage.setItem("win-token", refreshResponse.data.access_token);
+        }
+      } catch (refreshError) {
+        console.warn("Falha ao renovar sessão no refresh-token", refreshError);
+      }
+
       success("Login realizado com sucesso!", "Bem-vindo à sua loja");
       setTimeout(() => {
         window.location.href = "/merchant/dashboard";
-      }, 1500);
-    }, 2000);
+      }, 1200);
+    } catch (err) {
+      notifyError("Erro ao entrar", "Não foi possível realizar o login agora");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRegisterStep = (step: number) => {
@@ -218,13 +271,24 @@ export default function MerchantAuth() {
                         id="email"
                         type="email"
                         placeholder="seu@email.com"
-                        className="pl-10"
+                        className="pl-10 pr-10"
                         value={loginData.email}
                         onChange={(e) =>
                           setLoginData({ ...loginData, email: e.target.value })
                         }
                         required
                       />
+                      {hasSavedEmail && (
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                          onClick={clearRememberedEmail}
+                          aria-label="Limpar email salvo"
+                          title="Limpar email salvo"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -251,7 +315,11 @@ export default function MerchantAuth() {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="remember" />
+                      <Checkbox
+                        id="remember"
+                        checked={rememberEmail}
+                        onCheckedChange={(checked) => setRememberEmail(checked === true)}
+                      />
                       <Label htmlFor="remember" className="text-sm">
                         Lembrar de mim
                       </Label>
