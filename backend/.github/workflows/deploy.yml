@@ -1,6 +1,5 @@
 name: WIN Backend CI/CD Deploy
 
-# O gatilho: Só roda quando você faz push na branch 'main'
 on:
   push:
     branches: [ "main" ]
@@ -21,7 +20,7 @@ jobs:
           cache: maven
 
       - name: 3. Compilar o projeto com Maven (Gera o arquivo .jar)
-        run: mvn clean package -DskipTests # Remova o -DskipTests no futuro para obrigar a rodar os testes
+        run: mvn clean package -DskipTests 
 
       - name: 4. Login no GitHub Container Registry (Segurança)
         uses: docker/login-action@v2
