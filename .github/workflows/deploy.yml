@@ -7,14 +7,10 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
+    
     permissions:
       contents: read
       packages: write
-
-    steps:
-      - name: 1. Checkout do Código
-        uses: actions/checkout@v3
 
     steps:
       - name: 1. Checkout do Código
@@ -29,7 +25,7 @@ jobs:
 
       - name: 3. Compilar o projeto com Maven (Gera o arquivo .jar)
         working-directory: ./backend
-        run: mvn clean package -DskipTests 
+        run: mvn clean package -DskipTests
 
       - name: 4. Login no GitHub Container Registry (Segurança)
         uses: docker/login-action@v2
@@ -52,17 +48,8 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            # Entra na pasta do projeto no servidor
-            cd /caminho/do/seu/projeto/win
-            
-            # Faz o login do servidor no repositório privado do GitHub
+            cd win
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # Baixa a nova versão recém compilada
             docker pull ghcr.io/${{ github.repository }}/win-backend:latest
-            
-            # Reinicia o container sem tempo de inatividade (Zero Downtime)
             docker-compose up -d --build
-            
-            # Limpa imagens antigas para não lotar o disco do servidor
             docker image prune -f
