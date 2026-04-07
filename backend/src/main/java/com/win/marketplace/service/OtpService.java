@@ -120,7 +120,7 @@ public class OtpService {
         OtpToken otpToken = otpOptional.get();
 
         // 2. Verificar se não expirou
-        if (otpToken.isNotExpired()) {
+        if (!otpToken.isNotExpired()) {
             log.warn("OTP expirado para telefone: {} - expiração: {}", telefone, otpToken.getExpiracao());
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,

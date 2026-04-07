@@ -175,7 +175,7 @@ security:
 
 # ✅ TWILIO SMS CONFIGURATION
 twilio:
-  enabled: ${TWILIO_ENABLED:true}
+  enabled: false
   account-sid: ${TWILIO_ACCOUNT_SID:}  # Account SID do Twilio
   auth-token: ${TWILIO_AUTH_TOKEN:}    # Auth Token do Twilio
   phone-number: ${TWILIO_PHONE_NUMBER:}  # Número de telefone Twilio para enviar SMS (ex: +5511999999999)

@@ -72,7 +72,7 @@ public class TwilioSmsClient {
             return true;
         }
 
-        // Validar configuração
+        // Validar configuração apenas se Twilio estiver habilitado
         validarConfiguracao();
 
         String messageBody = String.format(

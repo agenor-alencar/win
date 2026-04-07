@@ -548,7 +548,7 @@ CREATE TABLE IF NOT EXISTS devolucoes (
     criado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     atualizado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_devolucao_pedido FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE,
-    CONSTRAINT fk_devolucao_item_pedido FOREIGN KEY (item_pedido_id) REFERENCES itens_pedido(id) ON DELETE CASCADE,
+    CONSTRAINT fk_devolucao_item_pedido FOREIGN KEY (item_pedido_id) REFERENCES itens_pedidos(id) ON DELETE CASCADE,
     CONSTRAINT fk_devolucao_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
     CONSTRAINT fk_devolucao_lojista FOREIGN KEY (lojista_id) REFERENCES lojistas(id) ON DELETE CASCADE,
     CONSTRAINT chk_quantidade_devolvida CHECK (quantidade_devolvida > 0),
@@ -564,3 +564,22 @@ CREATE INDEX IF NOT EXISTS idx_devolucoes_lojista ON devolucoes(lojista_id);
 CREATE INDEX IF NOT EXISTS idx_devolucoes_status ON devolucoes(status);
 CREATE INDEX IF NOT EXISTS idx_devolucoes_criado_em ON devolucoes(criado_em);
 CREATE INDEX IF NOT EXISTS idx_devolucoes_lojista_status ON devolucoes(lojista_id, status);
+
+-- ============================================
+-- TABELA: otp_tokens (OTP via SMS)
+-- ============================================
+CREATE TABLE IF NOT EXISTS otp_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    telefone VARCHAR(20) NOT NULL,
+    codigo VARCHAR(6) NOT NULL,
+    tentativas INTEGER NOT NULL DEFAULT 0,
+    valido BOOLEAN NOT NULL DEFAULT true,
+    expiracao TIMESTAMP WITH TIME ZONE NOT NULL,
+    criado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    atualizado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_otp_telefone ON otp_tokens(telefone);
+CREATE INDEX IF NOT EXISTS idx_otp_valido ON otp_tokens(valido);
+CREATE INDEX IF NOT EXISTS idx_otp_expiracao ON otp_tokens(expiracao);
+CREATE INDEX IF NOT EXISTS idx_otp_telefone_valido ON otp_tokens(telefone, valido);

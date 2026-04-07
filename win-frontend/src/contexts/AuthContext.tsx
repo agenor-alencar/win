@@ -41,6 +41,8 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, senha: string, role?: string) => Promise<{ success: boolean; error?: string }>;
   register: (userData: RegisterData) => Promise<boolean>;
+  requestOtpCode: (telefone: string) => Promise<{ success: boolean; error?: string }>;
+  verifyOtpCode: (telefone: string, codigo: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateUser: (updatedUser: User) => void;
 }
@@ -252,6 +254,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const requestOtpCode = async (telefone: string): Promise<{ success: boolean; error?: string }> => {
+    updateState({ isLoading: true, error: null });
+    try {
+      const response = await api.post(`/v1/auth/request-code`, { telefone });
+      updateState({ isLoading: false });
+      return { success: true };
+    } catch (error: any) {
+      console.error("OTP request failed:", error);
+      const errorMessage = error.response?.data?.message || "Erro ao solicitar código. Tente novamente.";
+      updateState({ isLoading: false, error: errorMessage });
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const verifyOtpCode = async (telefone: string, codigo: string): Promise<{ success: boolean; error?: string }> => {
+    updateState({ isLoading: true, error: null });
+    try {
+      const response = await api.post(`/v1/auth/verify-code`, { telefone, codigo });
+      handleAuthSuccess(response.data);
+      updateState({ isLoading: false });
+      return { success: true };
+    } catch (error: any) {
+      console.error("OTP verification failed:", error);
+      const errorMessage = error.response?.data?.message || "Código inválido ou expirado.";
+      updateState({ isLoading: false, error: errorMessage });
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("win-token");
     localStorage.removeItem("win-user");
@@ -274,6 +305,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         error: state.error,
         login,
         register,
+        requestOtpCode,
+        verifyOtpCode,
         logout,
         updateUser,
       }}

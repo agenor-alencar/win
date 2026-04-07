@@ -28,6 +28,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { maskCPF, maskPhone, validatePassword } from "@/lib/formatters";
 import { Eye, EyeOff, X } from "lucide-react";
+import PhoneLogin from "./PhoneLogin";
 
 // Schema de validação para o formulário de REGISTRO
 const registerFormSchema = z.object({
@@ -363,8 +364,9 @@ export default function Login() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
+                <TabsTrigger value="phone">📱 Telefone</TabsTrigger>
                 <TabsTrigger value="register">Criar Conta</TabsTrigger>
               </TabsList>
 
@@ -466,6 +468,10 @@ export default function Login() {
                     </Link>
                   </div>
                 </form>
+              </TabsContent>
+
+              <TabsContent value="phone" className="space-y-4 mt-6">
+                <PhoneLogin />
               </TabsContent>
 
               <TabsContent value="register" className="space-y-4 mt-6">
