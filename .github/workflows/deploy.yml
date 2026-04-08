@@ -48,8 +48,45 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            cd win
+            set -e  # Parar em caso de erro
+            
+            # Navegar para diretório do projeto
+            cd /root/win
+            echo "📂 Diretório de trabalho: $(pwd)"
+            
+            # Sincronizar repositório com as mudanças (docker-compose.yml, etc)
+            echo "🔄 Sincronizando repositório..."
+            git fetch origin main
+            git reset --hard origin/main
+            echo "✅ Repositório sincronizado"
+            
+            # Fazer login no GitHub Container Registry
+            echo "🔐 Fazendo login no GitHub Container Registry..."
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "✅ Login realizado"
+            
+            # Puxar imagem mais recente do backend
+            echo "📥 Puxando imagem Docker mais recente..."
             docker pull ghcr.io/${{ github.repository }}/win-backend:latest
+            echo "✅ Imagem puxada"
+            
+            # Parar containers antigos (se houver) e iniciar novos
+            echo "🔄 Reiniciando containers com docker-compose..."
+            docker-compose down || true
             docker-compose up -d --build
+            echo "✅ Containers iniciados"
+            
+            # Aguardar backend ficar saudável
+            echo "⏳ Aguardando backend ficar saudável..."
+            sleep 15
+            docker-compose ps
+            
+            # Limpar imagens antigas
+            echo "🧹 Limpando imagens Docker antigas..."
             docker image prune -f
+            echo "✅ Limpeza concluída"
+            
+            # Validar que o backend está rodando
+            echo "🔍 Validando backend..."
+            docker logs win-marketplace-backend 2>&1 | grep -i "started\|healthy" | tail -3
+            echo "✅ Deploy concluído com sucesso!"
