@@ -170,8 +170,9 @@ services:
       # Google Maps API (para geocodificação)
       # ========================================
       Maps_API_KEY: ${Maps_API_KEY:-}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
     ports:
-      - "127.0.0.1:8080:8080"
+      - "0.0.0.0:8080:8080"
     volumes:
       - ./uploads:/app/uploads
     networks:
