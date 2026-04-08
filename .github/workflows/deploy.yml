@@ -47,7 +47,7 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
-          source: "docker-compose.yml"
+          source: "docker-compose.yml,nginx.conf,scripts/"
           target: "/root/win/"
 
       - name: 7. Deploy Seguro no Servidor DigitalOcean
@@ -63,3 +63,14 @@ jobs:
             docker-compose up -d --no-deps --build backend
             sleep 10
             docker-compose ps | grep backend
+
+      - name: 8. Configurar NGINX como Reverse Proxy
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            cd /root/win
+            chmod +x scripts/configure-nginx.sh
+            ./scripts/configure-nginx.sh
