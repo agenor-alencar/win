@@ -47,9 +47,8 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
-          source: "docker-compose.yml,.env.example"
-          target: "/root/win"
-          strip_components: 1
+          source: "docker-compose.yml"
+          target: "/root/win/"
 
       - name: 7. Deploy Seguro no Servidor DigitalOcean
         uses: appleboy/ssh-action@v0.1.10
@@ -58,32 +57,9 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            set -e  # Parar em caso de erro
-            
             cd /root/win
-            echo "📂 Diretório: $(pwd)"
-            
-            # Fazer login no GitHub Container Registry
-            echo "🔐 Fazendo login no Docker Registry..."
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # Puxar imagem mais recente
-            echo "📥 Puxando imagem backend..."
+            docker login ghcr.io -u ${{ github.actor }} --password <<< "${{ secrets.GITHUB_TOKEN }}"
             docker pull ghcr.io/${{ github.repository }}/win-backend:latest
-            
-            # Parar e atualizar containers
-            echo "🔄 Atualizando containers..."
-            docker-compose down || true
-            docker-compose up -d --build
-            
-            # Aguardar backend inicializar
-            echo "⏳ Aguardando backend (15s)..."
-            sleep 15
-            
-            # Validar status
-            echo "📊 Status dos containers:"
-            docker-compose ps
-            
-            # Limpar
-            docker image prune -f
-            echo "✅ Deploy concluído com sucesso!"
+            docker-compose up -d --no-deps --build backend
+            sleep 10
+            docker-compose ps | grep backend
