@@ -131,6 +131,7 @@ app:
   google:
     maps:
       api-key: ${GOOGLE_MAPS_API_KEY:}
+      geocoding-enabled: ${GOOGLE_MAPS_GEOCODING_ENABLED:true}
   
   # ✅ Uber Direct API
   uber:
@@ -199,6 +200,7 @@ logging:
     org.springframework.web: WARN  # Reduzido
     org.hibernate.SQL: WARN  # Desabilitado SQL logging
     org.hibernate.type.descriptor.sql.BasicBinder: WARN  # Desabilitado
+    com.win.marketplace.service: DEBUG  # ✅ DEBUG para GeocodingService
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
