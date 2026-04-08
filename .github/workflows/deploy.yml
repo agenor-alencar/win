@@ -41,7 +41,17 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}/win-backend:latest
 
-      - name: 6. Deploy Seguro no Servidor DigitalOcean
+      - name: 6. Copiar arquivos de configuração para VPS (SCP)
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          source: "docker-compose.yml,.env.example"
+          target: "/root/win"
+          strip_components: 1
+
+      - name: 7. Deploy Seguro no Servidor DigitalOcean
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.DO_HOST }}
@@ -50,43 +60,30 @@ jobs:
           script: |
             set -e  # Parar em caso de erro
             
-            # Navegar para diretório do projeto
             cd /root/win
-            echo "📂 Diretório de trabalho: $(pwd)"
-            
-            # Sincronizar repositório com as mudanças (docker-compose.yml, etc)
-            echo "🔄 Sincronizando repositório..."
-            git fetch origin main
-            git reset --hard origin/main
-            echo "✅ Repositório sincronizado"
+            echo "📂 Diretório: $(pwd)"
             
             # Fazer login no GitHub Container Registry
-            echo "🔐 Fazendo login no GitHub Container Registry..."
+            echo "🔐 Fazendo login no Docker Registry..."
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            echo "✅ Login realizado"
             
-            # Puxar imagem mais recente do backend
-            echo "📥 Puxando imagem Docker mais recente..."
+            # Puxar imagem mais recente
+            echo "📥 Puxando imagem backend..."
             docker pull ghcr.io/${{ github.repository }}/win-backend:latest
-            echo "✅ Imagem puxada"
             
-            # Parar containers antigos (se houver) e iniciar novos
-            echo "🔄 Reiniciando containers com docker-compose..."
+            # Parar e atualizar containers
+            echo "🔄 Atualizando containers..."
             docker-compose down || true
             docker-compose up -d --build
-            echo "✅ Containers iniciados"
             
-            # Aguardar backend ficar saudável
-            echo "⏳ Aguardando backend ficar saudável..."
+            # Aguardar backend inicializar
+            echo "⏳ Aguardando backend (15s)..."
             sleep 15
+            
+            # Validar status
+            echo "📊 Status dos containers:"
             docker-compose ps
             
-            # Limpar imagens antigas
-            echo "🧹 Limpando imagens Docker antigas..."
+            # Limpar
             docker image prune -f
-            echo "✅ Limpeza concluída"
-            
-            # Validar que o backend está rodando
-            echo "🔍 Validando backend..."
-            docker logs win-marketplace-backend 2>&1 | grep -i "started\|healthy" | tail -3
             echo "✅ Deploy concluído com sucesso!"
