@@ -111,7 +111,6 @@ docker-compose up -d
 
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8080
-- **Credenciais Admin**: `admin@winmarketplace.com` / `Admin@2025`
 
 📖 **[Guia Completo de Instalação](docs/getting-started/first-admin.md)**
 
