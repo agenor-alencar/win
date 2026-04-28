@@ -6,6 +6,8 @@ import com.win.marketplace.dto.response.DevolucaoResponseDTO;
 import com.win.marketplace.dto.mapper.DevolucaoMapper;
 import com.win.marketplace.model.*;
 import com.win.marketplace.repository.*;
+import com.win.marketplace.repository.LojistaErpConfigRepository;
+import com.win.marketplace.repository.PagamentoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -27,6 +30,10 @@ public class DevolucaoService {
     private final ItemPedidoRepository itemPedidoRepository;
     private final UsuarioRepository usuarioRepository;
     private final LojistaRepository lojistaRepository;
+    private final LojistaErpConfigRepository lojistaErpConfigRepository;
+    private final PagamentoRepository pagamentoRepository;
+    private final PagamentoService pagamentoService;
+    private final PagarMeService pagarMeService;
     private final DevolucaoMapper devolucaoMapper;
 
     /**
@@ -54,19 +61,71 @@ public class DevolucaoService {
         Lojista lojista = lojistaRepository.findById(itemPedido.getProduto().getLojista().getId())
                 .orElseThrow(() -> new RuntimeException("Lojista não encontrado"));
 
-        // Criar devolução
+        // Criar devolução (ainda não persistida)
         Devolucao devolucao = devolucaoMapper.toEntity(requestDTO);
         devolucao.setNumeroDevolucao(gerarNumeroDevolucao());
         devolucao.setPedido(pedido);
         devolucao.setItemPedido(itemPedido);
         devolucao.setUsuario(usuario);
         devolucao.setLojista(lojista);
-        devolucao.setStatus(Devolucao.StatusDevolucao.PENDENTE);
 
-        Devolucao savedDevolucao = devolucaoRepository.save(devolucao);
-        log.info("Devolução criada com sucesso: {}", savedDevolucao.getNumeroDevolucao());
+        // Obtém limiteEstornoAutomatico da configuração ERP do lojista (fallback para 20.00)
+        java.math.BigDecimal limite = lojistaErpConfigRepository
+                .findByLojistaIdAndAtivoTrue(lojista.getId())
+                .map(com.win.marketplace.model.LojistaErpConfig::getLimiteEstornoAutomatico)
+                .orElse(new java.math.BigDecimal("20.00"));
 
-        return devolucaoMapper.toResponseDTO(savedDevolucao);
+        // Valor a ser devolvido - usa o valor informado no DTO (total da devolução)
+        java.math.BigDecimal valorDevolucao = requestDTO.valorDevolucao();
+
+        // Regra: se valor <= limite -> aprova sem coleta e tenta estornar imediatamente
+        if (valorDevolucao.compareTo(limite) <= 0) {
+            devolucao.setStatus(Devolucao.StatusDevolucao.APROVADO_SEM_COLETA);
+            devolucao.setDataAprovacao(OffsetDateTime.now());
+
+            // Primeiro salva a devolução em memória (persistência final após estorno com sucesso)
+            // Tentar processar estorno no gateway
+            try {
+                // Buscar pagamento associado ao pedido
+                pagamentoRepository.findByPedidoId(pedido.getId()).ifPresent(pagamento -> {
+                    String transacaoId = pagamento.getTransacaoId();
+                    if (transacaoId != null && !transacaoId.isBlank()) {
+                        // Chama o gateway para cancelar/estornar a ordem/transaction
+                        Map<String, Object> resposta = pagarMeService.cancelarOrdem(transacaoId);
+                        // Extrair id retornado pelo gateway (se existente)
+                        Object gatewayId = resposta.get("id");
+                        if (gatewayId != null) {
+                            devolucao.setTransactionIdPagarme(gatewayId.toString());
+                        } else if (resposta.get("transaction_id") != null) {
+                            devolucao.setTransactionIdPagarme(resposta.get("transaction_id").toString());
+                        }
+
+                        // Marca pagamento local como estornado
+                        pagamentoService.estornarPagamento(pagamento.getId());
+                    } else {
+                        log.warn("Pagamento do pedido {} não possui transacaoId; estorno via gateway não executado", pedido.getId());
+                    }
+                });
+
+                // Definir data de reembolso (aplicada localmente)
+                devolucao.setDataReembolso(OffsetDateTime.now());
+
+                // Persistir devolução com status APROVADO_SEM_COLETA e transactionId preenchido
+                Devolucao saved = devolucaoRepository.save(devolucao);
+                log.info("Devolução aprovada sem coleta e estorno processado: {}", saved.getNumeroDevolucao());
+                return devolucaoMapper.toResponseDTO(saved);
+            } catch (Exception e) {
+                log.error("Falha ao processar estorno no gateway: {}", e.getMessage(), e);
+                // Garantir rollback: rethrow para que a transação seja revertida
+                throw new RuntimeException("Falha ao processar estorno: " + e.getMessage(), e);
+            }
+        } else {
+            // Aguardando entrega no balcão - estorno será processado posteriormente
+            devolucao.setStatus(Devolucao.StatusDevolucao.AGUARDANDO_ENTREGA_BALCAO);
+            Devolucao savedDevolucao = devolucaoRepository.save(devolucao);
+            log.info("Devolução criada e aguardando entrega no balcão: {}", savedDevolucao.getNumeroDevolucao());
+            return devolucaoMapper.toResponseDTO(savedDevolucao);
+        }
     }
 
     /**

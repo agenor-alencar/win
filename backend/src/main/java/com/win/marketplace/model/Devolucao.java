@@ -57,6 +57,9 @@ public class Devolucao {
     @Column(name = "valor_devolucao", nullable = false, precision = 10, scale = 2)
     private BigDecimal valorDevolucao;
 
+    @Column(name = "transaction_id_pagarme", length = 100)
+    private String transactionIdPagarme;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private StatusDevolucao status = StatusDevolucao.PENDENTE;
@@ -91,7 +94,8 @@ public class Devolucao {
         PRODUTO_DANIFICADO("Produto danificado no transporte"),
         ENTREGA_ATRASADA("Entrega muito atrasada"),
         NAO_ATENDE_EXPECTATIVA("Não atende às expectativas"),
-        OUTRO("Outro motivo");
+        OUTRO("Outro motivo"),
+        ERRO_MEDIDA_CLIENTE("Erro na medida informada pelo cliente");
 
         private final String descricao;
 
@@ -110,11 +114,14 @@ public class Devolucao {
     public enum StatusDevolucao {
         PENDENTE("Aguardando análise do lojista"),
         APROVADO("Devolução aprovada"),
+        APROVADO_SEM_COLETA("Aprovado sem coleta"),
         RECUSADO("Devolução recusada"),
         EM_TRANSITO("Produto em trânsito para o lojista"),
+        AGUARDANDO_ENTREGA_BALCAO("Aguardando entrega no balcão"),
         RECEBIDO("Produto recebido pelo lojista"),
         REEMBOLSADO("Reembolso efetuado"),
         CANCELADO("Devolução cancelada");
+
 
         private final String descricao;
 

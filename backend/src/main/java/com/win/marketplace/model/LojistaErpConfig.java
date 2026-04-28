@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
@@ -106,6 +107,13 @@ public class LojistaErpConfig {
     @UpdateTimestamp
     @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm;
+
+    /**
+     * Limite para estorno automático (em moeda local). Padrão: 20.00
+     */
+    @Column(name = "limite_estorno_automatico", precision = 10, scale = 2, nullable = false)
+    @Builder.Default
+    private BigDecimal limiteEstornoAutomatico = new BigDecimal("20.00");
 
     /**
      * Verifica se está na hora de sincronizar novamente
