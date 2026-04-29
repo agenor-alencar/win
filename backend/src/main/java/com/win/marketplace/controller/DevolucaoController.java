@@ -5,6 +5,8 @@ import com.win.marketplace.dto.request.DevolucaoUpdateRequestDTO;
 import com.win.marketplace.dto.response.DevolucaoResponseDTO;
 import com.win.marketplace.model.Devolucao;
 import com.win.marketplace.service.DevolucaoService;
+import com.win.marketplace.repository.UsuarioRepository;
+import com.win.marketplace.model.Usuario;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,6 +38,7 @@ import java.util.UUID;
 public class DevolucaoController {
 
     private final DevolucaoService devolucaoService;
+    private final UsuarioRepository usuarioRepository;
 
     /**
      * Cria uma nova solicitação de devolução
@@ -47,6 +52,25 @@ public class DevolucaoController {
         
         log.info("POST /api/v1/devolucoes/usuario/{} - Criando devolução", usuarioId);
         DevolucaoResponseDTO response = devolucaoService.criarDevolucao(usuarioId, requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Cria uma nova solicitação de devolução (usuário autenticado)
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('CLIENTE', 'USER')")
+    @Operation(summary = "Criar devolução", description = "Cria uma nova solicitação de devolução para o usuário autenticado")
+    public ResponseEntity<DevolucaoResponseDTO> criarParaUsuarioAutenticado(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody DevolucaoCreateRequestDTO requestDTO) {
+
+        String email = userDetails.getUsername();
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        log.info("POST /api/v1/devolucoes - Criando devolução para usuário autenticado: {}", email);
+        DevolucaoResponseDTO response = devolucaoService.criarDevolucao(usuario.getId(), requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -77,6 +101,21 @@ public class DevolucaoController {
         
         log.info("GET /api/v1/devolucoes/lojista/{}", lojistaId);
         List<DevolucaoResponseDTO> devolucoes = devolucaoService.listarPorLojista(lojistaId);
+        return ResponseEntity.ok(devolucoes);
+    }
+
+    /**
+     * Lista devoluções pendentes de entrega no balcão para o lojista
+     */
+    @GetMapping("/lojista/{lojistaId}/pendentes")
+    @PreAuthorize("hasAnyRole('LOJISTA', 'MERCHANT')")
+    @Operation(summary = "Listar devoluções pendentes (balcão)", description = "Lista devoluções do lojista com status AGUARDANDO_ENTREGA_BALCAO")
+    public ResponseEntity<List<DevolucaoResponseDTO>> listarPendentesBalcao(
+            @Parameter(description = "ID do lojista") @PathVariable UUID lojistaId) {
+
+        log.info("GET /api/v1/devolucoes/lojista/{}/pendentes", lojistaId);
+        List<DevolucaoResponseDTO> devolucoes = devolucaoService.listarPorLojistaEStatus(
+                lojistaId, Devolucao.StatusDevolucao.AGUARDANDO_ENTREGA_BALCAO);
         return ResponseEntity.ok(devolucoes);
     }
 
@@ -150,5 +189,19 @@ public class DevolucaoController {
         log.info("GET /api/v1/devolucoes/lojista/{}/pendentes/count", lojistaId);
         long count = devolucaoService.contarPendentesPorLojista(lojistaId);
         return ResponseEntity.ok(count);
+    }
+
+    /**
+     * Confirma recebimento em loja e executa estorno pendente
+     */
+    @PatchMapping("/{id}/confirmar-recebimento")
+    @PreAuthorize("hasAnyRole('LOJISTA', 'MERCHANT')")
+    @Operation(summary = "Confirmar recebimento", description = "Confirma recebimento da devolução e aciona estorno pendente")
+    public ResponseEntity<DevolucaoResponseDTO> confirmarRecebimento(
+            @Parameter(description = "ID da devolução") @PathVariable UUID id) {
+
+        log.info("PATCH /api/v1/devolucoes/{}/confirmar-recebimento", id);
+        DevolucaoResponseDTO response = devolucaoService.confirmarRecebimento(id);
+        return ResponseEntity.ok(response);
     }
 }

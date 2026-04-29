@@ -233,6 +233,47 @@ public class DevolucaoService {
     }
 
     /**
+     * Confirma recebimento na loja e processa estorno pendente
+     */
+    public DevolucaoResponseDTO confirmarRecebimento(UUID devolucaoId) {
+        Devolucao devolucao = devolucaoRepository.findById(devolucaoId)
+                .orElseThrow(() -> new RuntimeException("Devolução não encontrada"));
+
+        if (devolucao.getStatus() != Devolucao.StatusDevolucao.AGUARDANDO_ENTREGA_BALCAO) {
+            throw new RuntimeException("Devolução não está aguardando entrega no balcão");
+        }
+
+        try {
+            Pedido pedido = devolucao.getPedido();
+            pagamentoRepository.findByPedidoId(pedido.getId()).ifPresent(pagamento -> {
+                String transacaoId = pagamento.getTransacaoId();
+                if (transacaoId != null && !transacaoId.isBlank()) {
+                    Map<String, Object> resposta = pagarMeService.cancelarOrdem(transacaoId);
+                    Object gatewayId = resposta.get("id");
+                    if (gatewayId != null) {
+                        devolucao.setTransactionIdPagarme(gatewayId.toString());
+                    } else if (resposta.get("transaction_id") != null) {
+                        devolucao.setTransactionIdPagarme(resposta.get("transaction_id").toString());
+                    }
+
+                    pagamentoService.estornarPagamento(pagamento.getId());
+                } else {
+                    log.warn("Pagamento do pedido {} não possui transacaoId; estorno via gateway não executado", pedido.getId());
+                }
+            });
+
+            devolucao.setStatus(Devolucao.StatusDevolucao.RECEBIDO);
+            devolucao.setDataReembolso(OffsetDateTime.now());
+
+            Devolucao saved = devolucaoRepository.save(devolucao);
+            return devolucaoMapper.toResponseDTO(saved);
+        } catch (Exception e) {
+            log.error("Falha ao processar estorno no recebimento: {}", e.getMessage(), e);
+            throw new RuntimeException("Falha ao processar estorno no recebimento: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Gera número único para devolução
      */
     private String gerarNumeroDevolucao() {
