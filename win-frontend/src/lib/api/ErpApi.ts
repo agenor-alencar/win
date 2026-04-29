@@ -18,6 +18,7 @@ export interface ErpConfig {
   lastSyncAt: string | null;
   lastSyncStatus: string | null;
   ativo: boolean;
+  limiteEstornoAutomatico?: number;
 }
 
 export interface ErpConfigRequest {
@@ -26,6 +27,7 @@ export interface ErpConfigRequest {
   apiKey?: string;
   syncFrequencyMinutes?: number;
   syncEnabled?: boolean;
+  limiteEstornoAutomatico?: number;
 }
 
 export interface ErpProduct {

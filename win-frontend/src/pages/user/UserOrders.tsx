@@ -5,9 +5,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Package, Truck, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ordersApi } from "@/lib/api/ordersApi";
+import { returnsApi, MotivoDevolucao } from "@/lib/api/returnsApi";
+import { useToast } from "@/hooks/use-toast";
 
 interface Order {
   id: string;
@@ -54,9 +72,16 @@ const statusConfig = {
 
 export default function UserOrders() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string>("");
+  const [selectedReason, setSelectedReason] = useState<MotivoDevolucao | "">("");
+  const [returnDetails, setReturnDetails] = useState("");
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -112,6 +137,7 @@ export default function UserOrders() {
   const renderOrderCard = (order: Order) => {
     const statusInfo = statusConfig[order.status];
     const StatusIcon = statusInfo.icon;
+    const canRequestReturn = order.status === "delivered";
 
     return (
       <Card key={order.id} className="mb-4">
@@ -164,9 +190,19 @@ export default function UserOrders() {
                     Ver Detalhes
                   </Link>
                 </Button>
-                {order.status === "delivered" && (
-                  <Button variant="outline" size="sm">
-                    Avaliar Compra
+                {canRequestReturn && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setSelectedItemId(order.items[0]?.id ?? "");
+                      setSelectedReason("");
+                      setReturnDetails("");
+                      setIsReturnDialogOpen(true);
+                    }}
+                  >
+                    Solicitar Devolução
                   </Button>
                 )}
               </div>
@@ -175,6 +211,73 @@ export default function UserOrders() {
         </CardContent>
       </Card>
     );
+  };
+
+  const motivoOptions: Array<{ label: string; value: MotivoDevolucao }> = [
+    { label: "Produto com defeito", value: "PRODUTO_DEFEITUOSO" },
+    { label: "Comprei a medida/modelo errado", value: "ERRO_MEDIDA_CLIENTE" },
+    { label: "Produto diferente do anunciado", value: "PRODUTO_DIFERENTE" },
+    { label: "Produto danificado no transporte", value: "PRODUTO_DANIFICADO" },
+    { label: "Outro", value: "OUTRO" },
+  ];
+
+  const handleSubmitReturn = async () => {
+    if (!selectedOrder || !selectedReason || !selectedItemId) {
+      return;
+    }
+
+    const selectedItem = selectedOrder.items.find((item) => item.id === selectedItemId);
+    if (!selectedItem) {
+      return;
+    }
+
+    setIsSubmittingReturn(true);
+
+    try {
+      const quantidadeDevolvida = selectedItem.quantity;
+      const valorDevolucao = Number((selectedItem.price * selectedItem.quantity).toFixed(2));
+      const motivoLabel = motivoOptions.find((m) => m.value === selectedReason)?.label ?? "Outro";
+      const descricaoBase = returnDetails.trim() || "Sem detalhes adicionais.";
+      const descricao = `Solicitacao de devolucao: ${motivoLabel}. ${descricaoBase}`;
+
+      const response = await returnsApi.createReturn({
+        pedidoId: selectedOrder.id,
+        itemPedidoId: selectedItem.id,
+        motivoDevolucao: selectedReason,
+        descricao,
+        quantidadeDevolvida,
+        valorDevolucao,
+      });
+
+      if (response.status === "APROVADO_SEM_COLETA") {
+        toast({
+          description:
+            "Estorno aprovado! ✅ Para sua comodidade e eficiência logística, não é necessário devolver este produto. Guarde-o com você para uso futuro ou repasse. Considere um presente da loja para você!",
+        });
+      }
+
+      if (response.status === "AGUARDANDO_ENTREGA_BALCAO") {
+        toast({
+          description:
+            "Solicitação recebida! 📦 Para liberar o seu estorno, por favor, entregue o item no balcão da loja parceira.",
+        });
+      }
+
+      setIsReturnDialogOpen(false);
+      setSelectedOrder(null);
+      setSelectedItemId("");
+      setSelectedReason("");
+      setReturnDetails("");
+    } catch (error) {
+      console.error("Erro ao solicitar devolução:", error);
+      toast({
+        title: "Erro ao solicitar devolução",
+        description: "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingReturn(false);
+    }
   };
 
   return (
@@ -242,6 +345,84 @@ export default function UserOrders() {
           </Tabs>
         </div>
       </main>
+
+      <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Solicitar devolução</DialogTitle>
+            <DialogDescription>
+              Selecione o motivo da devolução para o pedido {selectedOrder?.orderNumber}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-white p-4">
+              <p className="text-sm text-gray-600">Resumo do pedido</p>
+              <p className="text-base font-semibold text-gray-900">
+                #{selectedOrder?.orderNumber}
+              </p>
+              <p className="text-sm text-gray-500">
+                Total: R$ {selectedOrder?.total.toFixed(2)}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Item do pedido</label>
+              <Select value={selectedItemId} onValueChange={setSelectedItemId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o item" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(selectedOrder?.items ?? []).map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name} (Qtd: {item.quantity})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Motivo</label>
+              <Select value={selectedReason} onValueChange={(value) => setSelectedReason(value as MotivoDevolucao)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione um motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {motivoOptions.map((motivo) => (
+                    <SelectItem key={motivo.value} value={motivo.value}>
+                      {motivo.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Descricao / Detalhes do problema (opcional)
+              </label>
+              <Textarea
+                placeholder="Descreva o problema se desejar"
+                value={returnDetails}
+                onChange={(event) => setReturnDetails(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="sm:justify-between">
+            <Button variant="ghost" onClick={() => setIsReturnDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSubmitReturn}
+              disabled={!selectedReason || !selectedItemId || isSubmittingReturn}
+            >
+              {isSubmittingReturn ? "Enviando..." : "Confirmar devolução"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

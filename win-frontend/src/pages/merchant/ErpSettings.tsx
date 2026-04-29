@@ -45,6 +45,7 @@ export default function ErpSettings() {
     apiKey: "",
     syncFrequencyMinutes: "5",
     syncEnabled: true,
+    limiteEstornoAutomatico: "20.00",
   });
 
   // Buscar ID do lojista
@@ -90,6 +91,8 @@ export default function ErpSettings() {
               apiKey: "", // Nunca retorna por segurança
               syncFrequencyMinutes: config.syncFrequencyMinutes?.toString() || "5",
               syncEnabled: config.ativo,
+              limiteEstornoAutomatico:
+                config.limiteEstornoAutomatico?.toString() || "20.00",
             });
           }
         } catch (error) {
@@ -208,6 +211,7 @@ export default function ErpSettings() {
         apiKey: formData.apiKey || undefined, // Só envia se foi preenchida
         syncFrequencyMinutes: parseInt(formData.syncFrequencyMinutes),
         syncEnabled: formData.syncEnabled,
+        limiteEstornoAutomatico: Number(formData.limiteEstornoAutomatico || 20),
       });
 
       toast({
@@ -401,6 +405,23 @@ export default function ErpSettings() {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Intervalo entre sincronizações automáticas (recomendado: 5 minutos)
+                </p>
+              </div>
+
+              {/* Limite de Estorno Automatico */}
+              <div>
+                <Label htmlFor="limiteEstorno">Limite de Estorno Automatico (R$)</Label>
+                <Input
+                  id="limiteEstorno"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="20.00"
+                  value={formData.limiteEstornoAutomatico}
+                  onChange={(e) => handleInputChange("limiteEstornoAutomatico", e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Valores abaixo ou iguais a este limite sao estornados automaticamente.
                 </p>
               </div>
 
